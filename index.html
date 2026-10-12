@@ -204,7 +204,7 @@ dialog::backdrop{background:#00152fbb}
 <section id="home" class="page active">
   <div class="welcome"><div><small>Bem-vindo(a)</small><h2 id="welcomeName">AD Moriah</h2><p id="welcomeProfile"></p></div><div class="avatar">A</div></div>
   <div id="stats" class="stats"></div>
-  <div class="panel"><h3>🎂 Aniversariantes próximos</h3><div id="birthdays"></div></div>
+  <div class="panel"><h3>🎂 Aniversariantes próximos</h3><p>As homenagens são opcionais. Escolha uma pessoa e clique em Enviar parabéns quando desejar.</p><div id="birthdays"></div></div>
   <div class="panel"><h3>⛪ Próximas escalas da sede</h3><div id="nextScales"></div></div>
   <div class="panel"><h3>📅 Próximos eventos regionais</h3><div id="nextAgenda"></div></div>
 </section>
@@ -399,7 +399,7 @@ function sub(name,target,filter=true){
  state.unsubs.push(u)
 }
 function startRealtime(){$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);sub("obreiros","obreiros",true);sub("membros","membros",true);sub("festividades","festividades",true);sub("visitantes","visitantes",true);sub("resultadosCulto","resultadosCulto",true);sub("agendaRegional","agenda",false);if(isAdmin())sub("usuarios","usuarios",false)}
-function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));fillCongSelect($("ucong"));fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators();checkBirthdayAlert()}
+function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));fillCongSelect($("ucong"));fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
 
 function renderStats(){const t=state.membros.filter(m=>m.tither==="sim").length,p=state.festividades.filter(f=>f.status==="pending").length;const v=[["Congregações",state.congregacoes.length],["Obreiros",state.obreiros.length],["Membros",state.membros.length],["Dizimistas",t],["Festividades",state.festividades.length],["Pendentes",p],["Agenda",state.agenda.length],["Visitantes no mês",visitorsThisMonth().length]];$("stats").innerHTML=v.map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("")}
 function renderCong(){$("congList").innerHTML=state.congregacoes.length?state.congregacoes.map(c=>`<article class="card"><div class="person-head"><h3>⛪ ${c.name}</h3>${isAdmin()?`<button class="secondary" onclick="editCong('${c.id}')">Editar</button>`:""}</div><p><b>Pastor:</b> ${c.pastor||"—"} • <b>2º dirigente:</b> ${c.second||"—"}</p><p>📞 ${c.phone||"—"} • 📍 ${c.address||"—"}</p>${c.fixedScale?.active==="sim"?`<span class="badge pending">Toda ${c.fixedScale.occurrence}ª terça-feira • ${c.fixedScale.time||""}</span>`:""}</article>`).join(""):'<div class="card">Nenhum departamento cadastrada.</div>'}
@@ -477,7 +477,18 @@ $("rejectReason").onchange=()=>{$("rejectOtherWrap").classList.toggle("hidden",$
 $("rejectForm").onsubmit=async e=>{e.preventDefault();const id=$("rejectFestId").value,target=$("rejectTarget").value,reason=$("rejectReason").value,note=reason==="Outro"?$("rejectOther").value.trim():"";if(reason==="Outro"&&!note)return toast("Digite o motivo.");const field=target==="preacher"?"preacherDecision":"singerDecision";await updateDoc(doc(db,"festividades",id),{[field]:{status:"rejected",reason,note,updatedAt:new Date().toISOString()},updatedAt:serverTimestamp()});closeDlg("rejectDlg");toast("Reprovação registrada.")};
 function renderAgenda(){const l=[...state.agenda].sort((a,b)=>(a.date||"").localeCompare(b.date||""));$("agendaList").innerHTML=l.length?l.map(a=>`<article class="card"><div class="person-head"><h3>📅 ${a.name}</h3>${isAdmin()?`<button class="secondary" onclick="editAgenda('${a.id}')">Editar</button>`:""}</div><p>${fmt(a.date)} ${a.time||""}</p><p>📍 ${a.location||"—"}</p></article>`).join(""):'<div class="card">Nenhum evento.</div>';const today=new Date().toISOString().slice(0,10);$("nextAgenda").innerHTML=l.filter(a=>a.date>=today).slice(0,4).map(a=>`<div class="card"><b>${fmt(a.date)} ${a.time||""}</b> — ${a.name}</div>`).join("")||"Nenhum evento próximo."}
 function birthdayInfo(date){if(!date)return null;const [y,m,d]=date.split("-").map(Number),now=new Date();let n=new Date(now.getFullYear(),m-1,d),start=new Date(now.getFullYear(),now.getMonth(),now.getDate());if(n<start)n=new Date(now.getFullYear()+1,m-1,d);return{date:n,diff:Math.round((n-start)/86400000)}}
-function renderBirthdays(){const p=[...state.obreiros,...state.membros].map(x=>({x,b:birthdayInfo(x.birth)})).filter(o=>o.b&&o.b.diff<=7).sort((a,b)=>a.b.diff-b.b.diff);$("birthdays").innerHTML=p.length?p.map(o=>`<div class="card">🎉 <b>${o.x.name}</b> — ${o.b.diff===0?"Hoje":o.b.diff===1?"Amanhã":"em "+o.b.diff+" dias"}</div>`).join(""):"Nenhum aniversariante nos próximos 7 dias."}
+function renderBirthdays(){
+ const p=[...state.obreiros,...state.membros].map(x=>({x,b:birthdayInfo(x.birth)})).filter(o=>o.b&&o.b.diff<=7).sort((a,b)=>a.b.diff-b.b.diff);
+ const container=$("birthdays");container.replaceChildren();
+ if(!p.length){container.textContent="Nenhum aniversariante nos próximos 7 dias.";return;}
+ p.forEach(({x,b})=>{
+  const card=document.createElement("div");card.className="card";
+  const info=document.createElement("span");info.textContent=`🎉 ${x.name||"Membro"} — ${b.diff===0?"Hoje":b.diff===1?"Amanhã":"em "+b.diff+" dias"}`;
+  const btn=document.createElement("button");btn.className="primary";btn.type="button";btn.textContent="🎂 Enviar parabéns";btn.style.marginLeft="12px";
+  btn.addEventListener("click",()=>openBirthdayGreeting(x));
+  card.append(info,btn);container.appendChild(card);
+ });
+}
 function nthTuesday(y,m,n){const f=new Date(y,m,1),off=(2-f.getDay()+7)%7,d=1+off+(n-1)*7,r=new Date(y,m,d);return r.getMonth()===m?r:null}
 function renderScalesNext(){const now=new Date(),arr=[];state.congregacoes.forEach(c=>{const fs=c.fixedScale;if(fs?.active!=="sim")return;for(let add=0;add<3;add++){const b=now.getMonth()+add,y=now.getFullYear()+Math.floor(b/12),m=((b%12)+12)%12,d=nthTuesday(y,m,Number(fs.occurrence));if(d&&d>=new Date(now.getFullYear(),now.getMonth(),now.getDate())){arr.push({c,d});break}}});arr.sort((a,b)=>a.d-b.d);$("nextScales").innerHTML=arr.slice(0,5).map(x=>`<div class="card"><b>${x.d.toLocaleDateString("pt-BR")}</b> — ${x.c.name}</div>`).join("")||"Nenhuma escala."}
 function renderScale(){const ms=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"],y=state.scaleDate.getFullYear(),m=state.scaleDate.getMonth();$("scaleMonth").textContent=`${ms[m]} de ${y}`;const rows=[];for(let n=1;n<=5;n++){const d=nthTuesday(y,m,n);if(!d)continue;const c=state.congregacoes.find(c=>c.fixedScale?.active==="sim"&&Number(c.fixedScale.occurrence)===n);rows.push({n,d,c})}$("scaleList").innerHTML=rows.map(r=>`<article class="card"><h3>${r.n}ª terça-feira — ${r.d.toLocaleDateString("pt-BR")}</h3>${r.c?`<p><b>${r.c.name}</b> • ${r.c.fixedScale.time||""}</p>`:"<p>Nenhum departamento escalada.</p>"}</article>`).join("")}
@@ -587,18 +598,14 @@ Desejamos saúde, paz, sabedoria, alegria e muitas vitórias nesta nova etapa.
 *Com carinho,*
 *Pastor Reinaldo Lino*`;
 }
-function checkBirthdayAlert(){
- const now=new Date(),mm=String(now.getMonth()+1).padStart(2,"0"),dd=String(now.getDate()).padStart(2,"0");
- const todays=state.obreiros.filter(w=>w.birth&&w.birth.slice(5)===`${mm}-${dd}`);
- if(!todays.length)return;
- const w=todays[0],key=`admoriah-bday-${now.toISOString().slice(0,10)}-${w.id}`;
- if(sessionStorage.getItem(key))return;
- sessionStorage.setItem(key,"1");
- $("birthdayName").textContent=w.name;
- $("birthdayInfo").textContent=`${w.role||"Obreiro"} • ${cname(w.congregationId)}`;
+function openBirthdayGreeting(w){
+ // A homenagem só aparece após clique explícito no botão de aniversariantes.
+ $("birthdayName").textContent=w.name||"Aniversariante";
+ $("birthdayInfo").textContent=[w.role||w.department||"Membro",cname(w.congregationId)].filter(v=>v&&v!=="—").join(" • ");
  $("birthdayPhoto").src=w.photoData||"icons/icon-192.png";
- const number=String(w.phone||"").replace(/\D/g,"");
- $("birthdayWhats").href=number?`https://wa.me/55${number}?text=${encodeURIComponent(birthdayMessage(w))}`:`https://wa.me/?text=${encodeURIComponent(birthdayMessage(w))}`;
+ const digits=String(w.phone||"").replace(/\D/g,"");
+ const number=digits.startsWith("55")?digits:(digits?"55"+digits:"");
+ $("birthdayWhats").href=`https://wa.me/${number?number:""}?text=${encodeURIComponent(birthdayMessage(w))}`;
  const layer=$("confettiLayer");layer.innerHTML="";
  for(let i=0;i<55;i++){const c=document.createElement("i");c.className="confetti";c.style.left=Math.random()*100+"%";c.style.animationDuration=(2.5+Math.random()*4)+"s";c.style.animationDelay=(-Math.random()*5)+"s";c.style.background=["#e6b64b","#2e90fa","#12b76a","#f04438","#7a5af8"][i%5];layer.appendChild(c)}
  $("birthdayOverlay").classList.remove("hidden");
