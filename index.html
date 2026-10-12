@@ -540,12 +540,15 @@ window.toggleUser=async(id,active)=>{await updateDoc(doc(db,"usuarios",id),{acti
 
 // ============= AD Moriah 10 =============
 function calcAge(birth){
-  if(!birth)return null;
-  const d=new Date(birth+"T12:00:00"),n=new Date();
-  let a=n.getFullYear()-d.getFullYear();
-  const m=n.getMonth()-d.getMonth();
-  if(m<0||(m===0&&n.getDate()<d.getDate()))a--;
-  return a;
+  const iso=normalizeDateExcel(birth);
+  if(!iso)return null;
+  const [y,m,d]=iso.split("-").map(Number),today=new Date();
+  if(y<1900||y>today.getFullYear()||m<1||m>12||d<1||d>31)return null;
+  const date=new Date(y,m-1,d);
+  if(date.getFullYear()!==y||date.getMonth()!==m-1||date.getDate()!==d||date>today)return null;
+  let age=today.getFullYear()-y;
+  if(today.getMonth()+1<m||(today.getMonth()+1===m&&today.getDate()<d))age--;
+  return age;
 }
 function ageBand(age){
   if(age===null||age<0)return "Não informado";
@@ -612,12 +615,20 @@ function memberNumberExists(number,congregationId,ignoreId=""){
 // ----- Excel membros -----
 let pendingImportRows=[];
 function normalizeDateExcel(v){
- if(!v)return "";
- if(v instanceof Date)return v.toISOString().slice(0,10);
- if(typeof v==="number"&&window.XLSX){const d=XLSX.SSF.parse_date_code(v);if(d)return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`}
- const s=String(v).trim();
- const br=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(br)return `${br[3]}-${br[2].padStart(2,"0")}-${br[1].padStart(2,"0")}`;
- return /^\d{4}-\d{2}-\d{2}$/.test(s)?s:"";
+ if(v===null||v===undefined||v==="")return "";
+ let y,m,d;
+ if(v instanceof Date&&!isNaN(v.getTime())){y=v.getFullYear();m=v.getMonth()+1;d=v.getDate()}
+ else if(typeof v==="number"&&window.XLSX){const parsed=XLSX.SSF.parse_date_code(v);if(parsed){y=parsed.y;m=parsed.m;d=parsed.d}}
+ else {
+   const str=String(v).trim();
+   let match=str.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+   if(match){d=+match[1];m=+match[2];y=+match[3]}
+   else {match=str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:T.*)?$/);if(match){y=+match[1];m=+match[2];d=+match[3]}}
+ }
+ if(!y||!m||!d||y<1900||y>2100)return "";
+ const date=new Date(y,m-1,d);
+ if(date.getFullYear()!==y||date.getMonth()!==m-1||date.getDate()!==d)return "";
+ return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 }
 function memberRowsForExport(){
  return state.membros.map(m=>({"Numero_Cadastro":m.memberNumber||"","Nome":m.name||"","Data_Nascimento":m.birth||"","Telefone":m.phone||"","Sexo":m.sex==="M"?"Masculino":m.sex==="F"?"Feminino":"","Situacao":m.status||"membro","Estado_Civil":m.marital||"","Endereco":m.address||"","Data_Batismo":m.baptism||"","Dizimista":m.tither==="sim"?"SIM":"NAO","Departamento":m.department||"","Observacoes":m.notes||""}));
@@ -690,6 +701,10 @@ function renderIndicators(){
  $("indSubtitle").textContent=isAdmin()?"Visão geral e comparativa da Regional.":"Somente os dados da sua congregação.";
  const counts=Object.fromEntries(AGE_BANDS.map(x=>[x,0])),tithers=Object.fromEntries(AGE_BANDS.map(x=>[x,0]));
  members.forEach(m=>{const b=ageBand(calcAge(m.birth));if(b in counts){counts[b]++;if(m.tither==="sim")tithers[b]++}});
+ const withoutBirth=members.filter(m=>calcAge(m.birth)===null).length;
+ let dateWarning=document.getElementById("birthDateWarning");
+ if(!dateWarning){dateWarning=document.createElement("div");dateWarning.id="birthDateWarning";dateWarning.style.cssText="margin:12px 0;padding:12px 16px;background:#fff5df;border:1px solid #e6b64b;border-radius:10px;color:#503a12";document.getElementById("ageKpis").before(dateWarning)}
+ dateWarning.textContent=`Membros cadastrados: ${members.length} | Com nascimento válido: ${members.length-withoutBirth} | Sem nascimento válido: ${withoutBirth}. ${withoutBirth?"Confira e corrija as datas dos cadastros já importados.":"Todas as datas estão válidas."}`;
  $("ageKpis").innerHTML=AGE_BANDS.map(b=>`<div class="age-kpi"><small>${b}</small><strong>${counts[b]}</strong><span>${tithers[b]} dizimistas</span><div class="mini-progress"><i style="width:${counts[b]?Math.round(tithers[b]*100/counts[b]):0}%"></i></div></div>`).join("");
  destroyChart("age");charts.age=new Chart($("ageChart"),{type:"bar",data:{labels:AGE_BANDS,datasets:[{label:"Membros",data:AGE_BANDS.map(b=>counts[b])}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
  destroyChart("titherAge");charts.titherAge=new Chart($("titherAgeChart"),{type:"bar",data:{labels:AGE_BANDS,datasets:[{label:"Dizimistas",data:AGE_BANDS.map(b=>tithers[b])},{label:"Não dizimistas",data:AGE_BANDS.map(b=>Math.max(0,counts[b]-tithers[b]))}]},options:{responsive:true,maintainAspectRatio:false}});
