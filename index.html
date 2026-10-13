@@ -523,11 +523,18 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
  <div class="stats" id="finStats"></div>
  <div class="panel"><div class="grid2"><label>Mês de referência<input type="month" id="finMonth"></label><label>Tipo<select id="finFilter"><option value="">Todas as movimentações</option><option value="entrada">Entradas</option><option value="saida">Saídas</option></select></label></div><div id="finList" class="cards" style="margin-top:14px"></div></div>
  <div class="panel" style="margin-top:16px"><h3>Relatório individual de contribuições</h3><div class="grid2"><label>Data inicial<input type="date" id="finReportFrom"></label><label>Data final<input type="date" id="finReportTo"></label></div><div class="grid2"><label>Contribuinte<select id="finReportPerson"><option value="">Todos os contribuintes</option></select></label><label>Categoria<select id="finReportCategory"><option value="">Dízimos, ofertas e doações</option><option value="dizimo">Dízimos</option><option value="oferta">Ofertas</option><option value="doacao">Doações</option></select></label></div><div class="actions" style="margin-top:12px"><button type="button" id="finReportCsv" class="secondary">Exportar relatório CSV</button><button type="button" id="finReportPrint" class="secondary">Imprimir relatório</button></div><div id="finReportResult" style="margin-top:14px;overflow-x:auto"></div></div>
+ <div class="panel" style="margin-top:16px"><h3>📊 Relatórios financeiros completos</h3><p style="font-size:12px;color:#64748b">Entradas por contribuinte ou origem, saídas por centro de custo e prestação de contas. Lançamentos cancelados não integram os totais.</p>
+ <div class="grid2"><label>Relatório<select id="finFullMode"><option value="entradas">Entradas por contribuinte / origem</option><option value="saidas">Saídas por centro de custo / tipo</option><option value="consolidado">Prestação de contas consolidada</option></select></label><label>Agrupar por<select id="finFullGroup"><option value="pessoa">Contribuinte</option><option value="origem">Origem</option><option value="categoria">Categoria / tipo</option><option value="mes">Mês</option></select></label></div>
+ <div class="grid2"><label>Data inicial<input id="finFullFrom" type="date"></label><label>Data final<input id="finFullTo" type="date"></label></div>
+ <div class="grid2"><label>Origem da entrada<select id="finFullOrigin"><option value="">Todas as origens</option><option value="membro">Membro</option><option value="obreiro">Obreiro</option><option value="cooperador">Cooperador</option><option value="congregado">Congregado</option><option value="visitante">Visitante</option><option value="anonimo">Não identificado / outros</option></select></label><label>Centro de custo<select id="finFullCost"><option value="">Todos os centros</option><option value="administracao">Administração</option><option value="infraestrutura">Infraestrutura</option><option value="manutencao">Manutenção</option><option value="ministerios">Ministérios e eventos</option><option value="acao_social">Ação social</option><option value="outros">Outros / não classificado</option></select></label></div>
+ <div class="grid2"><label>Tipo / categoria<select id="finFullCategory"><option value="">Todas as categorias</option></select></label><label>Pesquisar contribuinte / descrição<input id="finFullSearch" type="search" placeholder="Nome ou descrição"></label></div>
+ <div class="actions" style="margin-top:12px"><button type="button" id="finFullCsv" class="secondary">Exportar CSV detalhado</button><button type="button" id="finFullPrint" class="secondary">Imprimir relatório</button></div><div id="finFullResult" style="margin-top:14px;overflow-x:auto"></div></div>
  <p style="font-size:12px;color:#64748b">Valores registrados para controle interno. Não substituem conciliação bancária, comprovantes nem conferência da tesouraria. Lançamentos cancelados permanecem no histórico.</p>
 </section>
 <dialog id="finDlg"><form id="finForm" class="form"><div class="form-head"><h3>Novo lançamento financeiro</h3><button type="button" data-close="finDlg">×</button></div>
 <div class="grid2"><label>Data<input id="finDate" type="date" required></label><label>Tipo<select id="finType" required><option value="entrada">Entrada</option><option value="saida">Saída</option></select></label></div>
 <div class="grid2"><label>Categoria<select id="finCategory" required><option value="dizimo">Dízimos</option><option value="oferta">Ofertas</option><option value="doacao">Doações</option><option value="evento">Eventos</option><option value="despesa_fixa">Despesas fixas</option><option value="manutencao">Manutenção</option><option value="acao_social">Ação social</option><option value="outros">Outros</option></select></label><label>Valor (R$)<input id="finAmount" type="number" min="0.01" step="0.01" required></label></div>
+<div id="finCostArea" style="display:none"><label>Centro de custo da saída<select id="finCostCenter"><option value="administracao">Administração</option><option value="infraestrutura">Infraestrutura (água, luz, internet, aluguel)</option><option value="manutencao">Manutenção</option><option value="ministerios">Ministérios e eventos</option><option value="acao_social">Ação social</option><option value="outros">Outros</option></select></label></div>
 <div id="finContributorArea"><div class="grid2"><label>Origem da contribuição<select id="finContributorType"><option value="anonimo">Não identificado / oferta coletiva</option><option value="membro">Membro</option><option value="obreiro">Obreiro</option><option value="cooperador">Cooperador</option><option value="congregado">Congregado</option><option value="visitante">Visitante</option></select></label><label>Nome do contribuinte<select id="finContributorId" disabled><option value="">Selecione a origem primeiro</option></select></label></div><label>Pesquisar contribuinte<input id="finContributorSearch" placeholder="Digite parte do nome" autocomplete="off"></label></div>
 <label>Descrição<input id="finDescription" maxlength="240" required placeholder="Ex.: Oferta do culto de domingo"></label>
 <div class="grid2"><label>Forma de pagamento<select id="finMethod"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="transferencia">Transferência</option><option value="cartao">Cartão</option><option value="outros">Outros</option></select></label><label>Referência do comprovante (opcional)<input id="finReceipt" maxlength="120" placeholder="Número ou referência"></label></div>
@@ -1470,11 +1477,11 @@ function renderFinance(){
  const entradas=sum("entrada"),saidas=sum("saida");
  $("finStats").innerHTML=[["Entradas",entradas],["Saídas",saidas],["Saldo do período",entradas-saidas]].map(([label,value])=>`<div class="stat"><small>${label}</small><strong>${money(value)}</strong></div>`).join("");
  $("finList").innerHTML=rows.length?rows.map(x=>`<article class="card" style="opacity:${x.cancelled?'.6':'1'}"><div class="person-head"><h3>${x.type==="entrada"?"⬆ Entrada":"⬇ Saída"} · ${finSafe(finLabels[x.category]||x.category)}</h3><strong>${money(x.amount)}</strong></div><p><b>${finSafe(fmt(x.date))}</b> · ${finSafe(x.description)}</p>${x.type==="entrada"?`<p>Contribuinte: <b>${finSafe(x.contributorName||"Não identificado")}</b></p>`:""}<p>Forma: ${finSafe(x.method||"—")} · Comprovante: ${finSafe(x.receipt||"—")}</p>${x.notes?`<p>${finSafe(x.notes)}</p>`:""}${x.cancelled?'<span class="badge">Cancelado</span>':`<button type="button" class="secondary" data-fin-cancel="${finSafe(x.id)}">Cancelar lançamento</button>`}</article>`).join(""):'<div class="card">Nenhum lançamento para o filtro selecionado.</div>';
- renderFinReport();
+ renderFinReport();renderFinFull();
 }
 $("finMonth").value=new Date().toISOString().slice(0,7);
 $("finMonth").addEventListener("change",renderFinance);$("finFilter").addEventListener("change",renderFinance);
-$("finNew").addEventListener("click",()=>{if(!isAdmin())return;$("finForm").reset();$("finDate").value=new Date().toLocaleDateString("en-CA");$("finFormStatus").textContent="";$("finContributorSearch").value="";updateFinContributor();openDlg("finDlg")});
+$("finNew").addEventListener("click",()=>{if(!isAdmin())return;$("finForm").reset();$("finDate").value=new Date().toLocaleDateString("en-CA");$("finFormStatus").textContent="";$("finContributorSearch").value="";updateFinContributor();$("finCostArea").style.display="none";$("finContributorArea").style.display="";openDlg("finDlg")});
 $("finForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!isAdmin())return finMessage("Acesso não autorizado.",true);
  const btn=$("finSubmit"),amount=Math.round(Number($("finAmount").value)*100)/100;
@@ -1486,7 +1493,7 @@ $("finForm").addEventListener("submit",async e=>{
  const savedContributorType=contributorType==="visitante"?"visitante":contributorType==="obreiro"&&!contributor?.memberId?"obreiro":"membro";
  const savedContributorId=contributor?.memberId||contributor?.id||"";
  if(contributorType!=="anonimo"&&!contributor)return $("finFormStatus").textContent="Selecione um contribuinte cadastrado.";
- const data={contributorType:savedContributorType,contributorGroup:contributorType,contributorId:savedContributorId,contributorName:contributor?.name||"Não identificado",date:$("finDate").value,type:$("finType").value,category:$("finCategory").value,amount,description:$("finDescription").value.trim(),method:$("finMethod").value,receipt:$("finReceipt").value.trim(),notes:$("finNotes").value.trim(),congregationId:"moriah",cancelled:false,createdBy:state.authUser.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
+ const data={contributorType:savedContributorType,contributorGroup:contributorType,contributorId:savedContributorId,contributorName:contributor?.name||"Não identificado",costCenter:$("finType").value==="saida"?$("finCostCenter").value:"",date:$("finDate").value,type:$("finType").value,category:$("finCategory").value,amount,description:$("finDescription").value.trim(),method:$("finMethod").value,receipt:$("finReceipt").value.trim(),notes:$("finNotes").value.trim(),congregationId:"moriah",cancelled:false,createdBy:state.authUser.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
  if(!data.description||!data.date)return $("finFormStatus").textContent="Informe data e descrição.";
  btn.disabled=true;$("finFormStatus").textContent="Gravando no Firebase...";
  try{await addDoc(collection(db,"financeiro"),data);closeDlg("finDlg");finMessage("Lançamento registrado com sucesso.");toast("Lançamento registrado.");}catch(err){console.error(err);$("finFormStatus").textContent="Falha na gravação: "+(err.code||err.message||"erro")+". Confira as regras do Firebase.";}finally{btn.disabled=false;}
@@ -1522,7 +1529,7 @@ function updateFinContributor(){
 }
 $("finContributorType").addEventListener("change",updateFinContributor);
 $("finContributorSearch").addEventListener("input",updateFinContributor);
-$("finType").addEventListener("change",()=>{$("finContributorArea").style.display=$("finType").value==="entrada"?"":"none";});
+$("finType").addEventListener("change",()=>{$("finContributorArea").style.display=$("finType").value==="entrada"?"":"none";$("finCostArea").style.display=$("finType").value==="saida"?"":"none";});
 function finReportRows(){
  const from=$("finReportFrom").value,to=$("finReportTo").value,who=$("finReportPerson").value,cat=$("finReportCategory").value;
  return financeRows.filter(x=>!x.cancelled&&x.type==="entrada"&&["dizimo","oferta","doacao"].includes(x.category)&&(!from||x.date>=from)&&(!to||x.date<=to)&&(!cat||x.category===cat)&&(!who||(x.contributorType+":"+x.contributorId)===who));
@@ -1541,6 +1548,55 @@ $("finReportCsv").addEventListener("click",()=>{
  const url=URL.createObjectURL(new Blob(["\ufeff",csv],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download="AD_Moriah_contribuicoes.csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 $("finReportPrint").addEventListener("click",()=>{const win=window.open("","_blank");if(!win)return toast("Permita pop-ups para imprimir.");win.document.write('<html><head><title>Relatório de contribuições - AD Moriah</title><style>body{font-family:Arial;padding:24px}td,th{border:1px solid #bbb;padding:8px;text-align:left}table{border-collapse:collapse;width:100%}</style></head><body><h2>Assembleia de Deus Moriah — Relatório de contribuições</h2><p>Período: '+finSafe($("finReportFrom").value||"Início")+' a '+finSafe($("finReportTo").value||"Atual")+'</p>'+$("finReportResult").innerHTML+'</body></html>');win.document.close();win.print()});
+
+// Relatórios gerenciais de entradas, saídas e consolidação — leitura local dos registros já sincronizados.
+const finCostNames={administracao:"Administração",infraestrutura:"Infraestrutura",manutencao:"Manutenção",ministerios:"Ministérios e eventos",acao_social:"Ação social",outros:"Outros / não classificado"};
+const finOriginNames={membro:"Membro",obreiro:"Obreiro",cooperador:"Cooperador",congregado:"Congregado",visitante:"Visitante",anonimo:"Não identificado / outros"};
+function finCostOf(x){return x.costCenter||({despesa_fixa:"infraestrutura",manutencao:"manutencao",acao_social:"acao_social",evento:"ministerios"}[x.category]||"outros");}
+function finOriginOf(x){return x.contributorGroup||x.contributorType||"anonimo";}
+function finFullRows(){
+ const mode=$("finFullMode").value,from=$("finFullFrom").value,to=$("finFullTo").value,origin=$("finFullOrigin").value,cost=$("finFullCost").value,category=$("finFullCategory").value,search=$("finFullSearch").value.trim().toLocaleLowerCase("pt-BR");
+ return financeRows.filter(x=>!x.cancelled&&(mode==="consolidado"||x.type===(mode==="entradas"?"entrada":"saida"))&&(!from||x.date>=from)&&(!to||x.date<=to)&&(!category||x.category===category)&&(!origin||x.type!=="entrada"||finOriginOf(x)===origin)&&(!cost||x.type!=="saida"||finCostOf(x)===cost)&&(!search||[x.contributorName,x.description,x.notes,x.receipt].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(search)))).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
+}
+function finFullGroupName(x){
+ const group=$("finFullGroup").value,mode=$("finFullMode").value;
+ if(mode==="consolidado"&&group==="pessoa")return x.type==="entrada"?"Entradas":"Saídas";
+ if(group==="mes")return String(x.date||"").slice(0,7)||"Sem data";
+ if(group==="categoria")return finLabels[x.category]||x.category||"Outros";
+ if(mode==="saidas")return finCostNames[finCostOf(x)]||"Outros";
+ if(group==="origem")return finOriginNames[finOriginOf(x)]||finOriginOf(x);
+ return (x.contributorName||"Não identificado")+(x.contributorId?" ["+x.contributorId.slice(0,7)+"]":"");
+}
+function finFullCsvText(){
+ const rows=finFullRows(),headers=["Data","Tipo","Contribuinte","Origem","Categoria","Centro de custo","Valor","Forma","Descrição","Comprovante","Observações"];
+ const cells=rows.map(x=>[x.date,x.type,x.contributorName||"Não identificado",finOriginNames[finOriginOf(x)]||finOriginOf(x),finLabels[x.category]||x.category,x.type==="saida"?finCostNames[finCostOf(x)]:"",Number(x.amount||0).toFixed(2).replace(".",","),x.method,x.description,x.receipt,x.notes]);
+ return [headers,...cells].map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";")).join("\r\n");
+}
+function renderFinFull(){
+ if(!$("finFullResult"))return;
+ const mode=$("finFullMode").value,group=$("finFullGroup"),old=group.value;
+ if(mode==="saidas"){
+  group.innerHTML='<option value="custo">Centro de custo</option><option value="categoria">Tipo / categoria</option><option value="mes">Mês</option>';
+ }else if(mode==="consolidado"){
+  group.innerHTML='<option value="pessoa">Entradas / saídas</option><option value="categoria">Categoria</option><option value="mes">Mês</option>';
+ }else{
+  group.innerHTML='<option value="pessoa">Contribuinte</option><option value="origem">Origem</option><option value="categoria">Categoria</option><option value="mes">Mês</option>';
+ }
+ if([...group.options].some(o=>o.value===old))group.value=old;
+ $("finFullOrigin").disabled=mode==="saidas";$("finFullCost").disabled=mode==="entradas";
+ const catSel=$("finFullCategory"),oldCat=catSel.value;
+ const cats=Object.entries(finLabels).filter(([key])=>mode==="consolidado"||((mode==="entradas")===(["dizimo","oferta","doacao","evento","outros"].includes(key))));
+ catSel.replaceChildren(new Option("Todas as categorias",""));cats.forEach(([key,label])=>catSel.add(new Option(label,key)));if([...catSel.options].some(o=>o.value===oldCat))catSel.value=oldCat;
+ const rows=finFullRows(),totals=new Map();let entradas=0,saidas=0;
+ for(const x of rows){const val=Number(x.amount||0);if(x.type==="entrada")entradas+=val;else saidas+=val;const key=finFullGroupName(x);if(!totals.has(key))totals.set(key,{name:key,entradas:0,saidas:0,quantidade:0});const r=totals.get(key);r[x.type==="entrada"?"entradas":"saidas"]+=val;r.quantidade++;}
+ const grouped=[...totals.values()].sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
+ const th=mode==="saidas"?"Centro / agrupamento":mode==="entradas"?"Contribuinte / agrupamento":"Agrupamento";
+ $("finFullResult").innerHTML=`<p><b>${rows.length} lançamento(s)</b> · Entradas: <b>${money(entradas)}</b> · Saídas: <b>${money(saidas)}</b> · Saldo: <b>${money(entradas-saidas)}</b></p>`+(grouped.length?`<table style="width:100%;border-collapse:collapse"><thead><tr><th>${th}</th><th>Quantidade</th><th>Entradas</th><th>Saídas</th><th>Saldo</th></tr></thead><tbody>${grouped.map(r=>`<tr><td>${finSafe(r.name)}</td><td>${r.quantidade}</td><td>${money(r.entradas)}</td><td>${money(r.saidas)}</td><td><b>${money(r.entradas-r.saidas)}</b></td></tr>`).join("")}</tbody></table>`:"Nenhum lançamento encontrado para os filtros selecionados.");
+}
+["finFullMode","finFullGroup","finFullFrom","finFullTo","finFullOrigin","finFullCost","finFullCategory","finFullSearch"].forEach(id=>$(id).addEventListener(id==="finFullSearch"?"input":"change",renderFinFull));
+$("finFullCsv").addEventListener("click",()=>{const url=URL.createObjectURL(new Blob(["\ufeff",finFullCsvText()],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download="AD_Moriah_relatorio_"+$("finFullMode").value+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+$("finFullPrint").addEventListener("click",()=>{const w=window.open("","_blank");if(!w)return toast("Permita pop-ups para imprimir.");w.document.write('<html><head><meta charset="utf-8"><title>Relatório financeiro - AD Moriah</title><style>body{font:14px Arial;padding:28px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #aaa;padding:8px;text-align:left}th{background:#eee}</style></head><body><h2>Assembleia de Deus Moriah — Relatório financeiro</h2><p>Tipo: '+finSafe($("finFullMode").selectedOptions[0].textContent)+' · Período: '+finSafe($("finFullFrom").value||"Início")+' a '+finSafe($("finFullTo").value||"Atual")+'</p>'+$("finFullResult").innerHTML+'</body></html>');w.document.close();w.print();});
+renderFinFull();
 </script>
 <script>
 (function(){
