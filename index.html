@@ -859,7 +859,7 @@ function toggleMemberRole(){const isWorker=$("mstatus").value==="obreiro";$("mro
  const original=id?state.membros.find(m=>m.id===id):null;
  if(original&&original.status!==$("mstatus").value&&!$("mmovement").value){
    $("mmovement").value="mudanca_situacao";
-   $("mmovementNotes").placeholder="Ex.: Separado para o ministério de obreiro";
+   $("mmovementNotes").placeholder="Descreva a mudança, se desejar";
  }
 }); $("newMemberBtn").onclick=()=>{$("memberForm").reset();$("mid").value="";$("mnumber").value=proximoNumeroCadastroMembro();$("mnumber").readOnly=true;$("mdepartment").value="";$("memberHistoryView").textContent="O histórico começará no primeiro registro de movimentação.";toggleMemberRole();openDlg("memberDlg")};
 $("memberForm").onsubmit=async e=>{
@@ -876,15 +876,12 @@ $("memberForm").onsubmit=async e=>{
  const oldHistory=Array.isArray(previous?.membershipHistory)?previous.membershipHistory:[];
  const history=oldHistory.slice();
  const statusNew=$("mstatus").value;
- if(previous && previous.status!==statusNew && !movementType){
-   $("mmovement").value="mudanca_situacao";
-   toast("A mudança de situação foi registrada no histórico. Confira os detalhes e salve novamente.");
-   $("mmovement").scrollIntoView({behavior:"smooth",block:"center"});
-   return;
- }
- if(movementType){
-   if(movementType==="outro"&&!movementNotes)return toast("Descreva a movimentação no campo de detalhes.");
-   history.push({type:movementType,date:new Date().toISOString(),notes:movementNotes,previousStatus:previous?.status||"",newStatus:statusNew});
+ // Mudanças de situação são registradas automaticamente, sem exigir um segundo clique em Salvar.
+ const effectiveMovementType=(previous && previous.status!==statusNew && !movementType)?"mudanca_situacao":movementType;
+ if(effectiveMovementType==="mudanca_situacao" && !movementType)$("mmovement").value="mudanca_situacao";
+ if(effectiveMovementType){
+   if(effectiveMovementType==="outro"&&!movementNotes)return toast("Descreva a movimentação no campo de detalhes.");
+   history.push({type:effectiveMovementType,date:new Date().toISOString(),notes:movementNotes,previousStatus:previous?.status||"",newStatus:statusNew});
  }
  const data={entryDate,membershipHistory:history,memberNumber,name:$("mname").value.trim(),congregationId,department:$("mdepartment").value,tither:$("mtither").value,phone:$("mphone").value.trim(),birth:$("mbirth").value,sex:$("msex").value,status:$("mstatus").value,ministerialRole:$("mstatus").value==="cooperador"?"Cooperador":($("mstatus").value==="obreiro"?$("mrole").value:""),baptism:$("mbaptism").value,marital:$("mmarital").value,address:$("maddress").value.trim(),notes:$("mnotes").value.trim(),updatedAt:serverTimestamp()};
  try{
@@ -904,7 +901,12 @@ $("memberForm").onsubmit=async e=>{
      alert("O cadastro do membro foi salvo, mas a seção Obreiros não foi atualizada.\n\n"+reason+"\n\nVerifique as regras do Firebase antes de tentar novamente.");
    }
  }
- catch(err){console.error(err);toast(err.message||"Não foi possível salvar o membro.")}
+ catch(err){
+   console.error("Falha ao salvar membro:",err);
+   const detail=err?.code==="permission-denied"?"O Firebase negou a alteração. Verifique as regras de atualização de membros e seu perfil de acesso.":(err?.message||"Falha desconhecida.");
+   toast("Não foi possível salvar: "+detail);
+   alert("Não foi possível salvar a mudança de situação.\n\n"+detail+"\n\nCódigo: "+(err?.code||"não informado"));
+ }
 };
 window.editMember=id=>{
  const m=state.membros.find(x=>x.id===id);if(!m)return;
