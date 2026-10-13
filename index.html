@@ -397,7 +397,10 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 @media(max-width:550px){.moriah-exec-lower{grid-template-columns:1fr}.moriah-exec-kpis{gap:8px}.moriah-exec-kpi{padding:12px}}
 @media print{.moriah-exec-head select{display:none}}
 </style>
-</head>
+<style>
+/* Etapa 11: acompanhamento cadastral */
+.moriah-follow-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0}.moriah-follow-card{background:var(--card,#fff);border:1px solid #dfe5ec;border-radius:14px;padding:16px}.moriah-follow-card strong{display:block;font-size:28px;margin:8px 0}.moriah-follow-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}.moriah-follow-list .panel{min-width:0}.moriah-follow-list ul{margin:8px 0;padding-left:20px}.moriah-follow-list li{margin:8px 0;overflow-wrap:anywhere}.moriah-follow-muted{color:#64748b;font-size:13px}.moriah-follow-pill{display:inline-block;background:#eef2f7;padding:3px 8px;border-radius:20px;font-size:12px;margin-left:5px}@media(max-width:700px){.moriah-follow-grid{grid-template-columns:1fr 1fr}.moriah-follow-list{grid-template-columns:1fr}}@media(max-width:450px){.moriah-follow-grid{grid-template-columns:1fr}}
+</style></head>
 <body>
 <div id="toast" class="toast"></div>
 
@@ -483,6 +486,10 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
     <div class="moriah-exec-panel"><h4>Atividades e resultados de cultos</h4><div id="execCultSummary"></div></div>
     <div class="moriah-exec-panel"><h4>Últimos resultados registrados</h4><div id="execRecentCult"></div></div>
   </div>
+<div class="moriah-exec-head"><div><h3>👥 Acompanhamento de membros</h3><p>Aniversariantes dos próximos 30 dias e qualidade dos cadastros.</p></div></div>
+<div class="moriah-follow-grid" id="followKpis" aria-live="polite"></div>
+<div class="moriah-follow-list"><div class="panel"><h3>🎂 Próximos aniversários</h3><div id="followBirthdays"></div></div><div class="panel"><h3>📝 Cadastros que precisam de atenção</h3><div id="followMissing"></div></div></div>
+<p class="moriah-follow-muted">A data de batismo não é equivalente à data de entrada na igreja. O tempo de membresia não é calculado nesta versão.</p>
   <div id="ageKpis" class="age-kpis"></div>
   <div class="admin-dashboard">
     <div class="chart-panel"><h3>👥 Faixa etária</h3><div class="chart-wrap"><canvas id="ageChart"></canvas></div></div>
@@ -1107,8 +1114,25 @@ function renderExecutiveSummary(){
 }
 $("execPeriod").addEventListener("change",renderExecutiveSummary);
 
+function renderMemberFollowup(){
+ const members=filteredMembersForIndicators(),kpis=$("followKpis");if(!kpis)return;
+ const missing=m=>[!String(m.birth||"").trim(),!String(m.phone||"").trim(),!String(m.address||"").trim()].filter(Boolean).length;
+ const incomplete=members.filter(m=>missing(m)>0);
+ const today=new Date();today.setHours(0,0,0,0);
+ const nextBirth=members.flatMap(m=>{const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(m.birth||""));if(!match)return[];const mo=Number(match[2]),day=Number(match[3]);if(mo<1||mo>12||day<1||day>31)return[];let next=new Date(today.getFullYear(),mo-1,day);if(next.getMonth()!==mo-1||next.getDate()!==day)return[];if(next<today){next=new Date(today.getFullYear()+1,mo-1,day);if(next.getMonth()!==mo-1||next.getDate()!==day)return[];}const days=Math.round((next-today)/86400000);return days<=30?[{m,days,next}]:[]}).sort((a,b)=>a.days-b.days||String(a.m.name).localeCompare(String(b.m.name),'pt-BR'));
+ const countBirth=members.filter(m=>!String(m.birth||"").trim()).length;
+ const countPhone=members.filter(m=>!String(m.phone||"").trim()).length;
+ const countAddress=members.filter(m=>!String(m.address||"").trim()).length;
+ const cards=[["Aniversariantes em 30 dias",nextBirth.length],["Cadastros incompletos",incomplete.length],["Sem telefone",countPhone],["Sem nascimento",countBirth],["Sem endereço",countAddress],["Com data de batismo",members.filter(m=>!!String(m.baptism||"").trim()).length]];
+ kpis.innerHTML=cards.map(([name,n])=>`<div class="moriah-follow-card"><small>${name}</small><strong>${n.toLocaleString('pt-BR')}</strong></div>`).join('');
+ const safe=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ $("followBirthdays").innerHTML=nextBirth.length?`<ul>${nextBirth.slice(0,30).map(({m,days,next})=>`<li><b>${safe(m.name)}</b> <span class="moriah-follow-pill">${String(next.getDate()).padStart(2,'0')}/${String(next.getMonth()+1).padStart(2,'0')}</span> <span class="moriah-follow-muted">${days===0?'Hoje':`Em ${days} dia(s)`}</span></li>`).join('')}</ul>${nextBirth.length>30?`<p class="moriah-follow-muted">Exibindo 30 de ${nextBirth.length} aniversários.</p>`:''}`:'<p class="moriah-follow-muted">Nenhum aniversário nos próximos 30 dias.</p>';
+ $("followMissing").innerHTML=incomplete.length?`<p class="moriah-follow-muted">Exibindo até 30 cadastros. Campos considerados: nascimento, telefone e endereço.</p><ul>${incomplete.slice().sort((a,b)=>missing(b)-missing(a)||String(a.name).localeCompare(String(b.name),'pt-BR')).slice(0,30).map(m=>{const fields=[!m.birth?'Nascimento':null,!m.phone?'Telefone':null,!m.address?'Endereço':null].filter(Boolean);return `<li><b>${safe(m.name)}</b> <span class="moriah-follow-muted">— ${fields.join(', ')}</span></li>`}).join('')}</ul>`:'<p class="moriah-follow-muted">Nenhuma pendência nesses três campos.</p>';
+}
+
 function renderIndicators(){
  renderExecutiveSummary();
+ renderMemberFollowup();
  if(!window.Chart)return;
  const members=filteredMembersForIndicators(),visitors=filteredVisitorsForIndicators();
  $("regionalAdminNotice").classList.toggle("hidden",isAdmin());
