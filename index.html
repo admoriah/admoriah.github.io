@@ -293,6 +293,27 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 @media(max-width:620px){#app .bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr));overflow:visible}#app main{padding:14px 12px 24px}#app .moriah-menu-groups{grid-template-columns:1fr}#app .bottom-nav button span{font-size:10px}}
 @media print{#app .bottom-nav{display:none!important}}
 
+
+/* Etapa 5 — Relatórios: controles responsivos, cartões e tabelas */
+#relatorios .moriah-report-tools{margin:14px 0 18px;padding:20px;border-radius:18px;border:1px solid #dce5ef;background:linear-gradient(135deg,#fff,#f4f8fd);box-shadow:0 7px 22px rgba(15,39,69,.06)}
+.moriah-report-tools-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.moriah-report-tools-head h3{margin:0 0 5px;color:#173656}.moriah-report-tools-head p{margin:0;color:#64748b;font-size:13px}
+.moriah-report-tag{background:#e6eff9;color:#1e4873;padding:6px 10px;border-radius:30px;font-size:11px;font-weight:700;white-space:nowrap}
+.moriah-report-controls{display:grid;grid-template-columns:minmax(180px,1fr) minmax(200px,1.5fr) auto;gap:12px;align-items:end}
+.moriah-report-controls label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#334155}
+.moriah-report-controls select,.moriah-report-controls input{width:100%;min-height:43px;border-radius:10px;border:1px solid #cbd5e1;background:white;padding:9px 12px;font:inherit;color:#1e293b}
+.moriah-report-controls button{min-height:43px;border-radius:10px}
+.moriah-report-status{margin:10px 0 0;color:#64748b;font-size:12px}
+#relatorios #reportSummary .stat{border-radius:16px;box-shadow:0 5px 17px rgba(15,39,69,.07);border:1px solid #e3eaf2}
+#relatorios #reportContent>.panel{margin:15px 0;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 4px 15px rgba(15,39,69,.05)}
+#relatorios #reportContent>.panel>h3{margin:0;padding:16px 18px;background:#f1f6fb;color:#173656;border-bottom:1px solid #e2e8f0}
+#relatorios .report-table{width:100%;border-collapse:collapse}
+#relatorios .report-table th{background:#e9f0f8;color:#234361;text-align:left;white-space:nowrap}
+#relatorios .report-table td,#relatorios .report-table th{padding:11px 13px;border-bottom:1px solid #e9eef5}
+#relatorios .report-table tbody tr:nth-child(even){background:#f9fbfe}
+#relatorios .report-table tbody tr:hover{background:#eef5fc}
+@media(max-width:700px){.moriah-report-controls{grid-template-columns:1fr}.moriah-report-tools-head{flex-wrap:wrap}#relatorios .moriah-report-tools{padding:14px}#relatorios .page-head .actions{display:flex;flex-wrap:wrap;gap:8px}}
+@media print{#relatorios .moriah-report-tools{display:none!important}#relatorios #reportContent>.panel{box-shadow:none;break-inside:avoid}#relatorios .report-table tbody tr:hover{background:transparent}}
 </style>
 </head>
 <body>
@@ -382,7 +403,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
   </div>
 </section>
 
-<section id="relatorios" class="page"><div class="page-head"><div><h2 id="reportTitle">Relatório Geral</h2><p id="reportSubtitle">Consolidado dos dados.</p></div><div class="actions"><button id="printReport" class="primary">📄 Gerar PDF</button><button id="csvReport" class="secondary">📊 Excel/CSV</button></div></div><div id="reportCover"></div><div id="reportSummary" class="stats"></div><div id="reportContent"></div></section>
+<section id="relatorios" class="page"><div class="page-head"><div><h2 id="reportTitle">Relatório Geral</h2><p id="reportSubtitle">Consolidado dos dados.</p></div><div class="actions"><button id="printReport" class="primary">📄 Gerar PDF</button><button id="csvReport" class="secondary">📊 Excel/CSV</button></div></div><div class="moriah-report-tools panel" aria-label="Filtros dos relatórios"><div class="moriah-report-tools-head"><div><h3>📊 Consultar relatórios</h3><p>Escolha uma seção e pesquise nas tabelas. Os filtros não alteram os dados.</p></div><span class="moriah-report-tag">Visualização</span></div><div class="moriah-report-controls"><label>Seção do relatório<select id="moriahReportSection"><option value="all">Todas as seções</option><option value="Perfil por faixa etária">Perfil por faixa etária</option><option value="Distribuição de membros por sexo">Distribuição por sexo</option><option value="Congregações">Congregações</option><option value="Obreiros">Obreiros</option><option value="Membros">Membros</option><option value="Visitantes">Visitantes</option><option value="Resultados dos Cultos">Resultados dos Cultos</option></select></label><label>Pesquisar na tabela<input id="moriahReportSearch" type="search" placeholder="Nome, cargo, data, situação..."></label><button type="button" class="secondary" id="moriahReportClear">Limpar filtros</button></div><p id="moriahReportFilterStatus" class="moriah-report-status" aria-live="polite"></p></div><div id="reportCover"></div><div id="reportSummary" class="stats"></div><div id="reportContent"></div></section>
 
 <section id="mais" class="page">
   <div class="page-head"><div><h2>Explorar o AD Moriah</h2><p>Acesse todas as áreas do aplicativo.</p></div></div>
@@ -944,8 +965,34 @@ function renderReports(){
  content+=reportTable("Visitantes",["Data","Nome","Congregação","Culto","Situação"],state.visitantes.map(v=>[fmt(v.date),v.name,cname(v.congregationId),v.service,visitorStatusLabel(v.status)]));
  content+=reportTable("Resultados dos Cultos",["Data","Congregação","Culto","Público","Visitantes","Decisões"],state.resultadosCulto.map(r=>[fmt(r.date),cname(r.congregationId),r.service,r.attendance||0,r.visitors||0,r.decisions||0]));
  $("reportContent").innerHTML=content;
+ aplicarFiltrosRelatorioMoriah();
 }
-$("printReport").onclick=()=>{renderReports();setTimeout(()=>window.print(),120)};
+
+// Filtros locais de apresentação: não alteram state nem dados do Firebase.
+function aplicarFiltrosRelatorioMoriah(){
+ const select=document.getElementById("moriahReportSection"),input=document.getElementById("moriahReportSearch"),status=document.getElementById("moriahReportFilterStatus"),container=document.getElementById("reportContent");
+ if(!select||!input||!container)return;
+ const secao=select.value,termo=input.value.trim().toLocaleLowerCase("pt-BR");
+ let secoes=0,linhas=0;
+ container.querySelectorAll(":scope > .panel").forEach(panel=>{
+  const titulo=(panel.querySelector("h3")?.textContent||"").trim();
+  const selecionado=secao==="all"||titulo===secao;
+  panel.hidden=!selecionado;
+  if(!selecionado)return;
+  secoes++;
+  panel.querySelectorAll("tbody tr").forEach(tr=>{
+   const visivel=!termo||tr.textContent.toLocaleLowerCase("pt-BR").includes(termo);
+   tr.hidden=!visivel;
+   if(visivel)linhas++;
+  });
+ });
+ if(status)status.textContent=`${secoes} seção(ões) • ${linhas} linha(s) exibida(s)`;
+}
+$("moriahReportSection").addEventListener("change",aplicarFiltrosRelatorioMoriah);
+$("moriahReportSearch").addEventListener("input",aplicarFiltrosRelatorioMoriah);
+$("moriahReportClear").addEventListener("click",()=>{$("moriahReportSection").value="all";$("moriahReportSearch").value="";aplicarFiltrosRelatorioMoriah()});
+
+$("printReport").onclick=()=>{const s=$("moriahReportSection"),q=$("moriahReportSearch");const oldS=s.value,oldQ=q.value;s.value="all";q.value="";renderReports();setTimeout(()=>{window.print();s.value=oldS;q.value=oldQ;aplicarFiltrosRelatorioMoriah()},120)};
 
 // Corrige rótulo de relatório no menu conforme perfil
 function updateAccessLabels(){
