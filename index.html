@@ -553,8 +553,9 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 
 <dialog id="memberDocDlg"><div class="form" style="max-width:620px"><div class="form-head"><div><h3>Documentos da secretaria</h3><small>Pré-visualização e impressão — sem alteração do cadastro</small></div><button type="button" data-close="memberDocDlg">×</button></div>
 <p id="memberDocPerson" style="font-weight:700"></p>
-<label>Modelo de documento<select id="memberDocType"><option value="ficha">Ficha cadastral individual</option><option value="declaracao">Declaração de membresia</option><option value="transferencia">Carta de transferência</option></select></label>
+<label>Modelo de documento<select id="memberDocType"><option value="ficha">Ficha cadastral individual</option><option value="declaracao">Declaração de membresia</option><option value="transferencia">Carta de transferência</option><option value="recomendacao">Carta de recomendação</option></select></label>
 <div id="memberDocTransferFields" class="hidden"><label>Nome da igreja destinatária<input id="memberDocDestination" placeholder="Igreja que receberá o membro"></label><label>Cidade / UF de destino<input id="memberDocCity" placeholder="Cidade e estado"></label></div>
+<div id="memberDocRecommendationFields" class="hidden"><label>Destinatário (opcional)<input id="memberDocRecommendTo" placeholder="Igreja, instituição ou responsável"></label><label>Finalidade (opcional)<input id="memberDocRecommendPurpose" placeholder="Ex.: participação em evento, apresentação à igreja"></label></div>
 <label>Local de emissão<input id="memberDocLocation" placeholder="Cidade / UF"></label>
 <p style="font-size:13px;color:#64748b">Documentos são minutas para conferência e assinatura. A impressão não registra nem efetiva transferência ou alteração de situação no Firebase.</p>
 <div class="form-actions"><button type="button" class="secondary" data-close="memberDocDlg">Cancelar</button><button type="button" class="primary" id="memberDocPrint">Visualizar / Imprimir</button></div></div></dialog>
@@ -1314,11 +1315,17 @@ window.openMemberDocument=id=>{
  $("memberDocPerson").textContent=`${m.name||"Membro"} — ${m.memberNumber||"sem número"}`;
  $("memberDocType").value="ficha";
  $("memberDocDestination").value="";$("memberDocCity").value="";
+ $("memberDocRecommendTo").value="";$("memberDocRecommendPurpose").value="";
  $("memberDocLocation").value="";
  $("memberDocTransferFields").classList.add("hidden");
+ $("memberDocRecommendationFields").classList.add("hidden");
  openDlg("memberDocDlg");
 };
-$("memberDocType").addEventListener("change",()=>$("memberDocTransferFields").classList.toggle("hidden",$("memberDocType").value!=="transferencia"));
+$("memberDocType").addEventListener("change",()=>{
+ const type=$("memberDocType").value;
+ $("memberDocTransferFields").classList.toggle("hidden",type!=="transferencia");
+ $("memberDocRecommendationFields").classList.toggle("hidden",type!=="recomendacao");
+});
 $("memberDocPrint").addEventListener("click",()=>{
  const m=state.membros.find(x=>x.id===memberDocSelectedId);if(!m){toast("Membro não encontrado.");return;}
  const type=$("memberDocType").value;
@@ -1340,9 +1347,14 @@ $("memberDocPrint").addEventListener("click",()=>{
  }else if(type==="declaracao"){
   title="DECLARAÇÃO DE MEMBRESIA";
   body=`<p>Declaramos, para os devidos fins, que <b>${memberName}</b>, cadastro nº <b>${number}</b>, consta em nossos registros na situação de <b>${e(status)}</b>, vinculado(a) à <b>${e(cname(m.congregationId)||"Assembleia de Deus Moriah")}</b>.</p><p>Esta declaração foi preparada a partir das informações cadastrais disponíveis nesta data e depende de conferência e assinatura da liderança responsável.</p>`;
- }else{
+ }else if(type==="transferencia"){
   title="CARTA DE TRANSFERÊNCIA — MINUTA";
   body=`<p>À liderança da igreja <b>${e(destination)}</b>, em <b>${e(city)}</b>.</p><p>Apresentamos, para apreciação e procedimentos cabíveis, o(a) irmão(ã) <b>${memberName}</b>, cadastro nº <b>${number}</b>, atualmente registrado(a) na situação de <b>${e(status)}</b> em nossa igreja.</p><p>A efetivação desta transferência depende de aprovação e assinatura da liderança competente. Este documento, por si só, não altera o cadastro nem formaliza a transferência.</p>`;
+ }else if(type==="recomendacao"){
+  title="CARTA DE RECOMENDAÇÃO — MINUTA";
+  const recipient=$("memberDocRecommendTo").value.trim();
+  const purpose=$("memberDocRecommendPurpose").value.trim();
+  body=`${recipient?`<p>À atenção de <b>${e(recipient)}</b>.</p>`:"<p>A quem possa interessar,</p>"}<p>A Igreja Assembleia de Deus Moriah apresenta o(a) irmão(ã) <b>${memberName}</b>, cadastro nº <b>${number}</b>, que consta em nossos registros como <b>${e(status)}</b>.</p>${purpose?`<p>Esta carta destina-se a: <b>${e(purpose)}</b>.</p>`:""}<p>Encaminhamos esta recomendação para apreciação do destinatário, mediante conferência dos dados e aprovação da liderança responsável.</p><p>Este documento somente terá validade após revisão e assinatura da liderança da igreja.</p>`;
  }
  const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${title} — AD Moriah</title><style>body{font-family:Arial,sans-serif;color:#18202a;margin:45px auto;max-width:760px;line-height:1.65;padding:0 25px}header{text-align:center;border-bottom:2px solid #1f2937;padding-bottom:16px;margin-bottom:38px}header strong{font-size:21px}h1{text-align:center;font-size:18px;margin-bottom:40px}p{text-align:justify;font-size:15px}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #cbd5e1;padding:9px;text-align:left}th{width:36%;background:#f1f5f9}.signature{margin:75px auto 0;max-width:420px;text-align:center;border-top:1px solid #111;padding-top:10px}.date{text-align:right;margin-top:40px}footer{margin-top:35px;font-size:11px;color:#64748b;text-align:center}@media print{body{margin:20px auto}th{background:#f1f5f9!important;print-color-adjust:exact}}</style></head><body><header><strong>IGREJA ASSEMBLEIA DE DEUS MORIAH</strong><div>Secretaria</div></header><h1>${title}</h1>${body}<p class="date">${issued}</p><div class="signature">Assinatura e identificação do responsável<br><small>Assinatura / carimbo, quando aplicável</small></div><footer>Documento gerado a partir do cadastro interno, sujeito à conferência.</footer></body></html>`;
  const win=window.open("","_blank");
