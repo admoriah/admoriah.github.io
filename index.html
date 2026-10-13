@@ -193,6 +193,33 @@ dialog::backdrop{background:#00152fbb}
 #app .topbar .brand{display:flex!important;align-items:center!important;gap:0!important}
 #app .topbar .brand img{display:block!important;width:100px!important;height:94px!important;max-width:none!important;object-fit:contain!important;flex-shrink:0!important}
 @media(max-width:600px){#app .topbar{min-height:88px;padding:7px 12px}#app .topbar .brand img{width:78px!important;height:72px!important}}
+
+/* AD Moriah — segunda etapa: dashboard e cadastros */
+#home .welcome{border-radius:22px!important;padding:26px!important;box-shadow:0 14px 36px rgba(9,31,65,.12)!important;background:linear-gradient(115deg,#102d57,#1b5082)!important;color:#fff!important}
+#home .welcome h2,#home .welcome p,#home .welcome small{color:#fff!important}
+#home .stats{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(145px,1fr))!important;gap:14px!important;margin:20px 0 24px!important}
+#home .stats .stat{min-height:112px!important;padding:20px 18px!important;border-radius:18px!important;border:1px solid #e4ebf3!important;background:linear-gradient(180deg,#fff,#f8fbff)!important;box-shadow:0 6px 22px rgba(15,41,78,.055)!important;display:flex!important;flex-direction:column!important;justify-content:space-between!important;gap:10px!important;transition:transform .2s,box-shadow .2s}
+#home .stats .stat:hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(15,41,78,.1)!important}
+#home .stats .stat small{font-size:12px!important;font-weight:700!important;color:#64748b!important;letter-spacing:.02em}
+#home .stats .stat strong{font-size:clamp(26px,3vw,34px)!important;line-height:1!important;color:#153a68!important;font-weight:800!important}
+#home .panel{border-radius:19px!important;border:1px solid #e5edf6!important;box-shadow:0 7px 25px rgba(13,36,70,.05)!important;padding:22px!important}
+#home .panel h3{font-size:17px!important;letter-spacing:-.015em!important;margin-bottom:12px!important}
+#membros .page-head,#obreiros .page-head{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:16px!important;margin-bottom:18px!important}
+#membros .page-head h2,#obreiros .page-head h2{font-size:clamp(23px,3vw,29px)!important;letter-spacing:-.035em!important}
+#membros .filters,#obreiros .filters{background:#f5f8fc!important;border:1px solid #e5edf6!important;border-radius:17px!important;padding:14px!important;display:flex!important;flex-wrap:wrap!important;gap:12px!important;margin-bottom:20px!important}
+#membros .filters input,#obreiros .filters input{flex:2 1 220px!important;min-width:0!important}
+#membros .filters select,#obreiros .filters select{flex:1 1 170px!important;min-width:0!important}
+#memberList,#workerList{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))!important;gap:16px!important;align-items:stretch!important}
+#memberList .card,#workerList .card{border:1px solid #e3eaf3!important;border-radius:19px!important;background:#fff!important;box-shadow:0 7px 22px rgba(10,38,77,.06)!important;padding:20px!important;display:flex!important;flex-direction:column!important;gap:11px!important;min-width:0!important;transition:transform .2s,box-shadow .2s}
+#memberList .card:hover,#workerList .card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(10,38,77,.11)!important}
+#memberList .card h3,#workerList .card h3{font-size:17px!important;line-height:1.35!important;overflow-wrap:anywhere!important;color:#12385f!important}
+#memberList .card p,#workerList .card p{font-size:13px!important;line-height:1.65!important;color:#52657c!important;margin:0!important;overflow-wrap:anywhere!important}
+#memberList .card .actions,#workerList .card .actions{margin-top:auto!important;padding-top:13px!important;border-top:1px solid #eef2f7!important;display:flex!important;gap:8px!important;flex-wrap:wrap!important}
+#memberList .card .actions button,#workerList .card .actions button{border-radius:10px!important;min-height:37px!important}
+#workerList .photo-mini{width:56px!important;height:56px!important;border-radius:15px!important;object-fit:cover!important;border:2px solid #e9eef6!important}
+#memberList .badge{white-space:nowrap!important}
+@media(max-width:600px){#home .welcome{padding:20px!important}#home .stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}#home .stats .stat{padding:16px 13px!important;min-height:98px!important}#home .panel{padding:17px!important}#membros .page-head .actions{width:100%!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}#membros .page-head .actions button{font-size:12px!important;padding:10px 6px!important}#memberList,#workerList{grid-template-columns:1fr!important}}
+
 </style>
 <style>
 /* Cabeçalho AD Moriah: logomarca branca e ampliada, responsiva */
@@ -272,7 +299,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 <main>
 <section id="home" class="page active">
   <div class="welcome"><div><small>Bem-vindo(a)</small><h2 id="welcomeName">AD Moriah</h2><p id="welcomeProfile"></p></div><div class="avatar">A</div></div>
-  <div id="stats" class="stats"></div>
+  <div id="stats" class="stats" aria-label="Resumo dos indicadores da igreja"></div>
   <div class="panel"><h3>🎂 Aniversariantes de hoje</h3><p>Veja quem faz aniversário hoje. Enviar uma homenagem é opcional e só acontece quando você escolher.</p><div id="birthdays"></div></div>
   <div class="panel"><h3>⛪ Próximas escalas da sede</h3><div id="nextScales"></div></div>
   <div class="panel"><h3>📅 Próximos eventos regionais</h3><div id="nextAgenda"></div></div>
