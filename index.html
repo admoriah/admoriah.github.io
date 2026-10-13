@@ -862,9 +862,27 @@ function toggleMemberRole(){const isWorker=$("mstatus").value==="obreiro";$("mro
    $("mmovementNotes").placeholder="Descreva a mudança, se desejar";
  }
 }); $("newMemberBtn").onclick=()=>{$("memberForm").reset();$("mid").value="";$("mnumber").value=proximoNumeroCadastroMembro();$("mnumber").readOnly=true;$("mdepartment").value="";$("memberHistoryView").textContent="O histórico começará no primeiro registro de movimentação.";toggleMemberRole();openDlg("memberDlg")};
+// Diagnóstico de gravação: apresenta erros reais sem esconder detalhes do Firebase.
+function mostrarDiagnosticoMoriah(etapa,err){
+ const codigo=err?.code||"sem código";
+ const mensagem=err?.message||String(err||"Erro desconhecido");
+ let el=document.getElementById("moriahDiagnostico");
+ if(!el){el=document.createElement("div");el.id="moriahDiagnostico";el.setAttribute("role","alert");
+ el.style.cssText="position:fixed;z-index:999999;left:12px;right:12px;bottom:12px;background:#fff5f2;color:#74251c;border:2px solid #bb382d;border-radius:12px;padding:16px;box-shadow:0 8px 35px #0005;font:14px/1.5 Arial,sans-serif;max-height:45vh;overflow:auto";
+ document.body.appendChild(el);}
+ el.replaceChildren();
+ const heading=document.createElement("strong");heading.textContent="Erro ao salvar — "+etapa;
+ const detail=document.createElement("p");detail.textContent="Código: "+codigo+" | Mensagem: "+mensagem;
+ const help=document.createElement("p");help.textContent="Copie esta mensagem e envie no ChatGPT. Nenhuma regra do Firebase deve ser alterada sem identificar a causa.";
+ const copy=document.createElement("button");copy.type="button";copy.textContent="Copiar erro";copy.onclick=()=>navigator.clipboard?.writeText("Etapa: "+etapa+"\nCódigo: "+codigo+"\nMensagem: "+mensagem);
+ const close=document.createElement("button");close.type="button";close.textContent="Fechar";close.style.marginLeft="10px";close.onclick=()=>el.remove();
+ el.append(heading,detail,help,copy,close);
+}
+$("memberForm").addEventListener("invalid",e=>mostrarDiagnosticoMoriah("validação do formulário",new Error("Campo obrigatório ou inválido: "+(e.target?.id||"desconhecido"))),true);
 $("memberForm").onsubmit=async e=>{
  e.preventDefault();
  const id=$("mid").value;
+ let etapaGravacao="validação do cadastro";
  const congregationId="moriah";
  const memberNumber=id?normalizeMemberNumber($("mnumber").value):"";
  if(id&&!memberNumber)return toast("Cadastro existente sem número. Consulte o administrador.");
@@ -885,6 +903,7 @@ $("memberForm").onsubmit=async e=>{
  }
  const data={entryDate,membershipHistory:history,memberNumber,name:$("mname").value.trim(),congregationId,department:$("mdepartment").value,tither:$("mtither").value,phone:$("mphone").value.trim(),birth:$("mbirth").value,sex:$("msex").value,status:$("mstatus").value,ministerialRole:$("mstatus").value==="cooperador"?"Cooperador":($("mstatus").value==="obreiro"?$("mrole").value:""),baptism:$("mbaptism").value,marital:$("mmarital").value,address:$("maddress").value.trim(),notes:$("mnotes").value.trim(),updatedAt:serverTimestamp()};
  try{
+   etapaGravacao=id?"atualização de membro no Firestore":"transação do contador e criação de membro";
    const result=id?null:await criarMembroNumerado(data);
    const savedRef=id?doc(db,"membros",id):result.ref;
    if(id)await updateDoc(savedRef,data);
@@ -892,10 +911,12 @@ $("memberForm").onsubmit=async e=>{
    if(!id)data.memberNumber=result.numero;
    closeDlg("memberDlg");
    try{
+     etapaGravacao="sincronização da coleção Obreiros";
      await syncMemberWorker(savedRef.id,data);
      toast(data.status==="obreiro"?"Membro e obreiro salvos.":"Membro salvo.");
    }catch(syncErr){
      console.error("Erro ao sincronizar obreiro:",syncErr);
+     mostrarDiagnosticoMoriah("sincronização de obreiros (membro já salvo)",syncErr);
      const reason=syncErr?.code==="permission-denied"?"Sem permissão de gravação na coleção obreiros.":(syncErr?.message||"Falha na sincronização.");
      toast("Membro salvo. Obreiro não sincronizado: "+reason);
      alert("O cadastro do membro foi salvo, mas a seção Obreiros não foi atualizada.\n\n"+reason+"\n\nVerifique as regras do Firebase antes de tentar novamente.");
@@ -903,6 +924,7 @@ $("memberForm").onsubmit=async e=>{
  }
  catch(err){
    console.error("Falha ao salvar membro:",err);
+   mostrarDiagnosticoMoriah(etapaGravacao,err);
    const detail=err?.code==="permission-denied"?"O Firebase negou a alteração. Verifique as regras de atualização de membros e seu perfil de acesso.":(err?.message||"Falha desconhecida.");
    toast("Não foi possível salvar: "+detail);
    alert("Não foi possível salvar a mudança de situação.\n\n"+detail+"\n\nCódigo: "+(err?.code||"não informado"));
