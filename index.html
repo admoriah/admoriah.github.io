@@ -823,6 +823,20 @@ function renderReports(){
  const totalNaoDizimistasFaixas=ageRows.reduce((s,r)=>s+r[3],0);
  ageRows.push(["TOTAL",totalMembrosFaixas,totalDizimistasFaixas,totalNaoDizimistasFaixas,totalMembrosFaixas?Math.round(totalDizimistasFaixas*100/totalMembrosFaixas)+"%":"0%"]);
  let content=reportTable("Perfil por faixa etária",["Faixa","Membros","Dizimistas","Não dizimistas","% Dizimistas"],ageRows);
+ // Distribuição por sexo: usa o campo do cadastro de membros, sem inferir pelo nome.
+ const sexGroups=[
+  {label:"Masculino",members:state.membros.filter(m=>String(m.sex||"").trim().toLowerCase()==="m" || String(m.sex||"").trim().toLowerCase()==="masculino")},
+  {label:"Feminino",members:state.membros.filter(m=>String(m.sex||"").trim().toLowerCase()==="f" || String(m.sex||"").trim().toLowerCase()==="feminino")}
+ ];
+ const knownSexCount=sexGroups.reduce((n,g)=>n+g.members.length,0);
+ sexGroups.push({label:"Não informado",members:state.membros.filter(m=>!["m","masculino","f","feminino"].includes(String(m.sex||"").trim().toLowerCase()))});
+ const sexRows=sexGroups.map(g=>{
+  const dz=g.members.filter(m=>m.tither==="sim").length;
+  return [g.label,g.members.length,dz,g.members.length-dz,state.membros.length?Math.round(g.members.length*100/state.membros.length)+"%":"0%"];
+ });
+ const allSexTithers=state.membros.filter(m=>m.tither==="sim").length;
+ sexRows.push(["TOTAL",state.membros.length,allSexTithers,state.membros.length-allSexTithers,state.membros.length?"100%":"0%"]);
+ content+=reportTable("Distribuição de membros por sexo",["Sexo","Membros","Dizimistas","Não dizimistas","% dos membros"],sexRows);
  if(isAdmin())content+=reportTable("Congregações",["Nome","Pastor","Telefone"],state.congregacoes.map(c=>[c.name,c.pastor,c.phone]));
  content+=reportTable("Obreiros",["Nome","Cargo","Congregação"],obreirosContabilizaveis().map(w=>[w.name,w.role,cname(w.congregationId)]));
  content+=reportTable("Membros",["Nº Cadastro","Nome","Idade","Faixa","Dizimista"],state.membros.map(m=>[m.memberNumber||"",m.name,calcAge(m.birth)??"",ageBand(calcAge(m.birth)),m.tither==="sim"?"Sim":"Não"]));
