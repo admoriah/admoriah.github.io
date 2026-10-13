@@ -280,10 +280,10 @@ dialog::backdrop{background:#00152fbb}
     <div><h2 id="indTitle">Indicadores</h2><p id="indSubtitle">Acompanhamento ministerial e estatístico.</p></div>
     <button id="refreshCharts" class="secondary">Atualizar gráficos</button>
   </div>
-  <div id="regionalAdminNotice" class="admin-lock hidden">🔒 O painel comparativo regional e os rankings são exclusivos do Administrador Regional.</div>
+  <div id="regionalAdminNotice" class="admin-lock hidden">🔒 O painel comparativo e os rankings são exclusivos do Administrador.</div>
   <div id="indCongFilterWrap" class="panel admin-only">
     <label><b>Visualizar:</b>
-      <select id="indCongFilter"><option value="">Toda a Regional</option></select>
+      <select id="indCongFilter"><option value="">Todas as congregações</option></select>
     </label>
   </div>
   <div id="ageKpis" class="age-kpis"></div>
@@ -294,7 +294,7 @@ dialog::backdrop{background:#00152fbb}
   </div>
   <div id="adminOnlyCharts" class="admin-only">
     <div class="chart-panel"><h3>⛪ Comparativo das congregações</h3><div class="chart-wrap"><canvas id="congChart"></canvas></div></div>
-    <div class="panel"><h3>🏆 Destaques da Regional</h3><div id="rankingCards" class="cards"></div></div>
+    <div class="panel"><h3>🏆 Destaques</h3><div id="rankingCards" class="cards"></div></div>
   </div>
 </section>
 
@@ -787,8 +787,8 @@ function renderIndicators(){
  if(!window.Chart)return;
  const members=filteredMembersForIndicators(),visitors=filteredVisitorsForIndicators();
  $("regionalAdminNotice").classList.toggle("hidden",isAdmin());
- $("indTitle").textContent=isAdmin()?"Painel Executivo Regional":"Indicadores da Congregação";
- $("indSubtitle").textContent=isAdmin()?"Visão geral e comparativa da Regional.":"Somente os dados da sua congregação.";
+ $("indTitle").textContent=isAdmin()?"Painel Executivo":"Indicadores da Congregação";
+ $("indSubtitle").textContent=isAdmin()?"Visão geral e comparativa dos indicadores.":"Somente os dados da sua congregação.";
  const counts=Object.fromEntries(AGE_BANDS.map(x=>[x,0])),tithers=Object.fromEntries(AGE_BANDS.map(x=>[x,0]));
  members.forEach(m=>{const b=ageBand(calcAge(m.birth));if(b in counts){counts[b]++;if(m.tither==="sim")tithers[b]++}});
  const withoutBirth=members.filter(m=>calcAge(m.birth)===null).length;
