@@ -544,12 +544,21 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 <label>Observações (opcional)<textarea id="finNotes" maxlength="500"></textarea></label>
 <p id="finFormStatus" role="status" aria-live="polite"></p><div class="form-actions"><button type="button" class="secondary" data-close="finDlg">Cancelar</button><button id="finSubmit" type="submit" class="primary">Registrar lançamento</button></div></form></dialog>
 
+
+<section id="ministerios22" class="page">
+ <div class="page-head"><div><h2>⛪ Ministérios e Departamentos</h2><p>Etapa 22 • Gestão integrada à AD Moriah, sem duplicar cadastros.</p></div><button id="min22New" class="primary edit-own" type="button">+ Novo departamento</button></div>
+ <div id="min22Status" class="panel" role="status">Aguardando sincronização dos ministérios.</div>
+ <div class="stats" id="min22Stats"></div>
+ <div class="panel"><div class="grid2"><label>Pesquisar departamento<input id="min22Search" type="search" placeholder="Nome, responsável ou atividade"></label><label>Situação<select id="min22Filter"><option value="">Todos</option><option value="ativo">Ativos</option><option value="inativo">Inativos</option></select></label></div><div class="actions"><button id="min22Csv" class="secondary" type="button">Exportar relatório CSV</button><button id="min22Print" class="secondary" type="button">Imprimir relatório</button></div></div>
+ <div id="min22List"></div>
+</section>
 <section id="mais" class="page">
   <div class="page-head"><div><h2>Explorar o AD Moriah</h2><p>Acesse todas as áreas do aplicativo.</p></div></div>
   <div class="moriah-menu-groups">
     <div class="panel moriah-menu-group"><h3>👥 Pessoas e ministérios</h3><div class="moriah-links">
       <button class="menu-link" data-page="membros">👥 Membros</button>
       <button class="menu-link" data-page="obreiros">👔 Obreiros</button>
+      <button class="menu-link" data-page="ministerios22">⛪ Ministérios e Departamentos</button>
       <button class="menu-link" data-page="visitantes">🙋 Visitantes</button>
     </div></div>
     <div class="panel moriah-menu-group"><h3>📅 Atividades da igreja</h3><div class="moriah-links">
@@ -576,6 +585,15 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 </nav>
 </div>
 
+
+<dialog id="min22Dlg"><form id="min22Form" class="form"><input id="min22Id" type="hidden"><div class="form-head"><h3>Cadastro de ministério / departamento</h3><button type="button" data-close="min22Dlg">×</button></div>
+<label>Nome do departamento<input id="min22Name" maxlength="100" required placeholder="Ex.: Escola Bíblica Dominical"></label>
+<div class="grid2"><label>Área de atuação<select id="min22Area"><option>Ensino</option><option>Louvor</option><option>Evangelismo</option><option>Missões</option><option>Intercessão</option><option>Infantil</option><option>Juventude</option><option>Assistência social</option><option>Recepção</option><option>Administração</option><option>Outros</option></select></label><label>Situação<select id="min22Situation"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select></label></div>
+<div class="grid2"><label>Dirigente / responsável<select id="min22Leader"><option value="">Não definido</option></select></label><label>Vice-responsável<select id="min22Deputy"><option value="">Não definido</option></select></label></div>
+<label>Integrantes vinculados aos cadastros existentes<select id="min22People" multiple size="8" style="min-height:155px"></select><small>Para selecionar vários integrantes, use Ctrl + clique (Windows) ou Command + clique (Mac).</small></label>
+<div class="grid2"><label>Dia / periodicidade<input id="min22Schedule" maxlength="100" placeholder="Ex.: Domingos, às 9h"></label><label>Local das atividades<input id="min22Place" maxlength="100" placeholder="Ex.: Templo principal"></label></div>
+<label>Atividades e objetivos<textarea id="min22Activities" maxlength="1500" rows="4"></textarea></label><label>Observações<textarea id="min22Notes" maxlength="1000" rows="3"></textarea></label>
+<p id="min22FormStatus" role="status"></p><div class="form-actions"><button type="button" class="secondary" data-close="min22Dlg">Cancelar</button><button type="submit" class="primary">Salvar departamento</button></div></form></dialog>
 <dialog id="congDlg"><form id="congForm" class="form"><input type="hidden" id="cid"><div class="form-head"><h3>Congregação</h3><button type="button" data-close="congDlg">×</button></div><label>Nome<input id="cname" required></label><div class="grid2"><label>Pastor<input id="cpastor"></label><label>2º dirigente<input id="csecond"></label></div><div class="grid2"><label>Telefone<input id="cphone"></label><label>Instagram<input id="cinstagram"></label></div><label>Endereço<input id="caddress"></label><h4>Escala fixa na sede</h4><div class="grid2"><label>Participa?<select id="cscaleActive"><option value="sim">Sim</option><option value="nao">Não</option></select></label><label>Terça-feira<select id="cscaleOccurrence"><option value="1">Toda 1ª terça-feira</option><option value="2">Toda 2ª terça-feira</option><option value="3">Toda 3ª terça-feira</option><option value="4">Toda 4ª terça-feira</option><option value="5">Toda 5ª terça-feira</option></select></label></div><div class="grid2"><label>Horário<input id="cscaleTime" type="time"></label><label>Responsável<input id="cscaleResponsible"></label></div><label>Observações<textarea id="cscaleNotes"></textarea></label><div class="form-actions"><button type="button" class="secondary" data-close="congDlg">Cancelar</button><button class="primary" type="submit">Salvar</button></div></form></dialog>
 
 <dialog id="workerDlg"><form id="workerForm" class="form form-modern-v4"><input type="hidden" id="wid"><input type="hidden" id="wphotoData"><input type="hidden" id="wcong" value="moriah"><div class="form-head"><div><h3>Cadastro de obreiro</h3><small>Cadastro completo e dados ministeriais</small></div><button type="button" data-close="workerDlg" aria-label="Fechar">×</button></div>
@@ -667,7 +685,7 @@ const {
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const $=id=>document.getElementById(id);
-const state={authUser:null,profile:null,congregacoes:[],obreiros:[],membros:[],festividades:[],agenda:[],usuarios:[],visitantes:[],resultadosCulto:[],unsubs:[],scaleDate:new Date()};
+const state={authUser:null,profile:null,congregacoes:[],obreiros:[],membros:[],festividades:[],agenda:[],usuarios:[],visitantes:[],resultadosCulto:[],ministerios22:[],unsubs:[],scaleDate:new Date()};
 
 function toast(m){const e=$("toast");e.textContent=m;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
 function fmt(d){if(!d)return "";const [y,m,dd]=d.split("-");return `${dd}/${m}/${y}`}
@@ -717,8 +735,8 @@ function sub(name,target,filter=true){
  const u=onSnapshot(q,s=>{state[target]=s.docs.map(d=>({id:d.id,...d.data()}));$("syncState").textContent="● online";renderAll()},e=>{console.error(e);$("syncState").textContent="● erro"});
  state.unsubs.push(u)
 }
-function startRealtime(){startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);sub("obreiros","obreiros",true);sub("membros","membros",true);sub("festividades","festividades",true);sub("visitantes","visitantes",true);sub("resultadosCulto","resultadosCulto",true);sub("agendaRegional","agenda",false);if(isAdmin())sub("usuarios","usuarios",false)}
-function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
+function startRealtime(){startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);sub("obreiros","obreiros",true);sub("membros","membros",true);sub("festividades","festividades",true);sub("visitantes","visitantes",true);sub("resultadosCulto","resultadosCulto",true);sub("agendaRegional","agenda",false);subMin22();if(isAdmin())sub("usuarios","usuarios",false)}
+function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();renderMin22();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
 
 // Apenas membros na situação Obreiro entram na contagem ministerial.
 // Registros antigos de Cooperador permanecem no banco, mas não aparecem como obreiros.
@@ -1692,6 +1710,52 @@ function renderFinFull(){
 $("finFullCsv").addEventListener("click",()=>{const url=URL.createObjectURL(new Blob(["\ufeff",finFullCsvText()],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download="AD_Moriah_relatorio_"+$("finFullMode").value+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 $("finFullPrint").addEventListener("click",()=>{const w=window.open("","_blank");if(!w)return toast("Permita pop-ups para imprimir.");w.document.write('<html><head><meta charset="utf-8"><title>Relatório financeiro - AD Moriah</title><style>body{font:14px Arial;padding:28px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #aaa;padding:8px;text-align:left}th{background:#eee}</style></head><body><h2>Assembleia de Deus Moriah — Relatório financeiro</h2><p>Tipo: '+finSafe($("finFullMode").selectedOptions[0].textContent)+' · Período: '+finSafe($("finFullFrom").value||"Início")+' a '+finSafe($("finFullTo").value||"Atual")+'</p>'+$("finFullResult").innerHTML+'</body></html>');w.document.close();w.print();});
 renderFinFull();
+
+// ETAPA 22 — Coleção independente; não modifica membros, obreiros ou financeiro.
+function min22Safe(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function min22PeopleList(){
+ const map=new Map();
+ state.membros.forEach(m=>{if(m.name)map.set('membros:'+m.id,{key:'membros:'+m.id,name:m.name,number:m.memberNumber||'',kind:'Membro'});});
+ state.obreiros.forEach(w=>{if(!w.name)return;const key='obreiros:'+w.id;map.set(key,{key,name:w.name,number:w.memberNumber||'',kind:'Obreiro'});});
+ return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+}
+function min22Person(key){return min22PeopleList().find(p=>p.key===key);}
+function min22Label(key){const p=min22Person(key);return p?p.name+' ('+p.kind+')':'Cadastro não localizado';}
+function subMin22(){
+ const u=onSnapshot(collection(db,'ministerios'),snap=>{state.ministerios22=snap.docs.map(d=>({id:d.id,...d.data()}));$('min22Status').textContent='● Ministérios sincronizados com o Firebase.';renderMin22();},err=>{console.error('Ministérios:',err);$('min22Status').textContent='Não foi possível consultar os ministérios ('+(err.code||'erro')+'). Publique a regra específica da Etapa 22 no Firestore.';state.ministerios22=[];renderMin22();});
+ state.unsubs.push(u);
+}
+function min22Filtered(){const q=$('min22Search').value.trim().toLocaleLowerCase('pt-BR'),f=$('min22Filter').value;return state.ministerios22.filter(x=>(!f||(x.situation||'ativo')===f)&&(!q||[x.name,x.area,x.activities,min22Label(x.leaderKey),x.schedule].join(' ').toLocaleLowerCase('pt-BR').includes(q))).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));}
+function renderMin22(){
+ if(!$('min22List'))return;
+ const all=state.ministerios22,rows=min22Filtered(),members=new Set(all.flatMap(x=>Array.isArray(x.peopleKeys)?x.peopleKeys:[]));
+ $('min22Stats').innerHTML=[['Departamentos',all.length],['Ativos',all.filter(x=>(x.situation||'ativo')==='ativo').length],['Vínculos de integrantes',members.size]].map(x=>'<div class="stat"><small>'+x[0]+'</small><strong>'+x[1]+'</strong></div>').join('');
+ $('min22New').style.display=canEdit()?'':'none';
+ $('min22List').innerHTML=rows.map(x=>'<article class="panel" style="margin:12px 0"><div class="page-head"><div><h3>'+min22Safe(x.name)+'</h3><p>'+min22Safe(x.area||'')+' • '+(x.situation==='inativo'?'Inativo':'Ativo')+'</p></div>'+(canEdit()?'<button type="button" class="secondary" data-min22-edit="'+min22Safe(x.id)+'">Editar</button>':'')+'</div><p><b>Responsável:</b> '+min22Safe(x.leaderKey?min22Label(x.leaderKey):'Não definido')+'<br><b>Vice:</b> '+min22Safe(x.deputyKey?min22Label(x.deputyKey):'Não definido')+'<br><b>Integrantes:</b> '+(Array.isArray(x.peopleKeys)?x.peopleKeys.length:0)+'<br><b>Atividades:</b> '+min22Safe(x.activities||'Não informadas')+'<br><b>Quando:</b> '+min22Safe(x.schedule||'Não informado')+'<br><b>Local:</b> '+min22Safe(x.place||'Não informado')+'</p><details><summary>Ver integrantes e observações</summary><p>'+min22Safe((x.peopleKeys||[]).map(min22Label).join(' • ')||'Nenhum integrante')+'</p><p>'+min22Safe(x.notes||'')+'</p></details></article>').join('')||'<div class="panel">Nenhum departamento encontrado.</div>';
+}
+function min22Open(id=''){
+ if(!canEdit())return toast('Perfil sem permissão para editar.');
+ const x=state.ministerios22.find(d=>d.id===id)||{};
+ $('min22Form').reset();$('min22Id').value=id;$('min22Name').value=x.name||'';$('min22Area').value=x.area||'Ensino';$('min22Situation').value=x.situation||'ativo';$('min22Schedule').value=x.schedule||'';$('min22Place').value=x.place||'';$('min22Activities').value=x.activities||'';$('min22Notes').value=x.notes||'';$('min22FormStatus').textContent='';
+ const people=min22PeopleList(),opts='<option value="">Não definido</option>'+people.map(p=>'<option value="'+min22Safe(p.key)+'">'+min22Safe(p.name+' — '+p.kind+(p.number?' — '+p.number:''))+'</option>').join('');
+ $('min22Leader').innerHTML=opts;$('min22Deputy').innerHTML=opts;$('min22People').innerHTML=people.map(p=>'<option value="'+min22Safe(p.key)+'">'+min22Safe(p.name+' — '+p.kind+(p.number?' — '+p.number:''))+'</option>').join('');
+ $('min22Leader').value=x.leaderKey||'';$('min22Deputy').value=x.deputyKey||'';[...$('min22People').options].forEach(o=>o.selected=(x.peopleKeys||[]).includes(o.value));openDlg('min22Dlg');
+}
+$('min22New').onclick=()=>min22Open();
+$('min22Search').oninput=renderMin22;$('min22Filter').onchange=renderMin22;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-min22-edit]');if(b)min22Open(b.dataset.min22Edit);});
+$('min22Form').onsubmit=async e=>{
+ e.preventDefault();if(!canEdit())return;
+ const id=$('min22Id').value,keys=[...$('min22People').selectedOptions].map(o=>o.value),leader=$('min22Leader').value,deputy=$('min22Deputy').value;
+ const data={name:$('min22Name').value.trim(),area:$('min22Area').value,situation:$('min22Situation').value,leaderKey:leader,deputyKey:deputy,peopleKeys:[...new Set([...keys,...[leader,deputy].filter(Boolean)])],schedule:$('min22Schedule').value.trim(),place:$('min22Place').value.trim(),activities:$('min22Activities').value.trim(),notes:$('min22Notes').value.trim(),congregationId:'moriah',updatedAt:serverTimestamp()};
+ if(!data.name)return;
+ $('min22FormStatus').textContent='Salvando...';
+ try{if(id)await updateDoc(doc(db,'ministerios',id),data);else await addDoc(collection(db,'ministerios'),{...data,createdAt:serverTimestamp()});closeDlg('min22Dlg');toast('Departamento salvo com sucesso.');}
+ catch(err){console.error(err);$('min22FormStatus').textContent='Não foi possível salvar ('+(err.code||'erro')+'). Verifique a regra ministerios no Firestore.';}
+};
+function min22Csv(){const header=['Departamento','Área','Situação','Responsável','Vice','Integrantes','Atividades','Periodicidade','Local','Observações'],rows=min22Filtered().map(x=>[x.name,x.area,x.situation,x.leaderKey?min22Label(x.leaderKey):'',x.deputyKey?min22Label(x.deputyKey):'',(x.peopleKeys||[]).map(min22Label).join(' | '),x.activities,x.schedule,x.place,x.notes]);return '\ufeff'+[header,...rows].map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');}
+$('min22Csv').onclick=()=>{const blob=new Blob([min22Csv()],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AD_Moriah_Ministerios.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);};
+$('min22Print').onclick=()=>{const rows=min22Filtered();const win=window.open('','_blank');if(!win)return toast('Permita pop-ups para imprimir.');const body=rows.map(x=>'<tr><td>'+min22Safe(x.name)+'</td><td>'+min22Safe(x.area)+'</td><td>'+min22Safe(x.leaderKey?min22Label(x.leaderKey):'')+'</td><td>'+min22Safe((x.peopleKeys||[]).map(min22Label).join(', '))+'</td><td>'+min22Safe(x.situation||'ativo')+'</td></tr>').join('');win.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ministérios AD Moriah</title><style>body{font-family:Arial;margin:24px}table{width:100%;border-collapse:collapse;font-size:12px}td,th{border:1px solid #aaa;padding:7px;text-align:left}</style></head><body><h2>Assembleia de Deus Moriah — Ministérios e Departamentos</h2><table><thead><tr><th>Departamento</th><th>Área</th><th>Responsável</th><th>Integrantes</th><th>Situação</th></tr></thead><tbody>'+body+'</tbody></table></body></html>');win.document.close();win.focus();win.print();};
 </script>
 <script>
 (function(){
