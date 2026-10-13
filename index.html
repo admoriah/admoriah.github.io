@@ -890,9 +890,14 @@ $("memberForm").onsubmit=async e=>{
    Promise.resolve(promise).then(v=>{clearTimeout(timeout);resolve(v)},err=>{clearTimeout(timeout);reject(err)});
  });
  const congregationId="moriah";
- const memberNumber=id?normalizeMemberNumber($("mnumber").value):"";
+ const memberNumber=id?normalizeMemberNumber(state.membros.find(m=>m.id===id)?.memberNumber || $("mnumber").value):"";
  if(id&&!memberNumber){atualizarEtapa("Bloqueado: cadastro sem número");return toast("Cadastro existente sem número. Consulte o administrador.");}
- if(id&&memberNumberExists(memberNumber,congregationId,id)){atualizarEtapa("Bloqueado: número duplicado");return toast("Já existe um membro com este Nº de Cadastro nesta congregação.");}
+ // Ao editar, o número é imutável: não bloquear atualizações por duplicidades legadas/importadas.
+ // A criação de novos cadastros continua protegida pela numeração transacional.
+ if(id&&memberNumberExists(memberNumber,congregationId,id)){
+   console.warn("Número de cadastro também encontrado em outro registro; edição do registro atual permitida:",memberNumber,id);
+   atualizarEtapa("Número já existente em outro registro; atualizando apenas este membro...");
+ }
  const previous=id?state.membros.find(m=>m.id===id):null;
  const movementType=$("mmovement").value;
  const movementNotes=$("mmovementNotes").value.trim();
