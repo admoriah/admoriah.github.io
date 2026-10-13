@@ -420,11 +420,24 @@ function sub(name,target,filter=true){
 function startRealtime(){$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);sub("obreiros","obreiros",true);sub("membros","membros",true);sub("festividades","festividades",true);sub("visitantes","visitantes",true);sub("resultadosCulto","resultadosCulto",true);sub("agendaRegional","agenda",false);if(isAdmin())sub("usuarios","usuarios",false)}
 function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
 
-function renderStats(){const t=state.membros.filter(m=>m.tither==="sim").length,p=state.festividades.filter(f=>f.status==="pending").length;const v=[["Congregações",state.congregacoes.length],["Obreiros",state.obreiros.length],["Membros",state.membros.length],["Dizimistas",t],["Festividades",state.festividades.length],["Pendentes",p],["Agenda",state.agenda.length],["Visitantes no mês",visitorsThisMonth().length]];$("stats").innerHTML=v.map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("")}
+// Apenas membros na situação Obreiro entram na contagem ministerial.
+// Registros antigos de Cooperador permanecem no banco, mas não aparecem como obreiros.
+function obreirosContabilizaveis(){
+ return state.obreiros.filter(w=>{
+   if(String(w.role||"").trim().toLowerCase()==="cooperador")return false;
+   if(w.memberId){
+     const membro=state.membros.find(m=>m.id===w.memberId);
+     if(membro && membro.status!=="obreiro" && !["diacono","presbitero","evangelista","pastor"].includes(membro.status))return false;
+   }
+   return true;
+ });
+}
+
+function renderStats(){const t=state.membros.filter(m=>m.tither==="sim").length,p=state.festividades.filter(f=>f.status==="pending").length;const v=[["Congregações",state.congregacoes.length],["Obreiros",obreirosContabilizaveis().length],["Membros",state.membros.length],["Dizimistas",t],["Festividades",state.festividades.length],["Pendentes",p],["Agenda",state.agenda.length],["Visitantes no mês",visitorsThisMonth().length]];$("stats").innerHTML=v.map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("")}
 function renderCong(){$("congList").innerHTML=state.congregacoes.length?state.congregacoes.map(c=>`<article class="card"><div class="person-head"><h3>⛪ ${c.name}</h3>${isAdmin()?`<button class="secondary" onclick="editCong('${c.id}')">Editar</button>`:""}</div><p><b>Pastor:</b> ${c.pastor||"—"} • <b>2º dirigente:</b> ${c.second||"—"}</p><p>📞 ${c.phone||"—"} • 📍 ${c.address||"—"}</p>${c.fixedScale?.active==="sim"?`<span class="badge pending">Toda ${c.fixedScale.occurrence}ª terça-feira • ${c.fixedScale.time||""}</span>`:""}</article>`).join(""):'<div class="card">Nenhum departamento cadastrada.</div>'}
 function renderWorkers(){
  const q=$("workerSearch").value.toLowerCase(),r=$("workerRole").value;
- const l=state.obreiros.filter(w=>(!q||(w.name||"").toLowerCase().includes(q))&&(!r||w.role===r));
+ const l=obreirosContabilizaveis().filter(w=>(!q||(w.name||"").toLowerCase().includes(q))&&(!r||w.role===r));
  $("workerList").innerHTML=l.length?l.map(w=>`<article class="card"><div class="person-with-photo"><img class="photo-mini" src="${w.photoData||'icons/icon-192.png'}" alt=""><div><h3>${w.name}</h3><p>${w.role} • ${cname(w.congregationId)}</p><p>📞 ${w.phone||"—"} • 🎂 ${fmt(w.birth)||"—"}</p></div></div><div class="actions">${canEdit()?`<button class="secondary" onclick="editWorker('${w.id}')">Editar</button><button class="danger" onclick="deleteItem('obreiros','${w.id}','${w.name}')">Excluir</button>`:""}</div></article>`).join(""):'<div class="card">Nenhum obreiro.</div>';
 }
 $("workerSearch").oninput=renderWorkers;$("workerRole").onchange=renderWorkers;
@@ -515,9 +528,9 @@ $("prevMonth").onclick=()=>{state.scaleDate=new Date(state.scaleDate.getFullYear
 function renderUsers(){if(!isAdmin()||!$("userList"))return;const q=$("userSearch").value.toLowerCase(),c=$("userCongFilter").value,l=state.usuarios.filter(u=>(!q||(u.name||"").toLowerCase().includes(q)||(u.login||"").toLowerCase().includes(q))&&(!c||u.congregationId===c));$("userList").innerHTML=l.length?l.map(u=>`<article class="card"><div class="person-head"><h3>${u.name||u.email||"Usuário sem nome"}</h3><span class="badge ${u.active===false?"bad":"ok"}">${u.active===false?"Inativo":"Ativo"}</span></div><p>Usuário: <b>${u.login||u.email||"Não informado"}</b> • ${profileLabel(u.role)}</p><div class="actions"><button class="secondary" onclick="editUser('${u.id}')">Editar perfil</button>${u.id!==state.authUser.uid?`<button class="${u.active===false?"approve":"reject"}" onclick="toggleUser('${u.id}',${u.active===false})">${u.active===false?"Ativar":"Inativar"}</button>`:""}</div></article>`).join(""):'<div class="card">Nenhum usuário.</div>'}
 $("userSearch").oninput=renderUsers;$("userCongFilter").onchange=renderUsers;
 function reportTable(t,h,r){return `<div class="panel"><h3>${t}</h3><div style="overflow:auto"><table class="report-table"><thead><tr>${h.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${r.map(row=>`<tr>${row.map(v=>`<td>${v??""}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>`}
-function renderReportsLegacy(){const t=state.membros.filter(m=>m.tither==="sim").length;$("reportSummary").innerHTML=[["Congregações",state.congregacoes.length],["Obreiros",state.obreiros.length],["Membros",state.membros.length],["Dizimistas",t],["Visitantes no mês",visitorsThisMonth().length],["Resultados de culto",state.resultadosCulto.length]].map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("");$("reportContent").innerHTML=reportTable("Congregações",["Nome","Pastor","Telefone"],state.congregacoes.map(c=>[c.name,c.pastor,c.phone]))+reportTable("Obreiros",["Nome","Cargo","Congregação"],state.obreiros.map(w=>[w.name,w.role,cname(w.congregationId)]))+reportTable("Membros",["Nome","Congregação","Dizimista"],state.membros.map(m=>[m.name,cname(m.congregationId),m.tither==="sim"?"Sim":"Não"]))+reportTable("Visitantes",["Data","Nome","Congregação","Culto","1ª visita","Situação"],state.visitantes.map(v=>[fmt(v.date),v.name,cname(v.congregationId),v.service,v.firstVisit==="sim"?"Sim":"Não",visitorStatusLabel(v.status)]))+reportTable("Resultados dos Cultos",["Data","Congregação","Culto","Público","Visitantes","Decisões"],state.resultadosCulto.map(r=>[fmt(r.date),cname(r.congregationId),r.service,r.attendance||0,r.visitors||0,r.decisions||0]))}
+function renderReportsLegacy(){const t=state.membros.filter(m=>m.tither==="sim").length;$("reportSummary").innerHTML=[["Congregações",state.congregacoes.length],["Obreiros",obreirosContabilizaveis().length],["Membros",state.membros.length],["Dizimistas",t],["Visitantes no mês",visitorsThisMonth().length],["Resultados de culto",state.resultadosCulto.length]].map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("");$("reportContent").innerHTML=reportTable("Congregações",["Nome","Pastor","Telefone"],state.congregacoes.map(c=>[c.name,c.pastor,c.phone]))+reportTable("Obreiros",["Nome","Cargo","Congregação"],obreirosContabilizaveis().map(w=>[w.name,w.role,cname(w.congregationId)]))+reportTable("Membros",["Nome","Congregação","Dizimista"],state.membros.map(m=>[m.name,cname(m.congregationId),m.tither==="sim"?"Sim":"Não"]))+reportTable("Visitantes",["Data","Nome","Congregação","Culto","1ª visita","Situação"],state.visitantes.map(v=>[fmt(v.date),v.name,cname(v.congregationId),v.service,v.firstVisit==="sim"?"Sim":"Não",visitorStatusLabel(v.status)]))+reportTable("Resultados dos Cultos",["Data","Congregação","Culto","Público","Visitantes","Decisões"],state.resultadosCulto.map(r=>[fmt(r.date),cname(r.congregationId),r.service,r.attendance||0,r.visitors||0,r.decisions||0]))}
 $("printReport").onclick=()=>{renderReports();window.print()};
-$("csvReport").onclick=()=>{const rows=[["TIPO","NOME","CONGREGAÇÃO","INFO"]];state.obreiros.forEach(x=>rows.push(["OBREIRO",x.name,cname(x.congregationId),x.role]));state.membros.forEach(x=>rows.push(["MEMBRO",x.name,cname(x.congregationId),x.tither==="sim"?"DIZIMISTA":"NÃO DIZIMISTA"]));const csv="﻿"+rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="AD Moriah-relatorio.csv";a.click()};
+$("csvReport").onclick=()=>{const rows=[["TIPO","NOME","CONGREGAÇÃO","INFO"]];obreirosContabilizaveis().forEach(x=>rows.push(["OBREIRO",x.name,cname(x.congregationId),x.role]));state.membros.forEach(x=>rows.push(["MEMBRO",x.name,cname(x.congregationId),x.tither==="sim"?"DIZIMISTA":"NÃO DIZIMISTA"]));const csv="﻿"+rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="AD Moriah-relatorio.csv";a.click()};
 
 $("newCongBtn").onclick=()=>{$("congForm").reset();$("cid").value="";openDlg("congDlg")};
 $("congForm").onsubmit=async e=>{e.preventDefault();const id=$("cid").value,data={name:$("cname").value.trim(),pastor:$("cpastor").value.trim(),second:$("csecond").value.trim(),phone:$("cphone").value.trim(),instagram:$("cinstagram").value.trim(),address:$("caddress").value.trim(),fixedScale:{active:$("cscaleActive").value,occurrence:Number($("cscaleOccurrence").value),time:$("cscaleTime").value,responsible:$("cscaleResponsible").value.trim(),notes:$("cscaleNotes").value.trim()},updatedAt:serverTimestamp()};try{id?await updateDoc(doc(db,"congregacoes",id),data):await addDoc(collection(db,"congregacoes"),data);closeDlg("congDlg");toast("Congregação salva.")}catch(e){console.error(e);toast("Sem permissão.")}};
@@ -532,7 +545,7 @@ window.editWorker=id=>{const w=state.obreiros.find(x=>x.id===id);if(!w)return;$(
 async function syncMemberWorker(memberId, member){
   const linked=state.obreiros.find(w=>w.memberId===memberId);
   const generatedId="membro_"+memberId;
-  if(!["obreiro","cooperador"].includes(member.status)){
+  if(member.status!=="obreiro"){
     // Somente exclui registros gerados automaticamente; nunca apaga obreiros manuais.
     if(linked?.autoFromMember===true)await deleteDoc(doc(db,"obreiros",linked.id));
     else if(state.obreiros.some(w=>w.id===generatedId&&w.autoFromMember===true))await deleteDoc(doc(db,"obreiros",generatedId));
@@ -545,9 +558,9 @@ async function syncMemberWorker(memberId, member){
   const workerId=existing?.id||generatedId;
   const workerData={memberId,memberNumber:member.memberNumber,autoFromMember:true,name:member.name,congregationId:member.congregationId,phone:member.phone||"",birth:member.birth||"",updatedAt:serverTimestamp()};
   // Situações ministeriais definem o cargo; Obreiro genérico mantém o cargo já preenchido.
-  const selectedRole=member.status==="cooperador"?"Cooperador":(member.ministerialRole||"");
+  const selectedRole=member.ministerialRole||(existing?.role==="Cooperador"?"Obreiro":"");
   if(selectedRole)workerData.role=selectedRole;
-  if(!existing)Object.assign(workerData,{role:selectedRole||"Cooperador",photoData:"",consecration:"",notes:"Cadastrado automaticamente a partir do cadastro de membros.",createdAt:serverTimestamp()});
+  if(!existing)Object.assign(workerData,{role:selectedRole||"Obreiro",photoData:"",consecration:"",notes:"Cadastrado automaticamente a partir do cadastro de membros.",createdAt:serverTimestamp()});
   await setDoc(doc(db,"obreiros",workerId),workerData,{merge:true});
 }
 
@@ -567,7 +580,7 @@ $("memberForm").onsubmit=async e=>{
    closeDlg("memberDlg");
    try{
      await syncMemberWorker(savedRef.id,data);
-     toast(["obreiro","cooperador"].includes(data.status)?"Membro e obreiro salvos.":"Membro salvo.");
+     toast(data.status==="obreiro"?"Membro e obreiro salvos.":"Membro salvo.");
    }catch(syncErr){
      console.error("Erro ao sincronizar obreiro:",syncErr);
      toast("Membro salvo, mas não foi possível atualizar Obreiros. Verifique permissões e tente novamente.");
@@ -781,11 +794,11 @@ function renderReports(){
  $("reportTitle").textContent=local?"Relatório da Congregação":"Relatório Executivo Regional";
  $("reportSubtitle").textContent=local?"Somente os dados vinculados à sua congregação.":"Relatório geral exclusivo do Administrador Regional.";
  $("reportCover").innerHTML=`<div class="report-cover"><small>ASSEMBLEIA DE DEUS</small><h2>ASSEMBLEIA DE DEUS MORIAH</h2><h3>${local?"RELATÓRIO DA CONGREGAÇÃO":"RELATÓRIO EXECUTIVO REGIONAL"}</h3><p>${new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"})}</p><small>Pastor Reinaldo Lino</small></div>`;
- $("reportSummary").innerHTML=[["Congregações",state.congregacoes.length],["Obreiros",state.obreiros.length],["Membros",state.membros.length],["Dizimistas",t],["Visitantes no mês",visitorsThisMonth().length],["Resultados de culto",state.resultadosCulto.length]].map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("");
+ $("reportSummary").innerHTML=[["Congregações",state.congregacoes.length],["Obreiros",obreirosContabilizaveis().length],["Membros",state.membros.length],["Dizimistas",t],["Visitantes no mês",visitorsThisMonth().length],["Resultados de culto",state.resultadosCulto.length]].map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("");
  const ageRows=AGE_BANDS.map(b=>{const all=state.membros.filter(m=>ageBand(calcAge(m.birth))===b),dz=all.filter(m=>m.tither==="sim");return [b,all.length,dz.length,all.length-dz.length,all.length?Math.round(dz.length*100/all.length)+"%":"0%"]});
  let content=reportTable("Perfil por faixa etária",["Faixa","Membros","Dizimistas","Não dizimistas","% Dizimistas"],ageRows);
  if(isAdmin())content+=reportTable("Congregações",["Nome","Pastor","Telefone"],state.congregacoes.map(c=>[c.name,c.pastor,c.phone]));
- content+=reportTable("Obreiros",["Nome","Cargo","Congregação"],state.obreiros.map(w=>[w.name,w.role,cname(w.congregationId)]));
+ content+=reportTable("Obreiros",["Nome","Cargo","Congregação"],obreirosContabilizaveis().map(w=>[w.name,w.role,cname(w.congregationId)]));
  content+=reportTable("Membros",["Nº Cadastro","Nome","Congregação","Idade","Faixa","Dizimista"],state.membros.map(m=>[m.memberNumber||"",m.name,cname(m.congregationId),calcAge(m.birth)??"",ageBand(calcAge(m.birth)),m.tither==="sim"?"Sim":"Não"]));
  content+=reportTable("Visitantes",["Data","Nome","Congregação","Culto","Situação"],state.visitantes.map(v=>[fmt(v.date),v.name,cname(v.congregationId),v.service,visitorStatusLabel(v.status)]));
  content+=reportTable("Resultados dos Cultos",["Data","Congregação","Culto","Público","Visitantes","Decisões"],state.resultadosCulto.map(r=>[fmt(r.date),cname(r.congregationId),r.service,r.attendance||0,r.visitors||0,r.decisions||0]));
