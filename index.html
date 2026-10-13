@@ -334,6 +334,10 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 @media(max-width:600px){#agenda .moriah-agenda-tools{padding:12px}#agenda .moriah-event-card{flex-wrap:wrap}#agenda .moriah-event-card>button{margin-left:auto}}
 @media print{#agenda .moriah-agenda-tools{display:none!important}}
 </style>
+<style>
+/* Etapa 7 — gestão de usuários: somente apresentação e filtros */
+.user-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0 18px}.user-kpi{background:linear-gradient(145deg,#102e50,#173e68);color:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 8px 20px #001a3512}.user-kpi small{display:block;opacity:.82;font-size:12px}.user-kpi strong{display:block;font-size:27px;margin-top:4px}.user-modern-filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}.user-modern-filters input,.user-modern-filters select{min-width:150px;flex:1 1 175px}.user-modern-card{border:1px solid #dce5ef;border-radius:16px}.user-modern-card .user-role-line{font-weight:700;color:#1b527d}.user-modern-card .actions{display:flex;flex-wrap:wrap;gap:8px}@media(max-width:600px){.user-kpis{gap:7px}.user-kpi{padding:12px 9px}.user-kpi strong{font-size:22px}.user-kpi small{font-size:11px}.user-modern-filters>*{width:100%;flex-basis:100%}}
+</style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -396,7 +400,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 
 <section id="escala" class="page"><div class="page-head"><div><h2>Escala Trabalhos Oficiais</h2><p>Terças-feiras do mês.</p></div></div><div class="month-nav"><button id="prevMonth">‹</button><strong id="scaleMonth"></strong><button id="nextMonth">›</button></div><div id="scaleList" class="cards"></div></section>
 
-<section id="usuarios" class="page"><div class="page-head"><div><h2>Gerenciar Usuários</h2><p>Somente administrador.</p></div><button id="newUserBtn" class="primary">+ Novo Usuário</button></div><div class="filters"><input id="userSearch" placeholder="Pesquisar usuário..."><select id="userCongFilter"><option value="">Todas as congregações</option></select></div><div id="userList" class="cards"></div></section>
+<section id="usuarios" class="page"><div class="page-head"><div><h2>Gerenciar Usuários</h2><p>Somente administrador.</p></div><button id="newUserBtn" class="primary">+ Novo Usuário</button></div><div class="user-kpis" id="userKpis" aria-live="polite"></div><div class="filters user-modern-filters"><input id="userSearch" placeholder="Pesquisar nome ou usuário..." aria-label="Pesquisar usuários"><select id="userRoleFilter" aria-label="Filtrar por perfil"><option value="">Todos os perfis</option><option value="admin">Administrador</option><option value="secretario">Secretário</option><option value="congregacao">Pastor / Congregação</option><option value="consulta">Consulta</option></select><select id="userStatusFilter" aria-label="Filtrar por situação"><option value="">Ativos e inativos</option><option value="active">Somente ativos</option><option value="inactive">Somente inativos</option></select><select id="userCongFilter"><option value="">Todas as congregações</option></select><button type="button" class="secondary" id="userClearFilters">Limpar filtros</button></div><div id="userList" class="cards user-modern-list"></div></section>
 
 
 <section id="indicadores" class="page">
@@ -708,8 +712,18 @@ function nthTuesday(y,m,n){const f=new Date(y,m,1),off=(2-f.getDay()+7)%7,d=1+of
 function renderScalesNext(){const now=new Date(),arr=[];state.congregacoes.forEach(c=>{const fs=c.fixedScale;if(fs?.active!=="sim")return;for(let add=0;add<3;add++){const b=now.getMonth()+add,y=now.getFullYear()+Math.floor(b/12),m=((b%12)+12)%12,d=nthTuesday(y,m,Number(fs.occurrence));if(d&&d>=new Date(now.getFullYear(),now.getMonth(),now.getDate())){arr.push({c,d});break}}});arr.sort((a,b)=>a.d-b.d);$("nextScales").innerHTML=arr.slice(0,5).map(x=>`<div class="card"><b>${x.d.toLocaleDateString("pt-BR")}</b> — ${x.c.name}</div>`).join("")||"Nenhuma escala."}
 function renderScale(){const ms=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"],y=state.scaleDate.getFullYear(),m=state.scaleDate.getMonth();$("scaleMonth").textContent=`${ms[m]} de ${y}`;const rows=[];for(let n=1;n<=5;n++){const d=nthTuesday(y,m,n);if(!d)continue;const c=state.congregacoes.find(c=>c.fixedScale?.active==="sim"&&Number(c.fixedScale.occurrence)===n);rows.push({n,d,c})}$("scaleList").innerHTML=rows.map(r=>`<article class="card"><h3>${r.n}ª terça-feira — ${r.d.toLocaleDateString("pt-BR")}</h3>${r.c?`<p><b>${r.c.name}</b> • ${r.c.fixedScale.time||""}</p>`:"<p>Nenhum departamento escalada.</p>"}</article>`).join("")}
 $("prevMonth").onclick=()=>{state.scaleDate=new Date(state.scaleDate.getFullYear(),state.scaleDate.getMonth()-1,1);renderScale()};$("nextMonth").onclick=()=>{state.scaleDate=new Date(state.scaleDate.getFullYear(),state.scaleDate.getMonth()+1,1);renderScale()};
-function renderUsers(){if(!isAdmin()||!$("userList"))return;const q=$("userSearch").value.toLowerCase(),c=$("userCongFilter").value,l=state.usuarios.filter(u=>(!q||(u.name||"").toLowerCase().includes(q)||(u.login||"").toLowerCase().includes(q))&&(!c||u.congregationId===c));$("userList").innerHTML=l.length?l.map(u=>`<article class="card"><div class="person-head"><h3>${u.name||u.email||"Usuário sem nome"}</h3><span class="badge ${u.active===false?"bad":"ok"}">${u.active===false?"Inativo":"Ativo"}</span></div><p>Usuário: <b>${u.login||u.email||"Não informado"}</b> • ${profileLabel(u.role)}</p><div class="actions"><button class="secondary" onclick="editUser('${u.id}')">Editar perfil</button>${u.id!==state.authUser.uid?`<button class="${u.active===false?"approve":"reject"}" onclick="toggleUser('${u.id}',${u.active===false})">${u.active===false?"Ativar":"Inativar"}</button>`:""}</div></article>`).join(""):'<div class="card">Nenhum usuário.</div>'}
-$("userSearch").oninput=renderUsers;$("userCongFilter").onchange=renderUsers;
+function renderUsers(){
+ if(!isAdmin()||!$("userList"))return;
+ const q=($("userSearch")?.value||"").trim().toLocaleLowerCase("pt-BR"),c=$("userCongFilter")?.value||"",role=$("userRoleFilter")?.value||"",status=$("userStatusFilter")?.value||"";
+ const all=state.usuarios||[];
+ const active=all.filter(u=>u.active!==false).length;
+ if($("userKpis"))$("userKpis").innerHTML=`<div class="user-kpi"><small>Total de usuários</small><strong>${all.length}</strong></div><div class="user-kpi"><small>Ativos</small><strong>${active}</strong></div><div class="user-kpi"><small>Inativos</small><strong>${all.length-active}</strong></div>`;
+ const l=all.filter(u=>(!q||(u.name||"").toLocaleLowerCase("pt-BR").includes(q)||(u.login||u.email||"").toLocaleLowerCase("pt-BR").includes(q))&&(!c||u.congregationId===c)&&(!role||u.role===role)&&(!status||(status==="active"?u.active!==false:u.active===false))).sort((a,b)=>String(a.name||a.email||"").localeCompare(String(b.name||b.email||""),"pt-BR",{sensitivity:"base"}));
+ const esc=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+ $("userList").innerHTML=l.length?l.map(u=>`<article class="card user-modern-card"><div class="person-head"><h3>${esc(u.name||u.email||"Usuário sem nome")}</h3><span class="badge ${u.active===false?"bad":"ok"}">${u.active===false?"Inativo":"Ativo"}</span></div><p><b>${esc(u.login||u.email||"Não informado")}</b></p><p class="user-role-line">${esc(profileLabel(u.role))}</p><div class="actions"><button class="secondary" onclick="editUser('${u.id}')">Editar perfil</button>${u.id!==state.authUser.uid?`<button class="${u.active===false?"approve":"reject"}" onclick="toggleUser('${u.id}',${u.active===false})">${u.active===false?"Ativar":"Inativar"}</button>`:""}</div></article>`).join(""):'<div class="card">Nenhum usuário corresponde aos filtros selecionados.</div>';
+}
+["userSearch","userCongFilter","userRoleFilter","userStatusFilter"].forEach(id=>{if($(id))$(id).addEventListener(id==="userSearch"?"input":"change",renderUsers)});
+if($("userClearFilters"))$("userClearFilters").onclick=()=>{["userSearch","userCongFilter","userRoleFilter","userStatusFilter"].forEach(id=>{if($(id))$(id).value=""});renderUsers()};
 function ordenarPorNomeRelatorio(lista){return [...lista].sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR",{sensitivity:"base",numeric:true}));}
 function reportTable(t,h,r){return `<div class="panel"><h3>${t}</h3><div style="overflow:auto"><table class="report-table"><thead><tr>${h.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${r.map(row=>`<tr>${row.map(v=>`<td>${v??""}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>`}
 function renderReportsLegacy(){const t=state.membros.filter(m=>m.tither==="sim").length;$("reportSummary").innerHTML=[["Congregações",state.congregacoes.length],["Obreiros",obreirosContabilizaveis().length],["Membros",state.membros.length],["Dizimistas",t],["Visitantes no mês",visitorsThisMonth().length],["Resultados de culto",state.resultadosCulto.length]].map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("");$("reportContent").innerHTML=reportTable("Congregações",["Nome","Pastor","Telefone"],state.congregacoes.map(c=>[c.name,c.pastor,c.phone]))+reportTable("Obreiros",["Nome","Cargo","Congregação"],ordenarPorNomeRelatorio(obreirosContabilizaveis()).map(w=>[w.name,w.role,cname(w.congregationId)]))+reportTable("Membros",["Nome","Congregação","Dizimista"],ordenarPorNomeRelatorio(state.membros).map(m=>[m.name,cname(m.congregationId),m.tither==="sim"?"Sim":"Não"]))+reportTable("Visitantes",["Data","Nome","Congregação","Culto","1ª visita","Situação"],state.visitantes.map(v=>[fmt(v.date),v.name,cname(v.congregationId),v.service,v.firstVisit==="sim"?"Sim":"Não",visitorStatusLabel(v.status)]))+reportTable("Resultados dos Cultos",["Data","Congregação","Culto","Público","Visitantes","Decisões"],state.resultadosCulto.map(r=>[fmt(r.date),cname(r.congregationId),r.service,r.attendance||0,r.visitors||0,r.decisions||0]))}
@@ -793,7 +807,16 @@ $("newAgendaBtn").onclick=()=>{$("agendaForm").reset();$("aid").value="";openDlg
 $("agendaForm").onsubmit=async e=>{e.preventDefault();const id=$("aid").value,data={name:$("aname").value.trim(),date:$("adate").value,time:$("atime").value,location:$("alocation").value.trim(),notes:$("anotes").value.trim(),updatedAt:serverTimestamp()};try{id?await updateDoc(doc(db,"agendaRegional",id),data):await addDoc(collection(db,"agendaRegional"),data);closeDlg("agendaDlg");toast("Evento salvo.")}catch{toast("Somente administrador.")}};
 window.editAgenda=id=>{const a=state.agenda.find(x=>x.id===id);if(!a)return;$("aid").value=id;$("aname").value=a.name||"";$("adate").value=a.date||"";$("atime").value=a.time||"";$("alocation").value=a.location||"";$("anotes").value=a.notes||"";openDlg("agendaDlg")};
 
-window.deleteItem=async(col,id,name)=>{if(confirm(`Excluir ${name}?`)){try{await deleteDoc(doc(db,col,id));toast("Excluído.")}catch{toast("Sem permissão.")}}};
+const exclusoesEmAndamento=new Set();
+window.deleteItem=async(col,id,name)=>{
+ const chave=`${col}/${id}`;
+ if(exclusoesEmAndamento.has(chave))return;
+ if(!confirm(`ATENÇÃO: excluir definitivamente \"${name||"este registro"}\"?\nEsta ação não pode ser desfeita.`))return;
+ exclusoesEmAndamento.add(chave);
+ try{await deleteDoc(doc(db,col,id));toast(`Registro excluído: ${name||"sem nome"}.`)}
+ catch(err){console.error("Falha ao excluir",err);toast(err?.code==="permission-denied"?"Você não tem permissão para excluir este registro.":"Falha ao excluir. Verifique a conexão e tente novamente.")}
+ finally{exclusoesEmAndamento.delete(chave)}
+};
 
 $("newUserBtn").onclick=()=>{$("userForm").reset();$("uid").value="";$("ulogin").disabled=false;$("userDlgTitle").textContent="Novo usuário";$("ucong").value="moriah";$("uactive").checked=true;openDlg("userDlg")};
 $("urole").onchange=()=>{$("ucong").value="moriah"};
@@ -1076,6 +1099,54 @@ function updateAccessLabels(){
  document.querySelectorAll('[data-page="usuarios"]').forEach(x=>x.classList.toggle("hidden",!isAdmin()));
  if(!isAdmin())document.querySelectorAll(".admin-only").forEach(x=>x.classList.add("hidden"));
 }
+
+// ETAPA 8: proteção contra salvamentos repetidos e fechamento acidental.
+// Não altera coleções, campos ou regras do Firebase.
+const formulariosProtegidos=["memberForm","workerForm","visitorForm"];
+const formulariosEstado=new Map();
+function camposFormulario(form){
+ return Array.from(form.elements).filter(el=>el.name!=="_ignore" && el.id && el.type!=="file" && el.type!=="submit" && el.type!=="button")
+ .map(el=>[el.id,el.type==="checkbox"?el.checked:el.value]);
+}
+function assinaturaFormulario(form){return JSON.stringify(camposFormulario(form))}
+for(const formId of formulariosProtegidos){
+ const form=$(formId),dlg=form.closest("dialog");
+ if(!form||!dlg)continue;
+ const estado={inicial:"",salvando:false};formulariosEstado.set(dlg.id,estado);
+ dlg.addEventListener("close",()=>{estado.inicial=""});
+ dlg.addEventListener("cancel",e=>{
+  if(estado.salvando){e.preventDefault();return}
+  if(estado.inicial && assinaturaFormulario(form)!==estado.inicial && !confirm("Existem alterações não salvas. Deseja descartar?"))e.preventDefault();
+ });
+ const original=form.onsubmit;
+ if(typeof original==="function")form.onsubmit=async function(e){
+  e.preventDefault();
+  if(estado.salvando)return;
+  if(!form.reportValidity())return;
+  const botao=form.querySelector('button[type="submit"],button.primary:not([type="button"])');
+  estado.salvando=true;
+  if(botao){botao.disabled=true;botao.dataset.textoOriginal=botao.textContent;botao.textContent="Salvando..."}
+  try{await original.call(this,e)}
+  finally{
+   estado.salvando=false;
+   if(botao){botao.disabled=false;botao.textContent=botao.dataset.textoOriginal||"Salvar"}
+  }
+ };
+}
+const fecharDialogoAnterior=closeDlg;
+closeDlg=function(id){
+ const dlg=$(id),estado=formulariosEstado.get(id),form=dlg?.querySelector("form");
+ if(estado && form && !estado.salvando && estado.inicial && assinaturaFormulario(form)!==estado.inicial){
+  if(!confirm("Existem alterações não salvas. Deseja descartá-las?"))return;
+ }
+ fecharDialogoAnterior(id);
+};
+const abrirDialogoAnterior=openDlg;
+openDlg=function(id){
+ abrirDialogoAnterior(id);
+ const estado=formulariosEstado.get(id),form=$(id)?.querySelector("form");
+ if(estado&&form)estado.inicial=assinaturaFormulario(form);
+};
 
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
 </script>
