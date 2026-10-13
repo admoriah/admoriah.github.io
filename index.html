@@ -404,7 +404,9 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 .member-history-view{margin-top:12px;padding:12px;border:1px solid #dfe5ec;border-radius:10px;background:var(--card,#fff)}
 .member-history-view h4{margin:0 0 8px}.member-history-view ol{padding-left:22px;margin:0}.member-history-view li{margin:8px 0}.member-history-view p{margin:4px 0;color:#667085}
 </style>
-</head>
+<style id="secretaria14style">
+.sec14{margin:18px 0;padding:18px;background:white;border:1px solid #d9e3ed;border-radius:16px}.sec14 h3{margin:0 0 5px;color:#102c4b}.sec14 .muted{font-size:12px;color:#667085}.sec14-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:15px 0}.sec14-stat{padding:12px;background:#f2f6fa;border-radius:10px}.sec14-stat b{font-size:23px;display:block;color:#102c4b}.sec14-tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.sec14-tools input,.sec14-tools select{padding:9px;border:1px solid #c8d5e3;border-radius:8px;max-width:240px}.sec14-tablewrap{max-height:330px;overflow:auto}.sec14 table{width:100%;border-collapse:collapse;font-size:12px}.sec14 th,.sec14 td{text-align:left;padding:9px;border-bottom:1px solid #e6ebf0}.sec14 th{position:sticky;top:0;background:#eef3f8}.sec14-actions{display:flex;gap:8px;flex-wrap:wrap}.sec14-actions button{padding:9px 12px}.sec14 .sec14-note{font-size:12px;color:#576579;margin-top:9px}
+</style></head>
 <body>
 <div id="toast" class="toast"></div>
 
@@ -449,7 +451,13 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 <section id="obreiros" class="page"><div class="page-head"><div><h2>Obreiros</h2><p>Pastores, evangelistas, presbíteros e diáconos.</p></div><button id="newWorkerBtn" class="primary edit-own">+ Novo</button></div><div class="filters"><input id="workerSearch" placeholder="Pesquisar..."><select id="workerRole"><option value="">Todos os cargos</option><option>Pastor</option><option>Evangelista</option><option>Presbítero</option><option>Diácono</option><option>Cooperador</option></select></div><div id="workerList" class="cards"></div></section>
 
 <section id="membros" class="page"><div class="page-head"><div><h2>Membros</h2><p>Cadastro, dizimistas e importação por planilha.</p></div>
-<div class="actions edit-own"><button id="downloadMemberTemplate" class="secondary">⬇ Modelo Excel</button><button id="importMembersBtn" class="secondary">⬆ Importar Excel</button><button id="exportMembersBtn" class="secondary">📊 Exportar</button><button id="newMemberBtn" class="primary">+ Novo</button></div></div><div class="filters"><input id="memberSearch" placeholder="Pesquisar..."><select id="memberTither"><option value="">Todos</option><option value="sim">Dizimistas</option><option value="nao">Não dizimistas</option></select></div><div id="memberList" class="cards"></div></section>
+<div class="actions edit-own"><button id="downloadMemberTemplate" class="secondary">⬇ Modelo Excel</button><button id="importMembersBtn" class="secondary">⬆ Importar Excel</button><button id="exportMembersBtn" class="secondary">📊 Exportar</button><button id="newMemberBtn" class="primary">+ Novo</button></div></div><div class="filters"><input id="memberSearch" placeholder="Pesquisar..."><select id="memberTither"><option value="">Todos</option><option value="sim">Dizimistas</option><option value="nao">Não dizimistas</option></select></div><div class="sec14" id="secretaria14" aria-label="Painel da secretaria">
+<h3>Secretaria — Etapa 14</h3><p class="muted">Painel de acompanhamento dos membros e movimentações registradas. Os dados são consultados diretamente dos cadastros existentes.</p>
+<div class="sec14-stats" id="sec14Stats"></div>
+<div class="sec14-tools"><input id="sec14Search" placeholder="Pesquisar nome ou número" aria-label="Pesquisar na secretaria"><select id="sec14Status" aria-label="Filtrar situação"><option value="">Todas as situações</option><option value="membro">Membro</option><option value="congregado">Congregado</option><option value="obreiro">Obreiro</option><option value="cooperador">Cooperador</option></select><select id="sec14View" aria-label="Tipo de relatório"><option value="cadastros">Relação de membros</option><option value="movimentos">Histórico de movimentações</option><option value="incompletos">Cadastros a completar</option></select></div>
+<div class="sec14-actions"><button type="button" class="secondary" id="sec14Csv">⬇ Exportar CSV</button><button type="button" class="secondary" id="sec14Print">🖨 Imprimir relatório</button></div>
+<div class="sec14-tablewrap"><table><thead id="sec14Head"></thead><tbody id="sec14Body"></tbody></table></div><p class="sec14-note" id="sec14Count"></p><p class="sec14-note">Relatórios administrativos para conferência interna. A emissão de documentos oficiais continua disponível no botão “Documentos” de cada membro. Transferências só são efetivadas após atualização do cadastro e aprovação da liderança.</p>
+</div><div id="memberList" class="cards"></div></section>
 
 
 <section id="visitantes" class="page">
@@ -699,6 +707,8 @@ function renderWorkers(){
 }
 $("workerSearch").oninput=renderWorkers;$("workerRole").onchange=renderWorkers;
 function renderMembers(){
+ window.__sec14Members=state.membros.map(m=>({...m}));
+ window.dispatchEvent(new Event("sec14-members-updated"));
  const q=$("memberSearch").value.toLowerCase(),f=$("memberTither").value;
  const l=state.membros.filter(m=>{
    const text=`${m.memberNumber||""} ${m.name||""} ${m.department||""}`.toLowerCase();
@@ -1435,5 +1445,54 @@ if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.ser
    const status=document.getElementById('memberSaveNotice');
    if(status){status.textContent='Solicitação de salvamento recebida';status.style.color='#134b82';}
  },true);
+})();
+</script><script id="secretaria14script">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const root=$('secretaria14');if(!root)return;
+const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const label={membro:'Membro',congregado:'Congregado',obreiro:'Obreiro',cooperador:'Cooperador'};
+let snapshot=[];let rows=[];let headers=[];
+const dt=v=>{if(!v)return '—';try{const d=typeof v==='string'?new Date(v):v?.toDate?.()||new Date(v);return isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR')}catch{return '—'}};
+function currentMembers(){
+ // Os cartões de membros são alimentados pelo Firestore. O painel utiliza os mesmos dados
+ // através de um evento emitido pelo renderMembers da aplicação principal.
+ return Array.isArray(window.__sec14Members)?window.__sec14Members:[];
+}
+function incomplete(m){return [!String(m.name||'').trim(),!String(m.phone||'').trim(),!m.birth,!m.sex,!String(m.address||'').trim(),!m.entryDate].filter(Boolean).length}
+function render(){
+ snapshot=currentMembers();
+ const q=$('sec14Search').value.toLocaleLowerCase('pt-BR').trim(),st=$('sec14Status').value,view=$('sec14View').value;
+ const base=snapshot.filter(m=>(!q||`${m.name||''} ${m.memberNumber||''}`.toLocaleLowerCase('pt-BR').includes(q))&&(!st||m.status===st));
+ const total=snapshot.length;const counts={membro:0,congregado:0,obreiro:0,cooperador:0};snapshot.forEach(m=>{if(counts[m.status]!==undefined)counts[m.status]++});
+ $('sec14Stats').innerHTML=[['Total',total],['Membros',counts.membro],['Congregados',counts.congregado],['Obreiros',counts.obreiro],['Cooperadores',counts.cooperador],['A completar',snapshot.filter(m=>incomplete(m)>0).length]].map(([a,b])=>`<div class="sec14-stat"><b>${b}</b><span>${safe(a)}</span></div>`).join('');
+ if(view==='movimentos'){
+ headers=['Cadastro','Nome','Data','Movimentação','Situação anterior','Nova situação','Observações'];
+ rows=base.flatMap(m=>(Array.isArray(m.membershipHistory)?m.membershipHistory:[]).map(h=>[m.memberNumber||'—',m.name||'—',dt(h.date),String(h.type||'').replace(/_/g,' '),label[h.previousStatus]||h.previousStatus||'—',label[h.newStatus]||h.newStatus||'—',h.notes||'—']));
+ }else if(view==='incompletos'){
+ headers=['Cadastro','Nome','Situação','Campos a completar'];
+ rows=base.map(m=>[m.memberNumber||'—',m.name||'—',label[m.status]||m.status||'—',[!m.name&&'Nome',!m.phone&&'Telefone',!m.birth&&'Nascimento',!m.sex&&'Sexo',!m.address&&'Endereço',!m.entryDate&&'Data de ingresso'].filter(Boolean).join(', ')]).filter(r=>r[3]);
+ }else{
+ headers=['Cadastro','Nome','Situação','Cargo','Telefone','Ingresso'];
+ rows=base.map(m=>[m.memberNumber||'—',m.name||'—',label[m.status]||m.status||'—',m.ministerialRole||'—',m.phone||'—',dt(m.entryDate)]);
+ }
+ $('sec14Head').innerHTML='<tr>'+headers.map(h=>'<th>'+safe(h)+'</th>').join('')+'</tr>';
+ $('sec14Body').innerHTML=rows.length?rows.map(r=>'<tr>'+r.map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+headers.length+'">Nenhum registro encontrado para os filtros selecionados.</td></tr>';
+ $('sec14Count').textContent=rows.length+' registro(s) no relatório. '+total+' cadastro(s) carregado(s).';
+}
+function csvCell(v){const t=String(v??'');return '"'+( /^[=+@\-\t\r]/.test(t)?"'":'')+t.replace(/"/g,'""')+'"'}
+$('sec14Csv').addEventListener('click',()=>{
+ const data='\uFEFF'+[headers,...rows].map(r=>r.map(csvCell).join(';')).join('\r\n');
+ const blob=new Blob([data],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='AD_Moriah_Secretaria_Etapa14.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
+});
+$('sec14Print').addEventListener('click',()=>{
+ const w=window.open('','_blank');if(!w){alert('Permita pop-ups para imprimir o relatório.');return;}
+ const title=$('sec14View').selectedOptions[0].textContent;
+ w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Secretaria - '+safe(title)+'</title><style>body{font:12px Arial;padding:24px}h1{font-size:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:6px;text-align:left}th{background:#eee}</style></head><body><h1>Assembleia de Deus Moriah — Secretaria</h1><h2>'+safe(title)+'</h2><p>Emitido em '+new Date().toLocaleString('pt-BR')+' • '+rows.length+' registros</p><table><thead>'+ $('sec14Head').innerHTML+'</thead><tbody>'+ $('sec14Body').innerHTML+'</tbody></table><p>Documento de conferência interna.</p></body></html>');w.document.close();w.focus();w.print();
+});
+['sec14Search','sec14Status','sec14View'].forEach(id=>$(id).addEventListener(id==='sec14Search'?'input':'change',render));
+window.addEventListener('sec14-members-updated',render);
+render();
 })();
 </script></body></html>
