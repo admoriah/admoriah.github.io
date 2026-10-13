@@ -448,7 +448,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 
 <section id="congregacoes" class="page" style="display:none"><div class="page-head"><div><h2>Congregações</h2><p>Dados das igrejas da Regional.</p></div><button id="newCongBtn" class="primary admin-only">+ Nova</button></div><div id="congList" class="cards"></div></section>
 
-<section id="obreiros" class="page"><div class="page-head"><div><h2>Obreiros</h2><p>Pastores, evangelistas, presbíteros e diáconos.</p></div><button id="newWorkerBtn" class="primary edit-own">+ Novo</button></div><div class="filters"><input id="workerSearch" placeholder="Pesquisar..."><select id="workerRole"><option value="">Todos os cargos</option><option>Pastor</option><option>Evangelista</option><option>Presbítero</option><option>Diácono</option><option>Cooperador</option></select></div><div id="workerList" class="cards"></div></section>
+<section id="obreiros" class="page"><div class="page-head"><div><h2>Obreiros</h2><p>Pastores, evangelistas, presbíteros e diáconos.</p></div><button id="newWorkerBtn" class="primary edit-own">+ Novo</button></div><div class="filters"><input id="workerSearch" placeholder="Pesquisar..."><select id="workerRole"><option value="">Todos os cargos</option><option>Pastor</option><option>Evangelista</option><option>Presbítero</option><option>Diácono</option><option>Cooperador</option></select></div><div id="workerNumberingPanel" class="card" style="margin:12px 0;display:none"><strong>Numeração dos obreiros</strong><p>Organiza os cadastros existentes por nome e atribui OBR-IMP-0001 em diante. Esta operação atualiza somente o campo de número na coleção obreiros.</p><button id="workerNumberingBtn" type="button" class="secondary">Conferir numeração alfabética</button></div><div id="workerList" class="cards"></div></section>
 
 <section id="membros" class="page"><div class="page-head"><div><h2>Membros</h2><p>Cadastro, dizimistas e importação por planilha.</p></div>
 <div class="actions edit-own"><button id="downloadMemberTemplate" class="secondary">⬇ Modelo Excel</button><button id="importMembersBtn" class="secondary">⬆ Importar Excel</button><button id="exportMembersBtn" class="secondary">📊 Exportar</button><button id="newMemberBtn" class="primary">+ Novo</button></div></div><div class="filters"><input id="memberSearch" placeholder="Pesquisar..."><select id="memberTither"><option value="">Todos</option><option value="sim">Dizimistas</option><option value="nao">Não dizimistas</option></select></div><div class="sec14" id="secretaria14" aria-label="Painel da secretaria">
@@ -733,9 +733,43 @@ function obreirosContabilizaveis(){
  });
 }
 
+// Etapa 21: numeração administrativa explícita, sem alteração de membros nem execução automática.
+function ordenarObreirosParaNumeracao(){
+ return [...obreirosContabilizaveis()].sort((a,b)=>
+  String(a.name||"").trim().localeCompare(String(b.name||"").trim(),"pt-BR",{sensitivity:"base",numeric:true}) || String(a.id).localeCompare(String(b.id)));
+}
+function numeroObreiroSequencial(i){return "OBR-IMP-"+String(i+1).padStart(4,"0");}
+function prepararNumeracaoObreiros(){
+ if(!isAdmin()){toast("Somente administrador pode numerar os obreiros.");return;}
+ const lista=ordenarObreirosParaNumeracao();
+ if(!lista.length){alert("Não há obreiros para numerar.");return;}
+ const alteracoes=lista.map((w,i)=>({id:w.id,nome:w.name||"Sem nome",anterior:String(w.memberNumber||"").trim(),novo:numeroObreiroSequencial(i)})).filter(x=>x.anterior!==x.novo);
+ if(!alteracoes.length){alert("Todos os obreiros já possuem a numeração correta em ordem alfabética.");return;}
+ const amostra=lista.slice(0,15).map((w,i)=>numeroObreiroSequencial(i)+" — "+w.name).join("\n");
+ const msg="NUMERAÇÃO ALFABÉTICA DE OBREIROS\n\n"+
+ "Total de obreiros: "+lista.length+"\nCadastros a atualizar: "+alteracoes.length+"\n\n"+
+ amostra+(lista.length>15?"\n... e mais "+(lista.length-15)+" obreiros":"")+
+ "\n\nATENÇÃO: números anteriores dos obreiros serão substituídos para manter a ordem alfabética. Nenhum membro será modificado. Confirma a gravação no Firebase?";
+ if(!confirm(msg))return;
+ gravarNumeracaoObreiros(alteracoes);
+}
+async function gravarNumeracaoObreiros(alteracoes){
+ const botao=$("workerNumberingBtn");if(botao.disabled)return;botao.disabled=true;
+ try{
+  // Grava em lotes pequenos. Se houver falha, a operação pode ser repetida sem duplicar números.
+  for(let i=0;i<alteracoes.length;i+=200){
+   const lote=writeBatch(db);
+   for(const item of alteracoes.slice(i,i+200))lote.update(doc(db,"obreiros",item.id),{memberNumber:item.novo,updatedAt:serverTimestamp()});
+   await lote.commit();
+  }
+  alert("Numeração concluída. "+alteracoes.length+" cadastros de obreiros atualizados. Confira a carteira e os relatórios.");
+ }catch(err){console.error("Numeração de obreiros:",err);alert("Não foi possível concluir todos os cadastros: "+(err.message||err.code||"erro")+". Confira a lista antes de repetir.");}
+ finally{botao.disabled=false;}
+}
+$("workerNumberingBtn").addEventListener("click",prepararNumeracaoObreiros);
 function renderStats(){const t=state.membros.filter(m=>m.tither==="sim").length,p=state.festividades.filter(f=>f.status==="pending").length;const v=[["Congregações",state.congregacoes.length],["Obreiros",obreirosContabilizaveis().length],["Membros",state.membros.length],["Dizimistas",t],["Festividades",state.festividades.length],["Pendentes",p],["Agenda",state.agenda.length],["Visitantes no mês",visitorsThisMonth().length]];$("stats").innerHTML=v.map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("")}
 function renderCong(){$("congList").innerHTML=state.congregacoes.length?state.congregacoes.map(c=>`<article class="card"><div class="person-head"><h3>⛪ ${c.name}</h3>${isAdmin()?`<button class="secondary" onclick="editCong('${c.id}')">Editar</button>`:""}</div><p><b>Pastor:</b> ${c.pastor||"—"} • <b>2º dirigente:</b> ${c.second||"—"}</p><p>📞 ${c.phone||"—"} • 📍 ${c.address||"—"}</p>${c.fixedScale?.active==="sim"?`<span class="badge pending">Toda ${c.fixedScale.occurrence}ª terça-feira • ${c.fixedScale.time||""}</span>`:""}</article>`).join(""):'<div class="card">Nenhum departamento cadastrada.</div>'}
-function renderWorkers(){
+function renderWorkers(){const painel=$("workerNumberingPanel");if(painel)painel.style.display=isAdmin()?"block":"none";
  const q=$("workerSearch").value.toLowerCase(),r=$("workerRole").value;
  const l=obreirosContabilizaveis().filter(w=>(!q||(w.name||"").toLowerCase().includes(q))&&(!r||w.role===r));
  $("workerList").innerHTML=l.length?l.map(w=>`<article class="card"><div class="person-with-photo"><img class="photo-mini" src="${w.photoData||'icons/icon-192.png'}" alt=""><div><h3>${w.name}</h3><p>${w.role} • ${cname(w.congregationId)}</p><p>📞 ${w.phone||"—"} • 🎂 ${fmt(w.birth)||"—"}</p></div></div><div class="actions"><button class="secondary" onclick="openWorkerDocument('${w.id}')">📄 Documentos / Carteira</button>${canEdit()?`<button class="secondary" onclick="editWorker('${w.id}')">Editar</button><button class="danger" onclick="deleteItem('obreiros','${w.id}','${w.name}')">Excluir</button>`:""}</div></article>`).join(""):'<div class="card">Nenhum obreiro.</div>';
