@@ -522,11 +522,13 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
  <div id="finMessage" class="panel" role="status" aria-live="polite">Aguardando acesso autorizado.</div>
  <div class="stats" id="finStats"></div>
  <div class="panel"><div class="grid2"><label>Mês de referência<input type="month" id="finMonth"></label><label>Tipo<select id="finFilter"><option value="">Todas as movimentações</option><option value="entrada">Entradas</option><option value="saida">Saídas</option></select></label></div><div id="finList" class="cards" style="margin-top:14px"></div></div>
+ <div class="panel" style="margin-top:16px"><h3>Relatório individual de contribuições</h3><div class="grid2"><label>Data inicial<input type="date" id="finReportFrom"></label><label>Data final<input type="date" id="finReportTo"></label></div><div class="grid2"><label>Contribuinte<select id="finReportPerson"><option value="">Todos os contribuintes</option></select></label><label>Categoria<select id="finReportCategory"><option value="">Dízimos, ofertas e doações</option><option value="dizimo">Dízimos</option><option value="oferta">Ofertas</option><option value="doacao">Doações</option></select></label></div><div class="actions" style="margin-top:12px"><button type="button" id="finReportCsv" class="secondary">Exportar relatório CSV</button><button type="button" id="finReportPrint" class="secondary">Imprimir relatório</button></div><div id="finReportResult" style="margin-top:14px;overflow-x:auto"></div></div>
  <p style="font-size:12px;color:#64748b">Valores registrados para controle interno. Não substituem conciliação bancária, comprovantes nem conferência da tesouraria. Lançamentos cancelados permanecem no histórico.</p>
 </section>
 <dialog id="finDlg"><form id="finForm" class="form"><div class="form-head"><h3>Novo lançamento financeiro</h3><button type="button" data-close="finDlg">×</button></div>
 <div class="grid2"><label>Data<input id="finDate" type="date" required></label><label>Tipo<select id="finType" required><option value="entrada">Entrada</option><option value="saida">Saída</option></select></label></div>
 <div class="grid2"><label>Categoria<select id="finCategory" required><option value="dizimo">Dízimos</option><option value="oferta">Ofertas</option><option value="doacao">Doações</option><option value="evento">Eventos</option><option value="despesa_fixa">Despesas fixas</option><option value="manutencao">Manutenção</option><option value="acao_social">Ação social</option><option value="outros">Outros</option></select></label><label>Valor (R$)<input id="finAmount" type="number" min="0.01" step="0.01" required></label></div>
+<div id="finContributorArea"><div class="grid2"><label>Origem da contribuição<select id="finContributorType"><option value="anonimo">Não identificado / oferta coletiva</option><option value="membro">Membro</option><option value="visitante">Visitante</option></select></label><label>Nome do contribuinte<select id="finContributorId" disabled><option value="">Selecione a origem primeiro</option></select></label></div><label>Pesquisar contribuinte<input id="finContributorSearch" placeholder="Digite parte do nome" autocomplete="off"></label></div>
 <label>Descrição<input id="finDescription" maxlength="240" required placeholder="Ex.: Oferta do culto de domingo"></label>
 <div class="grid2"><label>Forma de pagamento<select id="finMethod"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="transferencia">Transferência</option><option value="cartao">Cartão</option><option value="outros">Outros</option></select></label><label>Referência do comprovante (opcional)<input id="finReceipt" maxlength="120" placeholder="Número ou referência"></label></div>
 <label>Observações (opcional)<textarea id="finNotes" maxlength="500"></textarea></label>
@@ -1467,22 +1469,59 @@ function renderFinance(){
  const sum=t=>active.filter(x=>x.type===t).reduce((v,x)=>v+Number(x.amount||0),0);
  const entradas=sum("entrada"),saidas=sum("saida");
  $("finStats").innerHTML=[["Entradas",entradas],["Saídas",saidas],["Saldo do período",entradas-saidas]].map(([label,value])=>`<div class="stat"><small>${label}</small><strong>${money(value)}</strong></div>`).join("");
- $("finList").innerHTML=rows.length?rows.map(x=>`<article class="card" style="opacity:${x.cancelled?'.6':'1'}"><div class="person-head"><h3>${x.type==="entrada"?"⬆ Entrada":"⬇ Saída"} · ${finSafe(finLabels[x.category]||x.category)}</h3><strong>${money(x.amount)}</strong></div><p><b>${finSafe(fmt(x.date))}</b> · ${finSafe(x.description)}</p><p>Forma: ${finSafe(x.method||"—")} · Comprovante: ${finSafe(x.receipt||"—")}</p>${x.notes?`<p>${finSafe(x.notes)}</p>`:""}${x.cancelled?'<span class="badge">Cancelado</span>':`<button type="button" class="secondary" data-fin-cancel="${finSafe(x.id)}">Cancelar lançamento</button>`}</article>`).join(""):'<div class="card">Nenhum lançamento para o filtro selecionado.</div>';
+ $("finList").innerHTML=rows.length?rows.map(x=>`<article class="card" style="opacity:${x.cancelled?'.6':'1'}"><div class="person-head"><h3>${x.type==="entrada"?"⬆ Entrada":"⬇ Saída"} · ${finSafe(finLabels[x.category]||x.category)}</h3><strong>${money(x.amount)}</strong></div><p><b>${finSafe(fmt(x.date))}</b> · ${finSafe(x.description)}</p>${x.type==="entrada"?`<p>Contribuinte: <b>${finSafe(x.contributorName||"Não identificado")}</b></p>`:""}<p>Forma: ${finSafe(x.method||"—")} · Comprovante: ${finSafe(x.receipt||"—")}</p>${x.notes?`<p>${finSafe(x.notes)}</p>`:""}${x.cancelled?'<span class="badge">Cancelado</span>':`<button type="button" class="secondary" data-fin-cancel="${finSafe(x.id)}">Cancelar lançamento</button>`}</article>`).join(""):'<div class="card">Nenhum lançamento para o filtro selecionado.</div>';
+ renderFinReport();
 }
 $("finMonth").value=new Date().toISOString().slice(0,7);
 $("finMonth").addEventListener("change",renderFinance);$("finFilter").addEventListener("change",renderFinance);
-$("finNew").addEventListener("click",()=>{if(!isAdmin())return;$("finForm").reset();$("finDate").value=new Date().toLocaleDateString("en-CA");$("finFormStatus").textContent="";openDlg("finDlg")});
+$("finNew").addEventListener("click",()=>{if(!isAdmin())return;$("finForm").reset();$("finDate").value=new Date().toLocaleDateString("en-CA");$("finFormStatus").textContent="";$("finContributorSearch").value="";updateFinContributor();openDlg("finDlg")});
 $("finForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!isAdmin())return finMessage("Acesso não autorizado.",true);
  const btn=$("finSubmit"),amount=Math.round(Number($("finAmount").value)*100)/100;
  if(!Number.isFinite(amount)||amount<=0)return $("finFormStatus").textContent="Informe um valor válido.";
- const data={date:$("finDate").value,type:$("finType").value,category:$("finCategory").value,amount,description:$("finDescription").value.trim(),method:$("finMethod").value,receipt:$("finReceipt").value.trim(),notes:$("finNotes").value.trim(),congregationId:"moriah",cancelled:false,createdBy:state.authUser.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
+ const contributorType=$("finType").value==="entrada"?$("finContributorType").value:"anonimo";
+ const contributorId=contributorType==="anonimo"?"":$("finContributorId").value;
+ const contributorList=contributorType==="membro"?state.membros:contributorType==="visitante"?state.visitantes:[];
+ const contributor=contributorList.find(x=>x.id===contributorId);
+ if(contributorType!=="anonimo"&&!contributor)return $("finFormStatus").textContent="Selecione um contribuinte cadastrado.";
+ const data={contributorType,contributorId:contributor?.id||"",contributorName:contributor?.name||"Não identificado",date:$("finDate").value,type:$("finType").value,category:$("finCategory").value,amount,description:$("finDescription").value.trim(),method:$("finMethod").value,receipt:$("finReceipt").value.trim(),notes:$("finNotes").value.trim(),congregationId:"moriah",cancelled:false,createdBy:state.authUser.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
  if(!data.description||!data.date)return $("finFormStatus").textContent="Informe data e descrição.";
  btn.disabled=true;$("finFormStatus").textContent="Gravando no Firebase...";
  try{await addDoc(collection(db,"financeiro"),data);closeDlg("finDlg");finMessage("Lançamento registrado com sucesso.");toast("Lançamento registrado.");}catch(err){console.error(err);$("finFormStatus").textContent="Falha na gravação: "+(err.code||err.message||"erro")+". Confira as regras do Firebase.";}finally{btn.disabled=false;}
 });
 $("finList").addEventListener("click",async e=>{const b=e.target.closest("[data-fin-cancel]");if(!b||!isAdmin())return;const id=b.dataset.finCancel;if(!confirm("Cancelar este lançamento? Ele continuará no histórico e não entrará nos totais."))return;b.disabled=true;try{await updateDoc(doc(db,"financeiro",id),{cancelled:true,cancelledBy:state.authUser.uid,cancelledAt:serverTimestamp(),updatedAt:serverTimestamp()});toast("Lançamento cancelado.");}catch(err){console.error(err);finMessage("Falha ao cancelar: "+(err.code||err.message),true);b.disabled=false;}});
-$("finExport").addEventListener("click",()=>{if(!isAdmin())return;const month=$("finMonth").value,filter=$("finFilter").value;const rows=financeRows.filter(x=>(!month||String(x.date||"").startsWith(month))&&(!filter||x.type===filter));const csv=["Data;Tipo;Categoria;Valor;Descrição;Forma;Comprovante;Observações;Situação",...rows.map(x=>[x.date,x.type,finLabels[x.category]||x.category,Number(x.amount||0).toFixed(2).replace(".",","),x.description,x.method,x.receipt,x.notes,x.cancelled?"Cancelado":"Ativo"].map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";"))].join("\r\n");const blob=new Blob(["\ufeff",csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AD_Moriah_financeiro_"+(month||"geral")+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+$("finExport").addEventListener("click",()=>{if(!isAdmin())return;const month=$("finMonth").value,filter=$("finFilter").value;const rows=financeRows.filter(x=>(!month||String(x.date||"").startsWith(month))&&(!filter||x.type===filter));const csv=["Data;Tipo;Categoria;Valor;Contribuinte;Origem;Descrição;Forma;Comprovante;Observações;Situação",...rows.map(x=>[x.date,x.type,finLabels[x.category]||x.category,Number(x.amount||0).toFixed(2).replace(".",","),x.contributorName||"Não identificado",x.contributorType||"anonimo",x.description,x.method,x.receipt,x.notes,x.cancelled?"Cancelado":"Ativo"].map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";"))].join("\r\n");const blob=new Blob(["\ufeff",csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AD_Moriah_financeiro_"+(month||"geral")+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+
+// Identificação de contribuintes vinculada aos documentos de membros e visitantes.
+function updateFinContributor(){
+ const type=$("finContributorType").value,search=$("finContributorSearch").value.trim().toLocaleLowerCase("pt-BR");
+ const list=type==="membro"?(state.membros||[]):type==="visitante"?(state.visitantes||[]):[];
+ const sel=$("finContributorId"),current=sel.value;
+ sel.replaceChildren(new Option(type==="anonimo"?"Não identificado":"Selecione o contribuinte",""));
+ list.filter(x=>String(x.name||"").toLocaleLowerCase("pt-BR").includes(search)).sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR")).forEach(x=>sel.add(new Option(x.name+(x.memberNumber?" · "+x.memberNumber:""),x.id)));
+ sel.disabled=type==="anonimo";if([...sel.options].some(o=>o.value===current))sel.value=current;
+}
+$("finContributorType").addEventListener("change",updateFinContributor);
+$("finContributorSearch").addEventListener("input",updateFinContributor);
+$("finType").addEventListener("change",()=>{$("finContributorArea").style.display=$("finType").value==="entrada"?"":"none";});
+function finReportRows(){
+ const from=$("finReportFrom").value,to=$("finReportTo").value,who=$("finReportPerson").value,cat=$("finReportCategory").value;
+ return financeRows.filter(x=>!x.cancelled&&x.type==="entrada"&&["dizimo","oferta","doacao"].includes(x.category)&&(!from||x.date>=from)&&(!to||x.date<=to)&&(!cat||x.category===cat)&&(!who||(x.contributorType+":"+x.contributorId)===who));
+}
+function renderFinReport(){
+ if(!$("finReportResult"))return;
+ const people=new Map();financeRows.filter(x=>x.type==="entrada"&&["dizimo","oferta","doacao"].includes(x.category)).forEach(x=>{const key=(x.contributorType||"anonimo")+":"+(x.contributorId||"");people.set(key,x.contributorName||"Não identificado")});
+ const select=$("finReportPerson"),old=select.value;select.replaceChildren(new Option("Todos os contribuintes",""));[...people].sort((a,b)=>a[1].localeCompare(b[1],"pt-BR")).forEach(([key,name])=>select.add(new Option(name,key)));if([...select.options].some(o=>o.value===old))select.value=old;
+ const totals=new Map();finReportRows().forEach(x=>{const key=(x.contributorType||"anonimo")+":"+(x.contributorId||"");if(!totals.has(key))totals.set(key,{name:x.contributorName||"Não identificado",dizimo:0,oferta:0,doacao:0});totals.get(key)[x.category]+=Number(x.amount||0)});
+ const rows=[...totals.values()].sort((a,b)=>a.name.localeCompare(b.name,"pt-BR"));
+ $("finReportResult").innerHTML=rows.length?`<table style="width:100%;border-collapse:collapse"><thead><tr><th>Contribuinte</th><th>Dízimos</th><th>Ofertas</th><th>Doações</th><th>Total</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${finSafe(x.name)}</td><td>${money(x.dizimo)}</td><td>${money(x.oferta)}</td><td>${money(x.doacao)}</td><td><b>${money(x.dizimo+x.oferta+x.doacao)}</b></td></tr>`).join("")}</tbody></table>`:"Nenhuma contribuição encontrada no período selecionado.";
+}
+["finReportFrom","finReportTo","finReportPerson","finReportCategory"].forEach(id=>$(id).addEventListener("change",renderFinReport));
+$("finReportCsv").addEventListener("click",()=>{
+ const rows=finReportRows(),csv=["Data;Contribuinte;Origem;Categoria;Valor;Descrição",...rows.map(x=>[x.date,x.contributorName||"Não identificado",x.contributorType||"anonimo",finLabels[x.category],Number(x.amount||0).toFixed(2).replace(".",","),x.description].map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";"))].join("\r\n");
+ const url=URL.createObjectURL(new Blob(["\ufeff",csv],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download="AD_Moriah_contribuicoes.csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+$("finReportPrint").addEventListener("click",()=>{const win=window.open("","_blank");if(!win)return toast("Permita pop-ups para imprimir.");win.document.write('<html><head><title>Relatório de contribuições - AD Moriah</title><style>body{font-family:Arial;padding:24px}td,th{border:1px solid #bbb;padding:8px;text-align:left}table{border-collapse:collapse;width:100%}</style></head><body><h2>Assembleia de Deus Moriah — Relatório de contribuições</h2><p>Período: '+finSafe($("finReportFrom").value||"Início")+' a '+finSafe($("finReportTo").value||"Atual")+'</p>'+$("finReportResult").innerHTML+'</body></html>');win.document.close();win.print()});
 </script>
 <script>
 (function(){
