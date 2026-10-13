@@ -528,7 +528,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 <dialog id="finDlg"><form id="finForm" class="form"><div class="form-head"><h3>Novo lançamento financeiro</h3><button type="button" data-close="finDlg">×</button></div>
 <div class="grid2"><label>Data<input id="finDate" type="date" required></label><label>Tipo<select id="finType" required><option value="entrada">Entrada</option><option value="saida">Saída</option></select></label></div>
 <div class="grid2"><label>Categoria<select id="finCategory" required><option value="dizimo">Dízimos</option><option value="oferta">Ofertas</option><option value="doacao">Doações</option><option value="evento">Eventos</option><option value="despesa_fixa">Despesas fixas</option><option value="manutencao">Manutenção</option><option value="acao_social">Ação social</option><option value="outros">Outros</option></select></label><label>Valor (R$)<input id="finAmount" type="number" min="0.01" step="0.01" required></label></div>
-<div id="finContributorArea"><div class="grid2"><label>Origem da contribuição<select id="finContributorType"><option value="anonimo">Não identificado / oferta coletiva</option><option value="membro">Membro</option><option value="visitante">Visitante</option></select></label><label>Nome do contribuinte<select id="finContributorId" disabled><option value="">Selecione a origem primeiro</option></select></label></div><label>Pesquisar contribuinte<input id="finContributorSearch" placeholder="Digite parte do nome" autocomplete="off"></label></div>
+<div id="finContributorArea"><div class="grid2"><label>Origem da contribuição<select id="finContributorType"><option value="anonimo">Não identificado / oferta coletiva</option><option value="membro">Membro</option><option value="obreiro">Obreiro</option><option value="cooperador">Cooperador</option><option value="congregado">Congregado</option><option value="visitante">Visitante</option></select></label><label>Nome do contribuinte<select id="finContributorId" disabled><option value="">Selecione a origem primeiro</option></select></label></div><label>Pesquisar contribuinte<input id="finContributorSearch" placeholder="Digite parte do nome" autocomplete="off"></label></div>
 <label>Descrição<input id="finDescription" maxlength="240" required placeholder="Ex.: Oferta do culto de domingo"></label>
 <div class="grid2"><label>Forma de pagamento<select id="finMethod"><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="transferencia">Transferência</option><option value="cartao">Cartão</option><option value="outros">Outros</option></select></label><label>Referência do comprovante (opcional)<input id="finReceipt" maxlength="120" placeholder="Número ou referência"></label></div>
 <label>Observações (opcional)<textarea id="finNotes" maxlength="500"></textarea></label>
@@ -1481,10 +1481,12 @@ $("finForm").addEventListener("submit",async e=>{
  if(!Number.isFinite(amount)||amount<=0)return $("finFormStatus").textContent="Informe um valor válido.";
  const contributorType=$("finType").value==="entrada"?$("finContributorType").value:"anonimo";
  const contributorId=contributorType==="anonimo"?"":$("finContributorId").value;
- const contributorList=contributorType==="membro"?state.membros:contributorType==="visitante"?state.visitantes:[];
+ const contributorList=finPeopleByType(contributorType);
  const contributor=contributorList.find(x=>x.id===contributorId);
+ const savedContributorType=contributorType==="visitante"?"visitante":contributorType==="obreiro"&&!contributor?.memberId?"obreiro":"membro";
+ const savedContributorId=contributor?.memberId||contributor?.id||"";
  if(contributorType!=="anonimo"&&!contributor)return $("finFormStatus").textContent="Selecione um contribuinte cadastrado.";
- const data={contributorType,contributorId:contributor?.id||"",contributorName:contributor?.name||"Não identificado",date:$("finDate").value,type:$("finType").value,category:$("finCategory").value,amount,description:$("finDescription").value.trim(),method:$("finMethod").value,receipt:$("finReceipt").value.trim(),notes:$("finNotes").value.trim(),congregationId:"moriah",cancelled:false,createdBy:state.authUser.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
+ const data={contributorType:savedContributorType,contributorGroup:contributorType,contributorId:savedContributorId,contributorName:contributor?.name||"Não identificado",date:$("finDate").value,type:$("finType").value,category:$("finCategory").value,amount,description:$("finDescription").value.trim(),method:$("finMethod").value,receipt:$("finReceipt").value.trim(),notes:$("finNotes").value.trim(),congregationId:"moriah",cancelled:false,createdBy:state.authUser.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()};
  if(!data.description||!data.date)return $("finFormStatus").textContent="Informe data e descrição.";
  btn.disabled=true;$("finFormStatus").textContent="Gravando no Firebase...";
  try{await addDoc(collection(db,"financeiro"),data);closeDlg("finDlg");finMessage("Lançamento registrado com sucesso.");toast("Lançamento registrado.");}catch(err){console.error(err);$("finFormStatus").textContent="Falha na gravação: "+(err.code||err.message||"erro")+". Confira as regras do Firebase.";}finally{btn.disabled=false;}
@@ -1493,9 +1495,26 @@ $("finList").addEventListener("click",async e=>{const b=e.target.closest("[data-
 $("finExport").addEventListener("click",()=>{if(!isAdmin())return;const month=$("finMonth").value,filter=$("finFilter").value;const rows=financeRows.filter(x=>(!month||String(x.date||"").startsWith(month))&&(!filter||x.type===filter));const csv=["Data;Tipo;Categoria;Valor;Contribuinte;Origem;Descrição;Forma;Comprovante;Observações;Situação",...rows.map(x=>[x.date,x.type,finLabels[x.category]||x.category,Number(x.amount||0).toFixed(2).replace(".",","),x.contributorName||"Não identificado",x.contributorType||"anonimo",x.description,x.method,x.receipt,x.notes,x.cancelled?"Cancelado":"Ativo"].map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";"))].join("\r\n");const blob=new Blob(["\ufeff",csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AD_Moriah_financeiro_"+(month||"geral")+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 
 // Identificação de contribuintes vinculada aos documentos de membros e visitantes.
+function finPeopleByType(type){
+ const members=state.membros||[],workers=state.obreiros||[];
+ if(type==="visitante")return state.visitantes||[];
+ if(type==="membro")return members.filter(m=>!m.status||m.status==="membro");
+ if(type==="congregado")return members.filter(m=>m.status==="congregado");
+ if(type==="cooperador")return members.filter(m=>m.status==="cooperador");
+ if(type==="obreiro"){
+   const selected=members.filter(m=>m.status==="obreiro");
+   const ids=new Set(selected.map(m=>m.id));
+   const standalone=workers.filter(w=>{
+     if(w.memberId)return !ids.has(w.memberId)&&!members.some(m=>m.id===w.memberId);
+     return !members.some(m=>String(m.name||"").trim().toLocaleLowerCase("pt-BR")===String(w.name||"").trim().toLocaleLowerCase("pt-BR")&&(!m.birth||!w.birth||m.birth===w.birth));
+   });
+   return [...selected,...standalone];
+ }
+ return [];
+}
 function updateFinContributor(){
  const type=$("finContributorType").value,search=$("finContributorSearch").value.trim().toLocaleLowerCase("pt-BR");
- const list=type==="membro"?(state.membros||[]):type==="visitante"?(state.visitantes||[]):[];
+ const list=finPeopleByType(type);
  const sel=$("finContributorId"),current=sel.value;
  sel.replaceChildren(new Option(type==="anonimo"?"Não identificado":"Selecione o contribuinte",""));
  list.filter(x=>String(x.name||"").toLocaleLowerCase("pt-BR").includes(search)).sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR")).forEach(x=>sel.add(new Option(x.name+(x.memberNumber?" · "+x.memberNumber:""),x.id)));
