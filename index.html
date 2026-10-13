@@ -853,7 +853,15 @@ async function syncMemberWorker(memberId, member){
   await setDoc(doc(db,"obreiros",workerId),workerData,{merge:true});
 }
 
-function toggleMemberRole(){const isWorker=$("mstatus").value==="obreiro";$("mroleWrap").classList.toggle("hidden",!isWorker);if(!isWorker)$("mrole").value="";} $("mstatus").addEventListener("change",toggleMemberRole); $("newMemberBtn").onclick=()=>{$("memberForm").reset();$("mid").value="";$("mnumber").value=proximoNumeroCadastroMembro();$("mnumber").readOnly=true;$("mdepartment").value="";$("memberHistoryView").textContent="O histórico começará no primeiro registro de movimentação.";toggleMemberRole();openDlg("memberDlg")};
+function toggleMemberRole(){const isWorker=$("mstatus").value==="obreiro";$("mroleWrap").classList.toggle("hidden",!isWorker);if(!isWorker)$("mrole").value="";} $("mstatus").addEventListener("change",()=>{
+ toggleMemberRole();
+ const id=$("mid").value;
+ const original=id?state.membros.find(m=>m.id===id):null;
+ if(original&&original.status!==$("mstatus").value&&!$("mmovement").value){
+   $("mmovement").value="mudanca_situacao";
+   $("mmovementNotes").placeholder="Ex.: Separado para o ministério de obreiro";
+ }
+}); $("newMemberBtn").onclick=()=>{$("memberForm").reset();$("mid").value="";$("mnumber").value=proximoNumeroCadastroMembro();$("mnumber").readOnly=true;$("mdepartment").value="";$("memberHistoryView").textContent="O histórico começará no primeiro registro de movimentação.";toggleMemberRole();openDlg("memberDlg")};
 $("memberForm").onsubmit=async e=>{
  e.preventDefault();
  const id=$("mid").value;
@@ -868,7 +876,12 @@ $("memberForm").onsubmit=async e=>{
  const oldHistory=Array.isArray(previous?.membershipHistory)?previous.membershipHistory:[];
  const history=oldHistory.slice();
  const statusNew=$("mstatus").value;
- if(previous && previous.status!==statusNew && !movementType){return toast("Informe o motivo da movimentação ao alterar a situação do membro.");}
+ if(previous && previous.status!==statusNew && !movementType){
+   $("mmovement").value="mudanca_situacao";
+   toast("A mudança de situação foi registrada no histórico. Confira os detalhes e salve novamente.");
+   $("mmovement").scrollIntoView({behavior:"smooth",block:"center"});
+   return;
+ }
  if(movementType){
    if(movementType==="outro"&&!movementNotes)return toast("Descreva a movimentação no campo de detalhes.");
    history.push({type:movementType,date:new Date().toISOString(),notes:movementNotes,previousStatus:previous?.status||"",newStatus:statusNew});
@@ -886,7 +899,9 @@ $("memberForm").onsubmit=async e=>{
      toast(data.status==="obreiro"?"Membro e obreiro salvos.":"Membro salvo.");
    }catch(syncErr){
      console.error("Erro ao sincronizar obreiro:",syncErr);
-     toast("Membro salvo, mas não foi possível atualizar Obreiros. Verifique permissões e tente novamente.");
+     const reason=syncErr?.code==="permission-denied"?"Sem permissão de gravação na coleção obreiros.":(syncErr?.message||"Falha na sincronização.");
+     toast("Membro salvo. Obreiro não sincronizado: "+reason);
+     alert("O cadastro do membro foi salvo, mas a seção Obreiros não foi atualizada.\n\n"+reason+"\n\nVerifique as regras do Firebase antes de tentar novamente.");
    }
  }
  catch(err){console.error(err);toast(err.message||"Não foi possível salvar o membro.")}
