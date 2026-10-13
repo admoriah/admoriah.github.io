@@ -550,6 +550,15 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 <div class="member-form-section"><div class="member-section-title"><span>01</span><div><strong>Identificação</strong><small>Dados principais do cadastro</small></div></div><div class="grid2"><label>Nº de Cadastro<input id="mnumber" autocomplete="off" placeholder="Ex.: 1001" required></label><label>Nome<input id="mname" required></label></div></div><div class="member-form-section"><div class="member-section-title"><span>02</span><div><strong>Participação na igreja</strong><small>Departamento, situação e ministério</small></div></div><div class="grid2"><label>Departamento (opcional)<select id="mdepartment"><option value="">Não informado</option><option value="Infantil">Infantil</option><option value="Adolescentes">Adolescentes</option><option value="Mocidade">Mocidade</option><option value="Círculo de Oração">Círculo de Oração</option><option value="Músicos">Músicos</option><option value="EBD">EBD</option><option value="Mídia">Mídia</option><option value="Tesouraria">Tesouraria</option><option value="Cozinha">Cozinha</option><option value="Grupo de Louvor">Grupo de Louvor</option></select></label><input type="hidden" id="mcong" value="moriah"><label>Dizimista?<select id="mtither"><option value="sim">Sim</option><option value="nao">Não</option></select></label></div></div><div class="member-form-section"><div class="member-section-title"><span>03</span><div><strong>Informações pessoais</strong><small>Contato, nascimento e dados complementares</small></div></div><div class="grid2"><label>Telefone<input id="mphone"></label><label>Nascimento<input id="mbirth" type="date"></label></div><div class="grid2"><label>Sexo<select id="msex"><option value="">Não informado</option><option value="M">Masculino</option><option value="F">Feminino</option></select></label><label>Situação<select id="mstatus"><option value="membro">Membro</option><option value="congregado">Congregado</option><option value="obreiro">Obreiro</option><option value="cooperador">Cooperador</option></select></label></div><div class="grid2"><label id="mroleWrap">Cargo ministerial (opcional)<select id="mrole"><option value="">Não informado</option><option value="Diácono">Diácono</option><option value="Presbítero">Presbítero</option><option value="Evangelista">Evangelista</option><option value="Pastor">Pastor</option></select></label></div><div class="grid2"><label>Batismo<input id="mbaptism" type="date"></label><label>Estado civil<select id="mmarital"><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>Viúvo(a)</option><option>Divorciado(a)</option></select></label></div></div><div class="member-form-section"><div class="member-section-title"><span>04</span><div><strong>Histórico de membresia</strong><small>Entrada na igreja e movimentações registradas a partir desta versão</small></div></div><div class="grid2"><label>Data de entrada na igreja<input id="mentry" type="date"></label><label>Motivo da movimentação<select id="mmovement"><option value="">Sem movimentação</option><option value="entrada">Entrada na igreja</option><option value="transferencia_entrada">Transferência recebida</option><option value="transferencia_saida">Transferência para outra igreja</option><option value="mudanca_situacao">Mudança de situação</option><option value="retorno">Retorno à comunhão</option><option value="outro">Outra movimentação</option></select></label></div><label>Detalhes da movimentação<textarea id="mmovementNotes" rows="2" placeholder="Origem, destino ou justificativa, quando necessário"></textarea></label><div id="memberHistoryView" class="member-history-view" aria-live="polite"></div></div>
 <div class="member-form-section"><div class="member-section-title"><span>05</span><div><strong>Endereço e observações</strong><small>Informações adicionais opcionais</small></div></div><label>Endereço<input id="maddress"></label><label>Observações<textarea id="mnotes"></textarea></label></div><div class="form-actions"><button type="button" class="secondary" data-close="memberDlg">Cancelar</button><button class="primary">Salvar</button></div></form></dialog>
 
+
+<dialog id="memberDocDlg"><div class="form" style="max-width:620px"><div class="form-head"><div><h3>Documentos da secretaria</h3><small>Pré-visualização e impressão — sem alteração do cadastro</small></div><button type="button" data-close="memberDocDlg">×</button></div>
+<p id="memberDocPerson" style="font-weight:700"></p>
+<label>Modelo de documento<select id="memberDocType"><option value="ficha">Ficha cadastral individual</option><option value="declaracao">Declaração de membresia</option><option value="transferencia">Carta de transferência</option></select></label>
+<div id="memberDocTransferFields" class="hidden"><label>Nome da igreja destinatária<input id="memberDocDestination" placeholder="Igreja que receberá o membro"></label><label>Cidade / UF de destino<input id="memberDocCity" placeholder="Cidade e estado"></label></div>
+<label>Local de emissão<input id="memberDocLocation" placeholder="Cidade / UF"></label>
+<p style="font-size:13px;color:#64748b">Documentos são minutas para conferência e assinatura. A impressão não registra nem efetiva transferência ou alteração de situação no Firebase.</p>
+<div class="form-actions"><button type="button" class="secondary" data-close="memberDocDlg">Cancelar</button><button type="button" class="primary" id="memberDocPrint">Visualizar / Imprimir</button></div></div></dialog>
+
 <dialog id="festDlg"><form id="festForm" class="form"><input type="hidden" id="fid"><div class="form-head"><h3>Festividade</h3><button type="button" data-close="festDlg">×</button></div><label>Tema / Nome<input id="fname" required></label><label>Congregação<select id="fcong"></select></label><div class="grid2"><label>Início<input id="fstart" type="date" required></label><label>Fim<input id="fend" type="date" required></label></div><div class="grid2"><label>Pregadores<input id="fpreachers"></label><label>Valor pregadores<input id="fpreacherValue" type="number" step="0.01"></label></div><div class="grid2"><label>Cantores<input id="fsingers"></label><label>Valor cantores<input id="fsingerValue" type="number" step="0.01"></label></div><label>Outros gastos<input id="fexpenses" type="number" step="0.01"></label><label>Observações<textarea id="fnotes"></textarea></label><div class="form-actions"><button type="button" class="secondary" data-close="festDlg">Cancelar</button><button class="primary">Salvar / Aprovação</button></div></form></dialog>
 
 <dialog id="agendaDlg"><form id="agendaForm" class="form"><input type="hidden" id="aid"><div class="form-head"><h3>Evento Regional</h3><button type="button" data-close="agendaDlg">×</button></div><label>Evento<input id="aname" required></label><div class="grid2"><label>Data<input id="adate" type="date" required></label><label>Horário<input id="atime" type="time"></label></div><label>Local<input id="alocation"></label><label>Observações<textarea id="anotes"></textarea></label><div class="form-actions"><button type="button" class="secondary" data-close="agendaDlg">Cancelar</button><button class="primary">Salvar</button></div></form></dialog>
@@ -698,7 +707,7 @@ function renderMembers(){
    <div class="person-head"><h3>${m.name}</h3><span class="badge ${m.tither==="sim"?"ok":"pending"}">${m.tither==="sim"?"Dizimista":"Não dizimista"}</span></div>
    <p><b>Nº Cadastro:</b> ${m.memberNumber||"—"} • Departamento: ${m.department||"Não informado"}</p>
    <p>📞 ${m.phone||"—"} • 🎂 ${fmt(m.birth)||"—"} • ${m.status==="cooperador"?"Cooperador":m.status==="obreiro"?"Obreiro":m.status==="congregado"?"Congregado":"Membro"}</p>
-   <div class="actions">${canEdit()?`<button class="secondary" onclick="editMember('${m.id}')">Editar</button><button class="danger" onclick="deleteItem('membros','${m.id}','${m.name}')">Excluir</button>`:""}</div>
+   <div class="actions"><button class="secondary" onclick="openMemberDocument('${m.id}')">📄 Documentos</button>${canEdit()?`<button class="secondary" onclick="editMember('${m.id}')">Editar</button><button class="danger" onclick="deleteItem('membros','${m.id}','${m.name}')">Excluir</button>`:""}</div>
  </article>`).join(""):'<div class="card">Nenhum membro.</div>';
 }
 $("memberSearch").oninput=renderMembers;$("memberTither").onchange=renderMembers;
@@ -1295,6 +1304,51 @@ openDlg=function(id){
  const estado=formulariosEstado.get(id),form=$(id)?.querySelector("form");
  if(estado&&form)estado.inicial=assinaturaFormulario(form);
 };
+
+
+// Etapa 13 — Documentos da secretaria: geração local, sem gravar no Firestore.
+let memberDocSelectedId=null;
+window.openMemberDocument=id=>{
+ const m=state.membros.find(x=>x.id===id);if(!m)return;
+ memberDocSelectedId=id;
+ $("memberDocPerson").textContent=`${m.name||"Membro"} — ${m.memberNumber||"sem número"}`;
+ $("memberDocType").value="ficha";
+ $("memberDocDestination").value="";$("memberDocCity").value="";
+ $("memberDocLocation").value="";
+ $("memberDocTransferFields").classList.add("hidden");
+ openDlg("memberDocDlg");
+};
+$("memberDocType").addEventListener("change",()=>$("memberDocTransferFields").classList.toggle("hidden",$("memberDocType").value!=="transferencia"));
+$("memberDocPrint").addEventListener("click",()=>{
+ const m=state.membros.find(x=>x.id===memberDocSelectedId);if(!m){toast("Membro não encontrado.");return;}
+ const type=$("memberDocType").value;
+ const destination=$("memberDocDestination").value.trim(),city=$("memberDocCity").value.trim();
+ if(type==="transferencia"&&(!destination||!city)){toast("Informe a igreja e a cidade de destino.");return;}
+ const escapeDoc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const e=escapeDoc;
+ const data=t=>t?fmt(t):"Não informado";
+ const today=new Date().toLocaleDateString("pt-BR");
+ const location=$("memberDocLocation").value.trim();
+ const issued=`${location?e(location)+", ":""}${e(today)}`;
+ const memberName=e(m.name||""),number=e(m.memberNumber||"Não informado");
+ const status={membro:"Membro",congregado:"Congregado",obreiro:"Obreiro",cooperador:"Cooperador"}[m.status]||m.status||"Não informada";
+ let title="",body="";
+ if(type==="ficha"){
+  title="FICHA CADASTRAL INDIVIDUAL";
+  const fields=[["Número de cadastro",m.memberNumber],["Nome",m.name],["Situação",status],["Congregação",cname(m.congregationId)],["Nascimento",data(m.birth)],["Telefone",m.phone],["Endereço",m.address],["Estado civil",m.marital],["Departamento",m.department],["Data do batismo",data(m.baptism)],["Entrada na igreja",data(m.entryDate)]];
+  body=`<table>${fields.map(([k,v])=>`<tr><th>${e(k)}</th><td>${e(v||"Não informado")}</td></tr>`).join("")}</table>`;
+ }else if(type==="declaracao"){
+  title="DECLARAÇÃO DE MEMBRESIA";
+  body=`<p>Declaramos, para os devidos fins, que <b>${memberName}</b>, cadastro nº <b>${number}</b>, consta em nossos registros na situação de <b>${e(status)}</b>, vinculado(a) à <b>${e(cname(m.congregationId)||"Assembleia de Deus Moriah")}</b>.</p><p>Esta declaração foi preparada a partir das informações cadastrais disponíveis nesta data e depende de conferência e assinatura da liderança responsável.</p>`;
+ }else{
+  title="CARTA DE TRANSFERÊNCIA — MINUTA";
+  body=`<p>À liderança da igreja <b>${e(destination)}</b>, em <b>${e(city)}</b>.</p><p>Apresentamos, para apreciação e procedimentos cabíveis, o(a) irmão(ã) <b>${memberName}</b>, cadastro nº <b>${number}</b>, atualmente registrado(a) na situação de <b>${e(status)}</b> em nossa igreja.</p><p>A efetivação desta transferência depende de aprovação e assinatura da liderança competente. Este documento, por si só, não altera o cadastro nem formaliza a transferência.</p>`;
+ }
+ const html=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${title} — AD Moriah</title><style>body{font-family:Arial,sans-serif;color:#18202a;margin:45px auto;max-width:760px;line-height:1.65;padding:0 25px}header{text-align:center;border-bottom:2px solid #1f2937;padding-bottom:16px;margin-bottom:38px}header strong{font-size:21px}h1{text-align:center;font-size:18px;margin-bottom:40px}p{text-align:justify;font-size:15px}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #cbd5e1;padding:9px;text-align:left}th{width:36%;background:#f1f5f9}.signature{margin:75px auto 0;max-width:420px;text-align:center;border-top:1px solid #111;padding-top:10px}.date{text-align:right;margin-top:40px}footer{margin-top:35px;font-size:11px;color:#64748b;text-align:center}@media print{body{margin:20px auto}th{background:#f1f5f9!important;print-color-adjust:exact}}</style></head><body><header><strong>IGREJA ASSEMBLEIA DE DEUS MORIAH</strong><div>Secretaria</div></header><h1>${title}</h1>${body}<p class="date">${issued}</p><div class="signature">Assinatura e identificação do responsável<br><small>Assinatura / carimbo, quando aplicável</small></div><footer>Documento gerado a partir do cadastro interno, sujeito à conferência.</footer></body></html>`;
+ const win=window.open("","_blank");
+ if(!win){toast("Permita pop-ups para visualizar o documento.");return;}
+ win.document.open();win.document.write(html);win.document.close();win.focus();
+});
 
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
 </script>
