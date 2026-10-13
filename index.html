@@ -204,6 +204,12 @@ dialog::backdrop{background:#00152fbb}
   #app .topbar .brand img { width: clamp(165px, 53vw, 240px) !important; height: auto !important; max-height: 68px !important; }
 }
 </style>
+<style>
+/* Relatório executivo: destaque do pastor e linha de totais */
+.report-cover .report-pastor { font-size: 1.2rem; font-weight: 750; margin-top: 12px; line-height: 1.4; }
+#reportContent > .panel:first-child .report-table tbody tr:last-child { font-weight: 800; background: #eaf1fa; border-top: 2px solid #0b2f5a; }
+#reportContent > .panel:first-child .report-table tbody tr:last-child td { padding-top: 10px; padding-bottom: 10px; }
+</style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -807,15 +813,19 @@ $("indCongFilter").onchange=renderIndicators;
 // ----- Relatório profissional -----
 function renderReports(){
  const local=!isAdmin(),t=state.membros.filter(m=>m.tither==="sim").length;
- $("reportTitle").textContent=local?"Relatório da Congregação":"Relatório Executivo Regional";
- $("reportSubtitle").textContent=local?"Somente os dados vinculados à sua congregação.":"Relatório geral exclusivo do Administrador Regional.";
- $("reportCover").innerHTML=`<div class="report-cover"><small>ASSEMBLEIA DE DEUS</small><h2>ASSEMBLEIA DE DEUS MORIAH</h2><h3>${local?"RELATÓRIO DA CONGREGAÇÃO":"RELATÓRIO EXECUTIVO REGIONAL"}</h3><p>${new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"})}</p><small>Pastor Reinaldo Lino</small></div>`;
+ $("reportTitle").textContent=local?"Relatório da Congregação":"Relatório Executivo";
+ $("reportSubtitle").textContent=local?"Somente os dados vinculados à sua congregação.":"Relatório geral exclusivo do Administrador.";
+ $("reportCover").innerHTML=`<div class="report-cover"><h2>ASSEMBLEIA DE DEUS MORIAH</h2><h3>${local?"RELATÓRIO DA CONGREGAÇÃO":"RELATÓRIO EXECUTIVO"}</h3><p>${new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"})}</p><div class="report-pastor">Pastor Reinaldo Lino</div></div>`;
  $("reportSummary").innerHTML=[["Congregações",state.congregacoes.length],["Obreiros",obreirosContabilizaveis().length],["Membros",state.membros.length],["Dizimistas",t],["Visitantes no mês",visitorsThisMonth().length],["Resultados de culto",state.resultadosCulto.length]].map(x=>`<div class="stat"><small>${x[0]}</small><strong>${x[1]}</strong></div>`).join("");
  const ageRows=AGE_BANDS.map(b=>{const all=state.membros.filter(m=>ageBand(calcAge(m.birth))===b),dz=all.filter(m=>m.tither==="sim");return [b,all.length,dz.length,all.length-dz.length,all.length?Math.round(dz.length*100/all.length)+"%":"0%"]});
+ const totalMembrosFaixas=ageRows.reduce((s,r)=>s+r[1],0);
+ const totalDizimistasFaixas=ageRows.reduce((s,r)=>s+r[2],0);
+ const totalNaoDizimistasFaixas=ageRows.reduce((s,r)=>s+r[3],0);
+ ageRows.push(["TOTAL",totalMembrosFaixas,totalDizimistasFaixas,totalNaoDizimistasFaixas,totalMembrosFaixas?Math.round(totalDizimistasFaixas*100/totalMembrosFaixas)+"%":"0%"]);
  let content=reportTable("Perfil por faixa etária",["Faixa","Membros","Dizimistas","Não dizimistas","% Dizimistas"],ageRows);
  if(isAdmin())content+=reportTable("Congregações",["Nome","Pastor","Telefone"],state.congregacoes.map(c=>[c.name,c.pastor,c.phone]));
  content+=reportTable("Obreiros",["Nome","Cargo","Congregação"],obreirosContabilizaveis().map(w=>[w.name,w.role,cname(w.congregationId)]));
- content+=reportTable("Membros",["Nº Cadastro","Nome","Congregação","Idade","Faixa","Dizimista"],state.membros.map(m=>[m.memberNumber||"",m.name,cname(m.congregationId),calcAge(m.birth)??"",ageBand(calcAge(m.birth)),m.tither==="sim"?"Sim":"Não"]));
+ content+=reportTable("Membros",["Nº Cadastro","Nome","Idade","Faixa","Dizimista"],state.membros.map(m=>[m.memberNumber||"",m.name,calcAge(m.birth)??"",ageBand(calcAge(m.birth)),m.tither==="sim"?"Sim":"Não"]));
  content+=reportTable("Visitantes",["Data","Nome","Congregação","Culto","Situação"],state.visitantes.map(v=>[fmt(v.date),v.name,cname(v.congregationId),v.service,visitorStatusLabel(v.status)]));
  content+=reportTable("Resultados dos Cultos",["Data","Congregação","Culto","Público","Visitantes","Decisões"],state.resultadosCulto.map(r=>[fmt(r.date),cname(r.congregationId),r.service,r.attendance||0,r.visitors||0,r.decisions||0]));
  $("reportContent").innerHTML=content;
