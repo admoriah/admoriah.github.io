@@ -818,13 +818,20 @@ function sendBirthdayWhatsApp(w){
 }
 
 function normalizeMemberNumber(v){return String(v??"").trim()}
-// Sugere o próximo número de cadastro a partir dos membros carregados do Firebase.
+// Mantém a sequência MOR-IMP-0001 dos cadastros importados, sem alterar registros existentes.
 function proximoNumeroCadastroMembro(){
- const numeros=state.membros.map(m=>normalizeMemberNumber(m.memberNumber)).filter(n=>/^\d+$/.test(n));
- if(!numeros.length)return "1";
- const maior=numeros.reduce((a,b)=>BigInt(a)>BigInt(b)?a:b);
- const proximo=(BigInt(maior)+1n).toString();
- return maior.startsWith("0")?proximo.padStart(maior.length,"0"):proximo;
+ const prefixo="MOR-IMP-";
+ const base=118; // Último cadastro informado: MOR-IMP-0118.
+ let maior=base;
+ let largura=4;
+ for(const membro of state.membros){
+  const numero=normalizeMemberNumber(membro.memberNumber);
+  const match=/^MOR-IMP-(\d+)$/i.exec(numero);
+  if(!match)continue;
+  const valor=Number(match[1]);
+  if(Number.isSafeInteger(valor)&&valor>maior){maior=valor;largura=Math.max(4,match[1].length)}
+ }
+ return prefixo+String(maior+1).padStart(largura,"0");
 }
 
 function memberNumberExists(number,congregationId,ignoreId=""){
