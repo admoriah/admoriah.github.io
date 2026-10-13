@@ -315,6 +315,25 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 @media(max-width:700px){.moriah-report-controls{grid-template-columns:1fr}.moriah-report-tools-head{flex-wrap:wrap}#relatorios .moriah-report-tools{padding:14px}#relatorios .page-head .actions{display:flex;flex-wrap:wrap;gap:8px}}
 @media print{#relatorios .moriah-report-tools{display:none!important}#relatorios #reportContent>.panel{box-shadow:none;break-inside:avoid}#relatorios .report-table tbody tr:hover{background:transparent}}
 </style>
+<style>
+/* AD Moriah — etapa 6: agenda, escala e festividades */
+#agenda .moriah-agenda-tools{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:16px 0;padding:16px;border:1px solid #dfe6f0;background:#f8fafc;border-radius:16px}
+#agenda .moriah-agenda-tools label{display:grid;gap:6px;flex:1 1 200px;font-size:12px;font-weight:700;color:#173052}
+#agenda .moriah-agenda-tools input,#agenda .moriah-agenda-tools select{width:100%;min-height:42px;border-radius:10px}
+#agenda .moriah-agenda-tools button{min-height:42px}
+#agenda .moriah-event-summary{font-size:13px;color:#64748b;margin:8px 0 14px}
+#agenda .moriah-agenda-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:14px}
+#agenda .moriah-event-card{display:flex;align-items:center;gap:14px;border:1px solid #e0e7ef;border-radius:16px;box-shadow:0 6px 20px rgba(17,38,68,.06);min-width:0}
+#agenda .moriah-date-tile{flex:0 0 65px;min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#102e50;color:#fff;border-radius:12px}
+#agenda .moriah-date-tile strong{font-size:25px;line-height:1.1}#agenda .moriah-date-tile span{font-size:11px;letter-spacing:1px;color:#e6c779;font-weight:800}
+#agenda .moriah-event-info{flex:1;min-width:0}#agenda .moriah-event-info h3{margin:0 0 8px;overflow-wrap:anywhere}#agenda .moriah-event-info p{margin:3px 0;font-size:13px}
+#escala .month-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:#f8fafc;border:1px solid #e0e7ef;border-radius:16px;margin:14px 0 18px}
+#escala .month-nav button{border-radius:10px;min-width:40px;min-height:40px}#escala #scaleMonth{color:#102e50;font-size:17px;text-align:center}
+#escala #scaleList .card,#festividades #festList .card{border:1px solid #e0e7ef;border-radius:16px;box-shadow:0 6px 20px rgba(17,38,68,.06)}
+#festividades #festList .approval-box{border-radius:12px}#festividades #festList .person-head{gap:12px;flex-wrap:wrap}
+@media(max-width:600px){#agenda .moriah-agenda-tools{padding:12px}#agenda .moriah-event-card{flex-wrap:wrap}#agenda .moriah-event-card>button{margin-left:auto}}
+@media print{#agenda .moriah-agenda-tools{display:none!important}}
+</style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -373,7 +392,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 
 <section id="festividades" class="page"><div class="page-head"><div><h2>Festividades</h2><p>Convidados, valores e aprovação.</p></div><button id="newFestBtn" class="primary edit-own">+ Nova</button></div><div id="festList" class="cards"></div></section>
 
-<section id="agenda" class="page"><div class="page-head"><div><h2>Agenda Regional</h2><p>Visível para todas as congregações.</p></div><button id="newAgendaBtn" class="primary admin-only">+ Evento</button></div><div id="agendaList" class="cards"></div></section>
+<section id="agenda" class="page"><div class="page-head"><div><h2>Agenda da Igreja</h2><p>Compromissos e eventos da Assembleia de Deus Moriah.</p></div><button id="newAgendaBtn" class="primary admin-only">+ Evento</button></div><div class="moriah-agenda-tools"><label>Pesquisar evento<input id="agendaSearch" type="search" placeholder="Nome ou local do evento"></label><label>Período<select id="agendaPeriod"><option value="upcoming">Próximos eventos</option><option value="all">Todos</option><option value="past">Eventos anteriores</option></select></label><button type="button" id="agendaClear" class="secondary">Limpar filtros</button></div><div id="agendaSummary" class="moriah-event-summary" aria-live="polite"></div><div id="agendaList" class="cards moriah-agenda-cards"></div></section>
 
 <section id="escala" class="page"><div class="page-head"><div><h2>Escala Trabalhos Oficiais</h2><p>Terças-feiras do mês.</p></div></div><div class="month-nav"><button id="prevMonth">‹</button><strong id="scaleMonth"></strong><button id="nextMonth">›</button></div><div id="scaleList" class="cards"></div></section>
 
@@ -505,7 +524,7 @@ const {
 
 const {
   getFirestore,doc,getDoc,setDoc,addDoc,updateDoc,deleteDoc,
-  collection,query,where,onSnapshot,writeBatch,serverTimestamp
+  collection,query,where,onSnapshot,writeBatch,runTransaction,serverTimestamp
 }=fsMod;
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
@@ -619,7 +638,7 @@ $("visitorSearch").oninput=renderVisitors;$("visitorMonthFilter").onchange=rende
 $("newVisitorBtn").onclick=()=>{if(!canEdit())return;$("visitorForm").reset();$("vid").value="";$("vdate").value=todayISO();fillCongSelect($("vcong"));openDlg("visitorDlg")};
 $("visitorForm").onsubmit=async e=>{e.preventDefault();const id=$("vid").value,data={name:$("vname").value.trim(),date:$("vdate").value,congregationId:"moriah",service:$("vservice").value,phone:$("vphone").value.trim(),city:$("vcity").value.trim(),invitedBy:$("vinvitedBy").value.trim(),firstVisit:$("vfirst").value,wantsVisit:$("vwantsVisit").value,status:$("vstatus").value,notes:$("vnotes").value.trim(),updatedAt:serverTimestamp()};try{id?await updateDoc(doc(db,"visitantes",id),data):await addDoc(collection(db,"visitantes"),data);closeDlg("visitorDlg");toast("Visitante salvo.")}catch(e){console.error(e);toast("Sem permissão.")}};
 window.editVisitor=id=>{const v=state.visitantes.find(x=>x.id===id);if(!v)return;$("vid").value=id;$("vname").value=v.name||"";$("vdate").value=v.date||todayISO();fillCongSelect($("vcong"));$("vcong").value=v.congregationId||"";$("vservice").value=v.service||"Outro";$("vphone").value=v.phone||"";$("vcity").value=v.city||"";$("vinvitedBy").value=v.invitedBy||"";$("vfirst").value=v.firstVisit||"sim";$("vwantsVisit").value=v.wantsVisit||"nao";$("vstatus").value=v.status||"aguardando";$("vnotes").value=v.notes||"";openDlg("visitorDlg")};
-window.visitorToMember=async id=>{const v=state.visitantes.find(x=>x.id===id);if(!v||!confirm(`Transformar ${v.name} em membro?`))return;try{await addDoc(collection(db,"membros"),{memberNumber:proximoNumeroCadastroMembro(),name:v.name,congregationId:v.congregationId,tither:"nao",phone:v.phone||"",birth:"",baptism:"",marital:"",address:v.city||"",notes:`Convertido de visitante. Primeira visita: ${fmt(v.date)}.`,createdAt:serverTimestamp()});await updateDoc(doc(db,"visitantes",id),{status:"membro",updatedAt:serverTimestamp()});toast("Visitante transformado em membro.")}catch(e){console.error(e);toast("Não foi possível transformar.")}};
+window.visitorToMember=async id=>{const v=state.visitantes.find(x=>x.id===id);if(!v||!confirm(`Transformar ${v.name} em membro?`))return;try{await criarMembroNumerado({name:v.name,congregationId:v.congregationId||"moriah",tither:"nao",phone:v.phone||"",birth:"",baptism:"",marital:"",address:v.city||"",notes:`Convertido de visitante. Primeira visita: ${fmt(v.date)}.`},doc(db,"visitantes",id));toast("Visitante transformado em membro.")}catch(e){console.error(e);toast(e.message||"Não foi possível transformar.")}};
 
 function renderCultResults(){
  if(!$("cultResultList"))return;
@@ -650,7 +669,28 @@ window.approveGuest=async(id,target)=>{const field=target==="preacher"?"preacher
 window.openReject=(id,target)=>{$("rejectFestId").value=id;$("rejectTarget").value=target;$("rejectReason").value="Valor muito alto";$("rejectOther").value="";$("rejectOtherWrap").classList.add("hidden");openDlg("rejectDlg")};
 $("rejectReason").onchange=()=>{$("rejectOtherWrap").classList.toggle("hidden",$("rejectReason").value!=="Outro")};
 $("rejectForm").onsubmit=async e=>{e.preventDefault();const id=$("rejectFestId").value,target=$("rejectTarget").value,reason=$("rejectReason").value,note=reason==="Outro"?$("rejectOther").value.trim():"";if(reason==="Outro"&&!note)return toast("Digite o motivo.");const field=target==="preacher"?"preacherDecision":"singerDecision";await updateDoc(doc(db,"festividades",id),{[field]:{status:"rejected",reason,note,updatedAt:new Date().toISOString()},updatedAt:serverTimestamp()});closeDlg("rejectDlg");toast("Reprovação registrada.")};
-function renderAgenda(){const l=[...state.agenda].sort((a,b)=>(a.date||"").localeCompare(b.date||""));$("agendaList").innerHTML=l.length?l.map(a=>`<article class="card"><div class="person-head"><h3>📅 ${a.name}</h3>${isAdmin()?`<button class="secondary" onclick="editAgenda('${a.id}')">Editar</button>`:""}</div><p>${fmt(a.date)} ${a.time||""}</p><p>📍 ${a.location||"—"}</p></article>`).join(""):'<div class="card">Nenhum evento.</div>';const today=new Date().toISOString().slice(0,10);$("nextAgenda").innerHTML=l.filter(a=>a.date>=today).slice(0,4).map(a=>`<div class="card"><b>${fmt(a.date)} ${a.time||""}</b> — ${a.name}</div>`).join("")||"Nenhum evento próximo."}
+function renderAgenda(){
+ const l=[...state.agenda].sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.time||"").localeCompare(b.time||""));
+ const today=new Date().toLocaleDateString("en-CA");
+ const search=($("agendaSearch")?.value||"").trim().toLocaleLowerCase("pt-BR");
+ const period=$("agendaPeriod")?.value||"upcoming";
+ const filtered=l.filter(a=>{
+  const match=!search||[a.name,a.location,a.time].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(search));
+  const inPeriod=period==="all"||(period==="past"?(a.date||"")<today:(a.date||"")>=today);
+  return match&&inPeriod;
+ });
+ if($("agendaSummary"))$("agendaSummary").textContent=`${filtered.length} ${filtered.length===1?"evento encontrado":"eventos encontrados"}`;
+ $("agendaList").innerHTML=filtered.length?filtered.map(a=>{
+  const parts=String(a.date||"").split("-");const day=parts[2]||"--";
+  const months=["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+  const month=months[Number(parts[1])-1]||"DATA";
+  return `<article class="card moriah-event-card"><div class="moriah-date-tile"><strong>${day}</strong><span>${month}</span></div><div class="moriah-event-info"><h3>${a.name||"Evento sem nome"}</h3><p>🕒 ${fmt(a.date)}${a.time?" • "+a.time:""}</p><p>📍 ${a.location||"Local não informado"}</p></div>${isAdmin()?`<button class="secondary" onclick="editAgenda('${a.id}')">Editar</button>`:""}</article>`;
+ }).join(""):'<div class="card moriah-empty-event">Nenhum evento encontrado para os filtros selecionados.</div>';
+ if($("nextAgenda"))$("nextAgenda").innerHTML=l.filter(a=>(a.date||"")>=today).slice(0,4).map(a=>`<div class="card"><b>${fmt(a.date)} ${a.time||""}</b> — ${a.name}</div>`).join("")||"Nenhum evento próximo.";
+}
+$("agendaSearch").oninput=renderAgenda;
+$("agendaPeriod").onchange=renderAgenda;
+$("agendaClear").onclick=()=>{$("agendaSearch").value="";$("agendaPeriod").value="upcoming";renderAgenda()};
 function birthdayInfo(date){if(!date)return null;const [y,m,d]=date.split("-").map(Number),now=new Date();let n=new Date(now.getFullYear(),m-1,d),start=new Date(now.getFullYear(),now.getMonth(),now.getDate());if(n<start)n=new Date(now.getFullYear()+1,m-1,d);return{date:n,diff:Math.round((n-start)/86400000)}}
 function renderBirthdays(){
  const p=[...state.obreiros,...state.membros].map(x=>({x,b:birthdayInfo(x.birth)})).filter(o=>o.b&&o.b.diff===0).sort((a,b)=>a.b.diff-b.b.diff);
@@ -708,19 +748,21 @@ async function syncMemberWorker(memberId, member){
   await setDoc(doc(db,"obreiros",workerId),workerData,{merge:true});
 }
 
-function toggleMemberRole(){const isWorker=$("mstatus").value==="obreiro";$("mroleWrap").classList.toggle("hidden",!isWorker);if(!isWorker)$("mrole").value="";} $("mstatus").addEventListener("change",toggleMemberRole); $("newMemberBtn").onclick=()=>{$("memberForm").reset();$("mid").value="";$("mnumber").value=proximoNumeroCadastroMembro();$("mdepartment").value="";toggleMemberRole();openDlg("memberDlg")};
+function toggleMemberRole(){const isWorker=$("mstatus").value==="obreiro";$("mroleWrap").classList.toggle("hidden",!isWorker);if(!isWorker)$("mrole").value="";} $("mstatus").addEventListener("change",toggleMemberRole); $("newMemberBtn").onclick=()=>{$("memberForm").reset();$("mid").value="";$("mnumber").value=proximoNumeroCadastroMembro();$("mnumber").readOnly=true;$("mdepartment").value="";toggleMemberRole();openDlg("memberDlg")};
 $("memberForm").onsubmit=async e=>{
  e.preventDefault();
  const id=$("mid").value;
  const congregationId="moriah";
- const memberNumber=normalizeMemberNumber($("mnumber").value);
- if(!memberNumber)return toast("Informe o número de cadastro do membro.");
- 
- if(memberNumberExists(memberNumber,congregationId,id))return toast("Já existe um membro com este Nº de Cadastro nesta congregação.");
+ const memberNumber=id?normalizeMemberNumber($("mnumber").value):"";
+ if(id&&!memberNumber)return toast("Cadastro existente sem número. Consulte o administrador.");
+ if(id&&memberNumberExists(memberNumber,congregationId,id))return toast("Já existe um membro com este Nº de Cadastro nesta congregação.");
  const data={memberNumber,name:$("mname").value.trim(),congregationId,department:$("mdepartment").value,tither:$("mtither").value,phone:$("mphone").value.trim(),birth:$("mbirth").value,sex:$("msex").value,status:$("mstatus").value,ministerialRole:$("mstatus").value==="cooperador"?"Cooperador":($("mstatus").value==="obreiro"?$("mrole").value:""),baptism:$("mbaptism").value,marital:$("mmarital").value,address:$("maddress").value.trim(),notes:$("mnotes").value.trim(),updatedAt:serverTimestamp()};
  try{
-   const savedRef=id?doc(db,"membros",id):await addDoc(collection(db,"membros"),{...data,createdAt:serverTimestamp()});
+   const result=id?null:await criarMembroNumerado(data);
+   const savedRef=id?doc(db,"membros",id):result.ref;
    if(id)await updateDoc(savedRef,data);
+   else $("mnumber").value=result.numero;
+   if(!id)data.memberNumber=result.numero;
    closeDlg("memberDlg");
    try{
      await syncMemberWorker(savedRef.id,data);
@@ -730,11 +772,11 @@ $("memberForm").onsubmit=async e=>{
      toast("Membro salvo, mas não foi possível atualizar Obreiros. Verifique permissões e tente novamente.");
    }
  }
- catch(err){console.error(err);toast("Não foi possível salvar o membro.")}
+ catch(err){console.error(err);toast(err.message||"Não foi possível salvar o membro.")}
 };
 window.editMember=id=>{
  const m=state.membros.find(x=>x.id===id);if(!m)return;
- $("mid").value=id;$("mnumber").value=m.memberNumber||"";$("mname").value=m.name||"";
+ $("mid").value=id;$("mnumber").value=m.memberNumber||"";$("mnumber").readOnly=true;$("mname").value=m.name||"";
  $("mdepartment").value=m.department||"";
  $("mtither").value=m.tither||"nao";$("mphone").value=m.phone||"";$("mbirth").value=m.birth||"";
  $("msex").value=m.sex||"";const oldRoles={diacono:"Diácono",presbitero:"Presbítero",evangelista:"Evangelista",pastor:"Pastor"};$("mstatus").value=oldRoles[m.status]?"obreiro":(m.status||"membro");$("mrole").value=m.status==="cooperador"?"":(m.ministerialRole||oldRoles[m.status]||state.obreiros.find(w=>w.memberId===id)?.role||"");toggleMemberRole();$("mbaptism").value=m.baptism||"";
@@ -832,6 +874,25 @@ function proximoNumeroCadastroMembro(){
   if(Number.isSafeInteger(valor)&&valor>maior){maior=valor;largura=Math.max(4,match[1].length)}
  }
  return prefixo+String(maior+1).padStart(largura,"0");
+}
+
+// O contador deve ser criado no Firestore: contadores/membros { ultimoNumero: 118 }.
+// O numero exibido antes de salvar e apenas uma previsao; a transacao reserva o definitivo.
+async function criarMembroNumerado(dados,visitanteRef=null){
+ const contadorRef=doc(db,"contadores","membros");
+ const novoRef=doc(collection(db,"membros"));
+ return runTransaction(db,async tx=>{
+  const snapshot=await tx.get(contadorRef);
+  if(!snapshot.exists())throw new Error("Configure contadores/membros no Firestore com ultimoNumero igual ao maior numero ja cadastrado.");
+  const ultimo=snapshot.data().ultimoNumero;
+  if(!Number.isSafeInteger(ultimo)||ultimo<118)throw new Error("Contador invalido: ultimoNumero deve ser inteiro e >= 118.");
+  const proximo=ultimo+1;
+  const numero=`MOR-IMP-${String(proximo).padStart(4,"0")}`;
+  tx.update(contadorRef,{ultimoNumero:proximo});
+  tx.set(novoRef,{...dados,memberNumber:numero,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+  if(visitanteRef)tx.update(visitanteRef,{status:"membro",updatedAt:serverTimestamp()});
+  return {ref:novoRef,numero};
+ });
 }
 
 function memberNumberExists(number,congregationId,ignoreId=""){
