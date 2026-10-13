@@ -378,6 +378,25 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
   dialog .form-actions { position: static !important; }
 }
 </style>
+
+<style>
+/* Etapa 10: resumo gerencial responsivo */
+.moriah-exec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0 12px}
+.moriah-exec-head h3{margin:0}.moriah-exec-head p{margin:4px 0 0;color:var(--muted,#667085)}
+.moriah-exec-head select{max-width:240px}
+.moriah-exec-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0}
+.moriah-exec-kpi{background:var(--card,#fff);border:1px solid #dfe5ec;border-radius:14px;padding:16px;min-width:0}
+.moriah-exec-kpi small{display:block;color:#536273;font-size:13px}
+.moriah-exec-kpi strong{display:block;font-size:clamp(22px,2.5vw,31px);margin:7px 0}
+.moriah-exec-kpi span{font-size:12px;color:#536273}
+.moriah-exec-lower{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 22px}
+.moriah-exec-panel{background:var(--card,#fff);border:1px solid #dfe5ec;border-radius:14px;padding:16px}
+.moriah-exec-panel h4{margin:0 0 12px}.moriah-exec-panel p{margin:8px 0}
+.moriah-exec-empty{color:#64748b}
+@media(max-width:800px){.moriah-exec-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:550px){.moriah-exec-lower{grid-template-columns:1fr}.moriah-exec-kpis{gap:8px}.moriah-exec-kpi{padding:12px}}
+@media print{.moriah-exec-head select{display:none}}
+</style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -453,6 +472,16 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
     <label><b>Visualizar:</b>
       <select id="indCongFilter"><option value="">Todas as congregações</option></select>
     </label>
+  </div>
+
+  <div class="moriah-exec-head">
+    <div><h3>Resumo gerencial</h3><p>Indicadores calculados com os registros disponíveis no Firebase.</p></div>
+    <label>Período <select id="execPeriod" aria-label="Período do resumo gerencial"><option value="month">Mês atual</option><option value="prev">Mês anterior</option><option value="all">Todos os registros</option></select></label>
+  </div>
+  <div id="execKpis" class="moriah-exec-kpis" aria-live="polite"></div>
+  <div class="moriah-exec-lower">
+    <div class="moriah-exec-panel"><h4>Atividades e resultados de cultos</h4><div id="execCultSummary"></div></div>
+    <div class="moriah-exec-panel"><h4>Últimos resultados registrados</h4><div id="execRecentCult"></div></div>
   </div>
   <div id="ageKpis" class="age-kpis"></div>
   <div class="admin-dashboard">
@@ -1045,7 +1074,41 @@ function filteredVisitorsForIndicators(){
  const selected=isAdmin()?($("indCongFilter")?.value||""):ownCong();
  return selected?state.visitantes.filter(v=>v.congregationId===selected):state.visitantes;
 }
+
+function renderExecutiveSummary(){
+ const area=$("execKpis");if(!area)return;
+ const members=filteredMembersForIndicators(),visitors=filteredVisitorsForIndicators();
+ const selected=isAdmin()?($("indCongFilter")?.value||""):ownCong();
+ const period=$("execPeriod")?.value||"month";
+ const now=new Date(),monthKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+ const prev=new Date(now.getFullYear(),now.getMonth()-1,1);
+ const key=period==="prev"?monthKey(prev):monthKey(now);
+ const inPeriod=d=>period==="all"||String(d||"").startsWith(key);
+ const filteredCult=state.resultadosCulto.filter(r=>(!selected||r.congregationId===selected)&&inPeriod(r.date));
+ const filteredVisitors=visitors.filter(v=>inPeriod(v.date));
+ const total=(field)=>filteredCult.reduce((sum,r)=>sum+(Number(r[field])||0),0);
+ const kpis=[
+  ["Membros cadastrados",members.length,"Total atual, independente do período"],
+  ["Obreiros",obreirosContabilizaveis().filter(w=>!selected||w.congregationId===selected).length,"Total atual"],
+  ["Dizimistas",members.filter(m=>m.tither==="sim").length,"Total atual"],
+  ["Visitantes cadastrados",filteredVisitors.length,period==="all"?"Todos os períodos":"No período selecionado"],
+  ["Cultos registrados",filteredCult.length,"No período selecionado"],
+  ["Público nos cultos",total("attendance"),"Soma dos públicos informados"],
+  ["Decisões por Cristo",total("decisions"),"Nos cultos registrados"],
+  ["Reconciliações",total("reconciliations"),"Nos cultos registrados"]
+ ];
+ area.innerHTML=kpis.map(([label,value,desc])=>`<article class="moriah-exec-kpi"><small>${label}</small><strong>${value.toLocaleString("pt-BR")}</strong><span>${desc}</span></article>`).join("");
+ $("execCultSummary").innerHTML=filteredCult.length
+ ?`<p><b>${filteredCult.length}</b> culto(s) com resultado registrado.</p><p>Visitantes informados nos cultos: <b>${total("visitors")}</b></p><p>Batismos: <b>${total("baptisms")}</b></p><p>Crianças apresentadas: <b>${total("children")}</b></p><p class="moriah-exec-empty">A soma do público não representa pessoas únicas.</p>`
+ :'<p class="moriah-exec-empty">Nenhum resultado de culto no período escolhido.</p>';
+ const recent=[...filteredCult].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,4);
+ const safe=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ $("execRecentCult").innerHTML=recent.length?recent.map(r=>`<p><b>${safe(fmt(r.date))}</b> — ${safe(r.service||"Culto")}<br><small>Público: ${Number(r.attendance)||0} • Visitantes: ${Number(r.visitors)||0}</small></p>`).join(""):'<p class="moriah-exec-empty">Sem registros para exibir.</p>';
+}
+$("execPeriod").addEventListener("change",renderExecutiveSummary);
+
 function renderIndicators(){
+ renderExecutiveSummary();
  if(!window.Chart)return;
  const members=filteredMembersForIndicators(),visitors=filteredVisitorsForIndicators();
  $("regionalAdminNotice").classList.toggle("hidden",isAdmin());
