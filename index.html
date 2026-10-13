@@ -210,6 +210,34 @@ dialog::backdrop{background:#00152fbb}
 #reportContent > .panel:first-child .report-table tbody tr:last-child { font-weight: 800; background: #eaf1fa; border-top: 2px solid #0b2f5a; }
 #reportContent > .panel:first-child .report-table tbody tr:last-child td { padding-top: 10px; padding-bottom: 10px; }
 </style>
+<style>
+
+/* AD MORIAH 2026 — atualização visual e navegação, sem alterações no Firebase */
+:root{--navy:#0b2340;--navy2:#153e64;--gold:#d9ab4a;--bg:#f2f5fa;--text:#16283f;--muted:#64748b}
+html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;letter-spacing:-.012em}
+#app{background:radial-gradient(ellipse at 100% 0%,#e3ebf6 0%,transparent 38%),var(--bg)}
+#app .topbar{background:linear-gradient(115deg,#071c34,#123657);box-shadow:0 3px 18px rgba(10,33,62,.16);border-bottom:1px solid rgba(255,255,255,.09)}
+#app main{max-width:1200px;padding:clamp(14px,2.8vw,30px)}
+#app .welcome{border-radius:22px;padding:clamp(20px,3vw,32px);background:linear-gradient(120deg,#0a2342,#164b74);box-shadow:0 12px 28px rgba(13,45,78,.13)}
+#app .panel,#app .chart-panel,#app .visitor-stat,#app .stat-card{border-radius:18px;box-shadow:0 4px 20px rgba(17,43,73,.055);border:1px solid rgba(35,72,112,.07)}
+#app .page-head h2{color:#102d4d;letter-spacing:-.035em}
+#app button.primary,#app .gold-btn{border-radius:12px}
+#app input,#app select,#app textarea{border-radius:11px}
+#app .bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr));max-width:680px;left:50%;right:auto;width:calc(100% - 20px);transform:translateX(-50%);bottom:10px;padding:7px 6px max(7px,env(safe-area-inset-bottom));border-radius:19px;background:#0b2340;box-shadow:0 8px 30px rgba(4,23,45,.26);overflow:visible}
+#app .bottom-nav button{min-width:0;padding:7px 3px;border-radius:12px;font-size:20px;transition:background .18s,color .18s}
+#app .bottom-nav button span{font-size:11px;font-weight:650;margin-top:3px}
+#app .bottom-nav button.active{color:#f5c968;background:rgba(255,255,255,.10)}
+#app .moriah-menu-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start}
+#app .moriah-menu-group{margin:0;padding:18px}
+#app .moriah-menu-group h3{margin:0 0 13px;color:#153957;font-size:16px}
+#app .moriah-links{display:grid;gap:8px}
+#app .moriah-links .menu-link{margin:0;padding:14px 15px;border-radius:12px;background:#f3f7fb;border:1px solid #e5edf5;font-weight:650;transition:background .15s,transform .15s}
+#app .moriah-links .menu-link:hover{background:#e6f0f9;transform:translateY(-1px)}
+#app .app{padding-bottom:100px}
+@media(max-width:620px){#app .bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr));overflow:visible}#app main{padding:14px 12px 24px}#app .moriah-menu-groups{grid-template-columns:1fr}#app .bottom-nav button span{font-size:10px}}
+@media print{#app .bottom-nav{display:none!important}}
+
+</style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -300,16 +328,34 @@ dialog::backdrop{background:#00152fbb}
 
 <section id="relatorios" class="page"><div class="page-head"><div><h2 id="reportTitle">Relatório Geral</h2><p id="reportSubtitle">Consolidado dos dados.</p></div><div class="actions"><button id="printReport" class="primary">📄 Gerar PDF</button><button id="csvReport" class="secondary">📊 Excel/CSV</button></div></div><div id="reportCover"></div><div id="reportSummary" class="stats"></div><div id="reportContent"></div></section>
 
-<section id="mais" class="page"><div class="panel"><h3>Mais opções</h3><button class="menu-link" data-page="visitantes">🙋 Visitantes</button><button class="menu-link" data-page="resultadosCulto">🙏 Resultados dos Cultos</button><button class="menu-link" data-page="escala">⛪ Escala Trabalhos Oficiais</button><button class="menu-link admin-only" data-page="usuarios">👤 Gerenciar Usuários</button><button class="menu-link" data-page="indicadores">📈 Indicadores</button><button class="menu-link" data-page="relatorios">📊 Relatórios</button></div></section>
+<section id="mais" class="page">
+  <div class="page-head"><div><h2>Explorar o AD Moriah</h2><p>Acesse todas as áreas do aplicativo.</p></div></div>
+  <div class="moriah-menu-groups">
+    <div class="panel moriah-menu-group"><h3>👥 Pessoas e ministérios</h3><div class="moriah-links">
+      <button class="menu-link" data-page="membros">👥 Membros</button>
+      <button class="menu-link" data-page="obreiros">👔 Obreiros</button>
+      <button class="menu-link" data-page="visitantes">🙋 Visitantes</button>
+    </div></div>
+    <div class="panel moriah-menu-group"><h3>📅 Atividades da igreja</h3><div class="moriah-links">
+      <button class="menu-link" data-page="agenda">📅 Agenda</button>
+      <button class="menu-link" data-page="escala">⛪ Escala Trabalhos Oficiais</button>
+      <button class="menu-link" data-page="resultadosCulto">🙏 Resultados dos Cultos</button>
+      <button class="menu-link" data-page="festividades">⭐ Festividades</button>
+    </div></div>
+    <div class="panel moriah-menu-group"><h3>📊 Gestão e relatórios</h3><div class="moriah-links">
+      <button class="menu-link" data-page="indicadores">📈 Indicadores e gráficos</button>
+      <button class="menu-link" data-page="relatorios">📊 Relatórios</button>
+      <button class="menu-link admin-only" data-page="usuarios">👤 Gerenciar Usuários</button>
+    </div></div>
+  </div>
+</section>
 </main>
-<nav class="bottom-nav">
-<button data-page="home" class="active">⌂<span>Início</span></button>
-<button data-page="obreiros">👔<span>Obreiros</span></button>
-<button data-page="membros">👥<span>Membros</span></button><button data-page="visitantes">🙋<span>Visitantes</span></button><button data-page="indicadores">📈<span>Gráficos</span></button>
-<button data-page="agenda">📅<span>Agenda</span></button>
-<button data-page="festividades">★<span>Festas</span></button>
-
-<button data-page="mais">☰<span>Mais</span></button>
+<nav class="bottom-nav" aria-label="Navegação principal">
+<button data-page="home" class="active" aria-label="Início">⌂<span>Início</span></button>
+<button data-page="membros" aria-label="Membros">👥<span>Membros</span></button>
+<button data-page="agenda" aria-label="Agenda">📅<span>Agenda</span></button>
+<button data-page="relatorios" aria-label="Relatórios">📊<span>Relatórios</span></button>
+<button data-page="mais" aria-label="Mais opções">☰<span>Mais</span></button>
 </nav>
 </div>
 
