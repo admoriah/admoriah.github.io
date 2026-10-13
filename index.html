@@ -298,7 +298,7 @@ dialog::backdrop{background:#00152fbb}
 <label>Nome<input id="wname" required></label><div class="grid2"><label>Cargo<select id="wrole"><option>Pastor</option><option>Evangelista</option><option>Presbítero</option><option>Diácono</option><option>Cooperador</option></select></label><label>Congregação<select id="wcong"></select></label></div><div class="grid2"><label>Telefone<input id="wphone"></label><label>Nascimento<input id="wbirth" type="date"></label></div><label>Consagração<input id="wconsecration" type="date"></label><label>Observações<textarea id="wnotes"></textarea></label><div class="form-actions"><button type="button" class="secondary" data-close="workerDlg">Cancelar</button><button class="primary">Salvar</button></div></form></dialog>
 
 <dialog id="memberDlg"><form id="memberForm" class="form"><input type="hidden" id="mid"><div class="form-head"><h3>Membro</h3><button type="button" data-close="memberDlg">×</button></div>
-<div class="grid2"><label>Nº de Cadastro<input id="mnumber" autocomplete="off" placeholder="Ex.: 1001" required></label><label>Nome<input id="mname" required></label></div><div class="grid2"><label>Departamento (opcional)<select id="mdepartment"><option value="">Não informado</option><option value="Infantil">Infantil</option><option value="Adolescentes">Adolescentes</option><option value="Mocidade">Mocidade</option><option value="Círculo de Oração">Círculo de Oração</option><option value="Músicos">Músicos</option><option value="Membro">Membro</option></select></label><input type="hidden" id="mcong" value="moriah"><label>Dizimista?<select id="mtither"><option value="sim">Sim</option><option value="nao">Não</option></select></label></div><div class="grid2"><label>Telefone<input id="mphone"></label><label>Nascimento<input id="mbirth" type="date"></label></div><div class="grid2"><label>Sexo<select id="msex"><option value="">Não informado</option><option value="M">Masculino</option><option value="F">Feminino</option></select></label><label>Situação<select id="mstatus"><option value="membro">Membro</option><option value="congregado">Congregado</option><option value="obreiro">Obreiro</option><option value="diacono">Diácono</option><option value="presbitero">Presbítero</option><option value="evangelista">Evangelista</option><option value="pastor">Pastor</option></select></label></div><div class="grid2"><label>Batismo<input id="mbaptism" type="date"></label><label>Estado civil<select id="mmarital"><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>Viúvo(a)</option><option>Divorciado(a)</option></select></label></div><label>Endereço<input id="maddress"></label><label>Observações<textarea id="mnotes"></textarea></label><div class="form-actions"><button type="button" class="secondary" data-close="memberDlg">Cancelar</button><button class="primary">Salvar</button></div></form></dialog>
+<div class="grid2"><label>Nº de Cadastro<input id="mnumber" autocomplete="off" placeholder="Ex.: 1001" required></label><label>Nome<input id="mname" required></label></div><div class="grid2"><label>Departamento (opcional)<select id="mdepartment"><option value="">Não informado</option><option value="Infantil">Infantil</option><option value="Adolescentes">Adolescentes</option><option value="Mocidade">Mocidade</option><option value="Círculo de Oração">Círculo de Oração</option><option value="Músicos">Músicos</option><option value="Membro">Membro</option></select></label><input type="hidden" id="mcong" value="moriah"><label>Dizimista?<select id="mtither"><option value="sim">Sim</option><option value="nao">Não</option></select></label></div><div class="grid2"><label>Telefone<input id="mphone"></label><label>Nascimento<input id="mbirth" type="date"></label></div><div class="grid2"><label>Sexo<select id="msex"><option value="">Não informado</option><option value="M">Masculino</option><option value="F">Feminino</option></select></label><label>Situação<select id="mstatus"><option value="membro">Membro</option><option value="congregado">Congregado</option><option value="obreiro">Obreiro</option></select></label></div><div class="grid2"><label id="mroleWrap">Cargo ministerial (opcional)<select id="mrole"><option value="">Não informado</option><option value="Diácono">Diácono</option><option value="Presbítero">Presbítero</option><option value="Evangelista">Evangelista</option><option value="Pastor">Pastor</option></select></label></div><div class="grid2"><label>Batismo<input id="mbaptism" type="date"></label><label>Estado civil<select id="mmarital"><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>Viúvo(a)</option><option>Divorciado(a)</option></select></label></div><label>Endereço<input id="maddress"></label><label>Observações<textarea id="mnotes"></textarea></label><div class="form-actions"><button type="button" class="secondary" data-close="memberDlg">Cancelar</button><button class="primary">Salvar</button></div></form></dialog>
 
 <dialog id="festDlg"><form id="festForm" class="form"><input type="hidden" id="fid"><div class="form-head"><h3>Festividade</h3><button type="button" data-close="festDlg">×</button></div><label>Tema / Nome<input id="fname" required></label><label>Congregação<select id="fcong"></select></label><div class="grid2"><label>Início<input id="fstart" type="date" required></label><label>Fim<input id="fend" type="date" required></label></div><div class="grid2"><label>Pregadores<input id="fpreachers"></label><label>Valor pregadores<input id="fpreacherValue" type="number" step="0.01"></label></div><div class="grid2"><label>Cantores<input id="fsingers"></label><label>Valor cantores<input id="fsingerValue" type="number" step="0.01"></label></div><label>Outros gastos<input id="fexpenses" type="number" step="0.01"></label><label>Observações<textarea id="fnotes"></textarea></label><div class="form-actions"><button type="button" class="secondary" data-close="festDlg">Cancelar</button><button class="primary">Salvar / Aprovação</button></div></form></dialog>
 
@@ -532,7 +532,7 @@ window.editWorker=id=>{const w=state.obreiros.find(x=>x.id===id);if(!w)return;$(
 async function syncMemberWorker(memberId, member){
   const linked=state.obreiros.find(w=>w.memberId===memberId);
   const generatedId="membro_"+memberId;
-  if(!["obreiro","diacono","presbitero","evangelista","pastor"].includes(member.status)){
+  if(member.status!=="obreiro"){
     // Somente exclui registros gerados automaticamente; nunca apaga obreiros manuais.
     if(linked?.autoFromMember===true)await deleteDoc(doc(db,"obreiros",linked.id));
     else if(state.obreiros.some(w=>w.id===generatedId&&w.autoFromMember===true))await deleteDoc(doc(db,"obreiros",generatedId));
@@ -545,13 +545,13 @@ async function syncMemberWorker(memberId, member){
   const workerId=existing?.id||generatedId;
   const workerData={memberId,memberNumber:member.memberNumber,autoFromMember:true,name:member.name,congregationId:member.congregationId,phone:member.phone||"",birth:member.birth||"",updatedAt:serverTimestamp()};
   // Situações ministeriais definem o cargo; Obreiro genérico mantém o cargo já preenchido.
-  const roleByStatus={diacono:"Diácono",presbitero:"Presbítero",evangelista:"Evangelista",pastor:"Pastor"};
-  if(roleByStatus[member.status])workerData.role=roleByStatus[member.status];
-  if(!existing)Object.assign(workerData,{role:roleByStatus[member.status]||"Cooperador",photoData:"",consecration:"",notes:"Cadastrado automaticamente a partir do cadastro de membros.",createdAt:serverTimestamp()});
+  const selectedRole=member.ministerialRole||"";
+  if(selectedRole)workerData.role=selectedRole;
+  if(!existing)Object.assign(workerData,{role:selectedRole||"Cooperador",photoData:"",consecration:"",notes:"Cadastrado automaticamente a partir do cadastro de membros.",createdAt:serverTimestamp()});
   await setDoc(doc(db,"obreiros",workerId),workerData,{merge:true});
 }
 
-$("newMemberBtn").onclick=()=>{$("memberForm").reset();$("mid").value="";$("mnumber").value="";$("mdepartment").value="";openDlg("memberDlg")};
+function toggleMemberRole(){const isWorker=$("mstatus").value==="obreiro";$("mroleWrap").classList.toggle("hidden",!isWorker);if(!isWorker)$("mrole").value="";} $("mstatus").addEventListener("change",toggleMemberRole); $("newMemberBtn").onclick=()=>{$("memberForm").reset();$("mid").value="";$("mnumber").value="";$("mdepartment").value="";toggleMemberRole();openDlg("memberDlg")};
 $("memberForm").onsubmit=async e=>{
  e.preventDefault();
  const id=$("mid").value;
@@ -560,14 +560,14 @@ $("memberForm").onsubmit=async e=>{
  if(!memberNumber)return toast("Informe o número de cadastro do membro.");
  
  if(memberNumberExists(memberNumber,congregationId,id))return toast("Já existe um membro com este Nº de Cadastro nesta congregação.");
- const data={memberNumber,name:$("mname").value.trim(),congregationId,department:$("mdepartment").value,tither:$("mtither").value,phone:$("mphone").value.trim(),birth:$("mbirth").value,sex:$("msex").value,status:$("mstatus").value,baptism:$("mbaptism").value,marital:$("mmarital").value,address:$("maddress").value.trim(),notes:$("mnotes").value.trim(),updatedAt:serverTimestamp()};
+ const data={memberNumber,name:$("mname").value.trim(),congregationId,department:$("mdepartment").value,tither:$("mtither").value,phone:$("mphone").value.trim(),birth:$("mbirth").value,sex:$("msex").value,status:$("mstatus").value,ministerialRole:$("mstatus").value==="obreiro"?$("mrole").value:"",baptism:$("mbaptism").value,marital:$("mmarital").value,address:$("maddress").value.trim(),notes:$("mnotes").value.trim(),updatedAt:serverTimestamp()};
  try{
    const savedRef=id?doc(db,"membros",id):await addDoc(collection(db,"membros"),{...data,createdAt:serverTimestamp()});
    if(id)await updateDoc(savedRef,data);
    closeDlg("memberDlg");
    try{
      await syncMemberWorker(savedRef.id,data);
-     toast(["obreiro","diacono","presbitero","evangelista","pastor"].includes(data.status)?"Membro e obreiro salvos.":"Membro salvo.");
+     toast(data.status==="obreiro"?"Membro e obreiro salvos.":"Membro salvo.");
    }catch(syncErr){
      console.error("Erro ao sincronizar obreiro:",syncErr);
      toast("Membro salvo, mas não foi possível atualizar Obreiros. Verifique permissões e tente novamente.");
@@ -580,7 +580,7 @@ window.editMember=id=>{
  $("mid").value=id;$("mnumber").value=m.memberNumber||"";$("mname").value=m.name||"";
  $("mdepartment").value=m.department||"";
  $("mtither").value=m.tither||"nao";$("mphone").value=m.phone||"";$("mbirth").value=m.birth||"";
- $("msex").value=m.sex||"";$("mstatus").value=m.status||"membro";$("mbaptism").value=m.baptism||"";
+ $("msex").value=m.sex||"";const oldRoles={diacono:"Diácono",presbitero:"Presbítero",evangelista:"Evangelista",pastor:"Pastor"};$("mstatus").value=oldRoles[m.status]?"obreiro":(m.status||"membro");$("mrole").value=m.ministerialRole||oldRoles[m.status]||state.obreiros.find(w=>w.memberId===id)?.role||"";toggleMemberRole();$("mbaptism").value=m.baptism||"";
  $("mmarital").value=m.marital||"";$("maddress").value=m.address||"";$("mnotes").value=m.notes||"";
  openDlg("memberDlg")
 };
