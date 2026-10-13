@@ -338,6 +338,46 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 /* Etapa 7 — gestão de usuários: somente apresentação e filtros */
 .user-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0 18px}.user-kpi{background:linear-gradient(145deg,#102e50,#173e68);color:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 8px 20px #001a3512}.user-kpi small{display:block;opacity:.82;font-size:12px}.user-kpi strong{display:block;font-size:27px;margin-top:4px}.user-modern-filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}.user-modern-filters input,.user-modern-filters select{min-width:150px;flex:1 1 175px}.user-modern-card{border:1px solid #dce5ef;border-radius:16px}.user-modern-card .user-role-line{font-weight:700;color:#1b527d}.user-modern-card .actions{display:flex;flex-wrap:wrap;gap:8px}@media(max-width:600px){.user-kpis{gap:7px}.user-kpi{padding:12px 9px}.user-kpi strong{font-size:22px}.user-kpi small{font-size:11px}.user-modern-filters>*{width:100%;flex-basis:100%}}
 </style>
+
+<style id="moriah-etapa9-mobile">
+/* Etapa 9 — usabilidade móvel. Somente apresentação; Firebase e eventos preservados. */
+@media (max-width: 767px) {
+  html { -webkit-text-size-adjust: 100%; }
+  body { overflow-x: hidden; }
+  #app, #app main, #app .page { min-width: 0; max-width: 100%; }
+  #app main { padding-left: 12px !important; padding-right: 12px !important; padding-bottom: calc(110px + env(safe-area-inset-bottom)) !important; }
+  #app .topbar { padding: 8px 12px !important; gap: 8px; }
+  #app .topbar .actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px; min-width: 0; }
+  #app .topbar button { min-height: 38px; }
+  #app .page-head { gap: 10px !important; }
+  #app .page-head h2 { overflow-wrap: anywhere; }
+  #app .page-head button, #app .filters button { min-height: 44px; }
+  #app .bottom-nav { width: calc(100% - 16px) !important; max-width: 520px; bottom: max(8px, env(safe-area-inset-bottom)) !important; padding: 7px 5px !important; border-radius: 18px; }
+  #app .bottom-nav button { min-height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; touch-action: manipulation; }
+  #app .bottom-nav button span { font-size: 10px !important; line-height: 1.2; }
+  #app .panel, #app .card, #app .filters { min-width: 0; max-width: 100%; }
+  #app .filters { gap: 10px; }
+  #app input:not([type=checkbox]):not([type=radio]), #app select, #app textarea, dialog input:not([type=checkbox]):not([type=radio]), dialog select, dialog textarea { max-width: 100%; min-width: 0; font-size: 16px; }
+  #app .grid2, dialog .grid2 { grid-template-columns: minmax(0,1fr) !important; }
+  #app table, #app .report-table { display: block; width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+  #app table th, #app table td { white-space: nowrap; }
+  #app .table-scroll { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  dialog { width: calc(100vw - 20px) !important; max-width: 650px; max-height: min(90dvh, 900px); overflow-y: auto; overscroll-behavior: contain; }
+  dialog .form { padding: 14px !important; min-width: 0; }
+  dialog .form-actions { position: sticky; bottom: 0; z-index: 2; background: #fff; padding: 12px 0 max(10px,env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; }
+  dialog .form-actions button { min-height: 44px; flex: 1 1 125px; }
+  #app .stats, #app .user-kpis { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+}
+@media (max-width: 380px) {
+  #app main { padding-left: 9px !important; padding-right: 9px !important; }
+  #app .stats, #app .user-kpis { grid-template-columns: minmax(0,1fr) !important; }
+  #app .bottom-nav button span { font-size: 9px !important; }
+}
+@media print {
+  #app table, #app .report-table { display: table !important; overflow: visible !important; }
+  dialog .form-actions { position: static !important; }
+}
+</style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
