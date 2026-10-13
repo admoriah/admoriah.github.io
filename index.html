@@ -539,7 +539,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 </nav>
 </div>
 
-<dialog id="congDlg"><form id="congForm" class="form"><input type="hidden" id="cid"><div class="form-head"><h3>Congregação</h3><button type="button" data-close="congDlg">×</button></div><label>Nome<input id="cname" required></label><div class="grid2"><label>Pastor<input id="cpastor"></label><label>2º dirigente<input id="csecond"></label></div><div class="grid2"><label>Telefone<input id="cphone"></label><label>Instagram<input id="cinstagram"></label></div><label>Endereço<input id="caddress"></label><h4>Escala fixa na sede</h4><div class="grid2"><label>Participa?<select id="cscaleActive"><option value="sim">Sim</option><option value="nao">Não</option></select></label><label>Terça-feira<select id="cscaleOccurrence"><option value="1">Toda 1ª terça-feira</option><option value="2">Toda 2ª terça-feira</option><option value="3">Toda 3ª terça-feira</option><option value="4">Toda 4ª terça-feira</option><option value="5">Toda 5ª terça-feira</option></select></label></div><div class="grid2"><label>Horário<input id="cscaleTime" type="time"></label><label>Responsável<input id="cscaleResponsible"></label></div><label>Observações<textarea id="cscaleNotes"></textarea></label><div class="form-actions"><button type="button" class="secondary" data-close="congDlg">Cancelar</button><button class="primary">Salvar</button></div></form></dialog>
+<dialog id="congDlg"><form id="congForm" class="form"><input type="hidden" id="cid"><div class="form-head"><h3>Congregação</h3><button type="button" data-close="congDlg">×</button></div><label>Nome<input id="cname" required></label><div class="grid2"><label>Pastor<input id="cpastor"></label><label>2º dirigente<input id="csecond"></label></div><div class="grid2"><label>Telefone<input id="cphone"></label><label>Instagram<input id="cinstagram"></label></div><label>Endereço<input id="caddress"></label><h4>Escala fixa na sede</h4><div class="grid2"><label>Participa?<select id="cscaleActive"><option value="sim">Sim</option><option value="nao">Não</option></select></label><label>Terça-feira<select id="cscaleOccurrence"><option value="1">Toda 1ª terça-feira</option><option value="2">Toda 2ª terça-feira</option><option value="3">Toda 3ª terça-feira</option><option value="4">Toda 4ª terça-feira</option><option value="5">Toda 5ª terça-feira</option></select></label></div><div class="grid2"><label>Horário<input id="cscaleTime" type="time"></label><label>Responsável<input id="cscaleResponsible"></label></div><label>Observações<textarea id="cscaleNotes"></textarea></label><div class="form-actions"><button type="button" class="secondary" data-close="congDlg">Cancelar</button><button class="primary" type="submit" id="memberSaveButton">Salvar</button></div></form></dialog>
 
 <dialog id="workerDlg"><form id="workerForm" class="form form-modern-v4"><input type="hidden" id="wid"><input type="hidden" id="wphotoData"><div class="form-head"><div><h3>Cadastro de obreiro</h3><small>Dados ministeriais e contato</small></div><button type="button" data-close="workerDlg" aria-label="Fechar">×</button></div>
 <div class="member-form-section"><div class="member-section-title"><span>01</span><div><strong>Identificação</strong><small>Foto e dados do obreiro</small></div></div><div class="v4-photo-row"><img id="wphotoPreview" class="photo-preview" alt="Foto do obreiro"><label>Foto do obreiro<input id="wphoto" type="file" accept="image/*"><small>A foto é reduzida automaticamente antes de salvar.</small></label></div><label>Nome completo<input id="wname" required autocomplete="name"></label></div>
@@ -1402,5 +1402,19 @@ $("memberDocPrint").addEventListener("click",()=>{
 });
 
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
+</script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+ const f=document.getElementById('memberForm'), b=document.getElementById('memberSaveButton');
+ if(!f||!b)return;
+ b.addEventListener('click',function(ev){
+  ev.preventDefault();
+  const invalid=Array.from(f.elements).filter(x=>x.willValidate&&!x.checkValidity());
+  if(invalid.length){alert('Campos que impedem o salvamento:\n\n'+invalid.map(x=>(x.id||'campo')+': '+x.validationMessage).join('\n'));invalid[0].focus();return;}
+  if(typeof f.onsubmit!=='function'){alert('ERRO: a rotina de salvamento não foi inicializada.');return;}
+  try{f.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));}
+  catch(e){alert('Erro ao iniciar salvamento: '+(e?.message||e));}
+ });
+});
 </script>
 </body></html>
