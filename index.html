@@ -619,7 +619,7 @@ $("visitorSearch").oninput=renderVisitors;$("visitorMonthFilter").onchange=rende
 $("newVisitorBtn").onclick=()=>{if(!canEdit())return;$("visitorForm").reset();$("vid").value="";$("vdate").value=todayISO();fillCongSelect($("vcong"));openDlg("visitorDlg")};
 $("visitorForm").onsubmit=async e=>{e.preventDefault();const id=$("vid").value,data={name:$("vname").value.trim(),date:$("vdate").value,congregationId:"moriah",service:$("vservice").value,phone:$("vphone").value.trim(),city:$("vcity").value.trim(),invitedBy:$("vinvitedBy").value.trim(),firstVisit:$("vfirst").value,wantsVisit:$("vwantsVisit").value,status:$("vstatus").value,notes:$("vnotes").value.trim(),updatedAt:serverTimestamp()};try{id?await updateDoc(doc(db,"visitantes",id),data):await addDoc(collection(db,"visitantes"),data);closeDlg("visitorDlg");toast("Visitante salvo.")}catch(e){console.error(e);toast("Sem permissão.")}};
 window.editVisitor=id=>{const v=state.visitantes.find(x=>x.id===id);if(!v)return;$("vid").value=id;$("vname").value=v.name||"";$("vdate").value=v.date||todayISO();fillCongSelect($("vcong"));$("vcong").value=v.congregationId||"";$("vservice").value=v.service||"Outro";$("vphone").value=v.phone||"";$("vcity").value=v.city||"";$("vinvitedBy").value=v.invitedBy||"";$("vfirst").value=v.firstVisit||"sim";$("vwantsVisit").value=v.wantsVisit||"nao";$("vstatus").value=v.status||"aguardando";$("vnotes").value=v.notes||"";openDlg("visitorDlg")};
-window.visitorToMember=async id=>{const v=state.visitantes.find(x=>x.id===id);if(!v||!confirm(`Transformar ${v.name} em membro?`))return;try{await addDoc(collection(db,"membros"),{memberNumber:"",name:v.name,congregationId:v.congregationId,tither:"nao",phone:v.phone||"",birth:"",baptism:"",marital:"",address:v.city||"",notes:`Convertido de visitante. Primeira visita: ${fmt(v.date)}.`,createdAt:serverTimestamp()});await updateDoc(doc(db,"visitantes",id),{status:"membro",updatedAt:serverTimestamp()});toast("Visitante transformado em membro.")}catch(e){console.error(e);toast("Não foi possível transformar.")}};
+window.visitorToMember=async id=>{const v=state.visitantes.find(x=>x.id===id);if(!v||!confirm(`Transformar ${v.name} em membro?`))return;try{await addDoc(collection(db,"membros"),{memberNumber:proximoNumeroCadastroMembro(),name:v.name,congregationId:v.congregationId,tither:"nao",phone:v.phone||"",birth:"",baptism:"",marital:"",address:v.city||"",notes:`Convertido de visitante. Primeira visita: ${fmt(v.date)}.`,createdAt:serverTimestamp()});await updateDoc(doc(db,"visitantes",id),{status:"membro",updatedAt:serverTimestamp()});toast("Visitante transformado em membro.")}catch(e){console.error(e);toast("Não foi possível transformar.")}};
 
 function renderCultResults(){
  if(!$("cultResultList"))return;
@@ -708,7 +708,7 @@ async function syncMemberWorker(memberId, member){
   await setDoc(doc(db,"obreiros",workerId),workerData,{merge:true});
 }
 
-function toggleMemberRole(){const isWorker=$("mstatus").value==="obreiro";$("mroleWrap").classList.toggle("hidden",!isWorker);if(!isWorker)$("mrole").value="";} $("mstatus").addEventListener("change",toggleMemberRole); $("newMemberBtn").onclick=()=>{$("memberForm").reset();$("mid").value="";$("mnumber").value="";$("mdepartment").value="";toggleMemberRole();openDlg("memberDlg")};
+function toggleMemberRole(){const isWorker=$("mstatus").value==="obreiro";$("mroleWrap").classList.toggle("hidden",!isWorker);if(!isWorker)$("mrole").value="";} $("mstatus").addEventListener("change",toggleMemberRole); $("newMemberBtn").onclick=()=>{$("memberForm").reset();$("mid").value="";$("mnumber").value=proximoNumeroCadastroMembro();$("mdepartment").value="";toggleMemberRole();openDlg("memberDlg")};
 $("memberForm").onsubmit=async e=>{
  e.preventDefault();
  const id=$("mid").value;
@@ -818,6 +818,15 @@ function sendBirthdayWhatsApp(w){
 }
 
 function normalizeMemberNumber(v){return String(v??"").trim()}
+// Sugere o próximo número de cadastro a partir dos membros carregados do Firebase.
+function proximoNumeroCadastroMembro(){
+ const numeros=state.membros.map(m=>normalizeMemberNumber(m.memberNumber)).filter(n=>/^\d+$/.test(n));
+ if(!numeros.length)return "1";
+ const maior=numeros.reduce((a,b)=>BigInt(a)>BigInt(b)?a:b);
+ const proximo=(BigInt(maior)+1n).toString();
+ return maior.startsWith("0")?proximo.padStart(maior.length,"0"):proximo;
+}
+
 function memberNumberExists(number,congregationId,ignoreId=""){
  const n=normalizeMemberNumber(number).toLowerCase();
  if(!n)return false;
