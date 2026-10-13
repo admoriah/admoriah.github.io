@@ -552,6 +552,13 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
  <div class="panel"><div class="grid2"><label>Pesquisar departamento<input id="min22Search" type="search" placeholder="Nome, responsável ou atividade"></label><label>Situação<select id="min22Filter"><option value="">Todos</option><option value="ativo">Ativos</option><option value="inativo">Inativos</option></select></label></div><div class="actions"><button id="min22Csv" class="secondary" type="button">Exportar relatório CSV</button><button id="min22Print" class="secondary" type="button">Imprimir relatório</button></div></div>
  <div id="min22List"></div>
 </section>
+<section id="patrimonio23" class="page">
+ <div class="page-head"><div><h2>🏛️ Controle de Patrimônio</h2><p>Etapa 23 • Inventário de bens e equipamentos da AD Moriah.</p></div><button id="pat23New" class="primary edit-own" type="button">+ Novo bem</button></div>
+ <div id="pat23Status" class="panel" role="status">Aguardando sincronização do patrimônio.</div>
+ <div class="stats" id="pat23Stats"></div>
+ <div class="panel"><div class="grid2"><label>Pesquisar patrimônio<input id="pat23Search" type="search" placeholder="Código, descrição, localização, responsável"></label><label>Situação<select id="pat23Filter"><option value="">Todas</option><option value="ativo">Em uso</option><option value="manutencao">Em manutenção</option><option value="emprestado">Emprestado</option><option value="baixado">Baixado</option></select></label></div><div class="actions"><button id="pat23Csv" class="secondary" type="button">Exportar inventário CSV</button><button id="pat23Print" class="secondary" type="button">Imprimir inventário</button></div></div>
+ <div id="pat23List"></div>
+</section>
 <section id="mais" class="page">
   <div class="page-head"><div><h2>Explorar o AD Moriah</h2><p>Acesse todas as áreas do aplicativo.</p></div></div>
   <div class="moriah-menu-groups">
@@ -559,6 +566,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
       <button class="menu-link" data-page="membros">👥 Membros</button>
       <button class="menu-link" data-page="obreiros">👔 Obreiros</button>
       <button class="menu-link" data-page="ministerios22">⛪ Ministérios e Departamentos</button>
+      <button class="menu-link" data-page="patrimonio23">🏛️ Controle de Patrimônio</button>
       <button class="menu-link" data-page="visitantes">🙋 Visitantes</button>
     </div></div>
     <div class="panel moriah-menu-group"><h3>📅 Atividades da igreja</h3><div class="moriah-links">
@@ -586,6 +594,14 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 </div>
 
 
+<dialog id="pat23Dlg"><form id="pat23Form" class="form"><input type="hidden" id="pat23Id"><div class="form-head"><div><h3>Cadastro de patrimônio</h3><small>Registro individual do bem — AD Moriah</small></div><button type="button" data-close="pat23Dlg">×</button></div>
+<div class="grid2"><label>Nº patrimonial (obrigatório)<input id="pat23Number" maxlength="40" required placeholder="Ex.: PAT-0001"></label><label>Categoria<select id="pat23Category"><option>Som e áudio</option><option>Informática</option><option>Móveis</option><option>Instrumentos musicais</option><option>Equipamentos de vídeo</option><option>Climatização</option><option>Construção e instalações</option><option>Utensílios</option><option>Outros</option></select></label></div>
+<label>Descrição do bem<input id="pat23Name" maxlength="150" required placeholder="Ex.: Mesa de som digital"></label>
+<div class="grid2"><label>Marca / modelo<input id="pat23Brand" maxlength="100"></label><label>Nº de série<input id="pat23Serial" maxlength="100"></label></div>
+<div class="grid2"><label>Localização<input id="pat23Location" maxlength="120" placeholder="Ex.: Templo — som"></label><label>Responsável<input id="pat23Keeper" maxlength="120" placeholder="Nome do responsável"></label></div>
+<div class="grid2"><label>Data de aquisição<input id="pat23Date" type="date"></label><label>Valor de aquisição (R$)<input id="pat23Value" type="number" min="0" step="0.01" placeholder="0,00"></label></div>
+<div class="grid2"><label>Estado de conservação<select id="pat23Condition"><option>Novo</option><option>Bom</option><option>Regular</option><option>Necessita reparo</option><option>Inservível</option></select></label><label>Situação<select id="pat23Situation"><option value="ativo">Em uso</option><option value="manutencao">Em manutenção</option><option value="emprestado">Emprestado</option><option value="baixado">Baixado</option></select></label></div>
+<label>Observações<textarea id="pat23Notes" rows="3" maxlength="2000"></textarea></label><p class="muted">Alterações de localização, responsável e situação são registradas no histórico do bem. A baixa não exclui o registro.</p><div id="pat23FormStatus" role="status" class="muted"></div><div class="form-actions"><button type="button" class="secondary" data-close="pat23Dlg">Cancelar</button><button type="submit" class="primary">Salvar patrimônio</button></div></form></dialog>
 <dialog id="min22Dlg"><form id="min22Form" class="form"><input id="min22Id" type="hidden"><div class="form-head"><h3>Cadastro de ministério / departamento</h3><button type="button" data-close="min22Dlg">×</button></div>
 <label>Nome do departamento<input id="min22Name" maxlength="100" required placeholder="Ex.: Escola Bíblica Dominical"></label>
 <div class="grid2"><label>Área de atuação<select id="min22Area"><option>Ensino</option><option>Louvor</option><option>Evangelismo</option><option>Missões</option><option>Intercessão</option><option>Infantil</option><option>Juventude</option><option>Assistência social</option><option>Recepção</option><option>Administração</option><option>Outros</option></select></label><label>Situação<select id="min22Situation"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select></label></div>
@@ -685,7 +701,7 @@ const {
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const $=id=>document.getElementById(id);
-const state={authUser:null,profile:null,congregacoes:[],obreiros:[],membros:[],festividades:[],agenda:[],usuarios:[],visitantes:[],resultadosCulto:[],ministerios22:[],unsubs:[],scaleDate:new Date()};
+const state={authUser:null,profile:null,congregacoes:[],obreiros:[],membros:[],festividades:[],agenda:[],usuarios:[],visitantes:[],resultadosCulto:[],ministerios22:[],patrimonio23:[],unsubs:[],scaleDate:new Date()};
 
 function toast(m){const e=$("toast");e.textContent=m;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
 function fmt(d){if(!d)return "";const [y,m,dd]=d.split("-");return `${dd}/${m}/${y}`}
@@ -735,8 +751,8 @@ function sub(name,target,filter=true){
  const u=onSnapshot(q,s=>{state[target]=s.docs.map(d=>({id:d.id,...d.data()}));$("syncState").textContent="● online";renderAll()},e=>{console.error(e);$("syncState").textContent="● erro"});
  state.unsubs.push(u)
 }
-function startRealtime(){startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);sub("obreiros","obreiros",true);sub("membros","membros",true);sub("festividades","festividades",true);sub("visitantes","visitantes",true);sub("resultadosCulto","resultadosCulto",true);sub("agendaRegional","agenda",false);subMin22();if(isAdmin())sub("usuarios","usuarios",false)}
-function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();renderMin22();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
+function startRealtime(){startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);sub("obreiros","obreiros",true);sub("membros","membros",true);sub("festividades","festividades",true);sub("visitantes","visitantes",true);sub("resultadosCulto","resultadosCulto",true);sub("agendaRegional","agenda",false);subMin22();subPat23();if(isAdmin())sub("usuarios","usuarios",false)}
+function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();renderMin22();renderPat23();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
 
 // Apenas membros na situação Obreiro entram na contagem ministerial.
 // Registros antigos de Cooperador permanecem no banco, mas não aparecem como obreiros.
@@ -1756,6 +1772,49 @@ $('min22Form').onsubmit=async e=>{
 function min22Csv(){const header=['Departamento','Área','Situação','Responsável','Vice','Integrantes','Atividades','Periodicidade','Local','Observações'],rows=min22Filtered().map(x=>[x.name,x.area,x.situation,x.leaderKey?min22Label(x.leaderKey):'',x.deputyKey?min22Label(x.deputyKey):'',(x.peopleKeys||[]).map(min22Label).join(' | '),x.activities,x.schedule,x.place,x.notes]);return '\ufeff'+[header,...rows].map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');}
 $('min22Csv').onclick=()=>{const blob=new Blob([min22Csv()],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AD_Moriah_Ministerios.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);};
 $('min22Print').onclick=()=>{const rows=min22Filtered();const win=window.open('','_blank');if(!win)return toast('Permita pop-ups para imprimir.');const body=rows.map(x=>'<tr><td>'+min22Safe(x.name)+'</td><td>'+min22Safe(x.area)+'</td><td>'+min22Safe(x.leaderKey?min22Label(x.leaderKey):'')+'</td><td>'+min22Safe((x.peopleKeys||[]).map(min22Label).join(', '))+'</td><td>'+min22Safe(x.situation||'ativo')+'</td></tr>').join('');win.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ministérios AD Moriah</title><style>body{font-family:Arial;margin:24px}table{width:100%;border-collapse:collapse;font-size:12px}td,th{border:1px solid #aaa;padding:7px;text-align:left}</style></head><body><h2>Assembleia de Deus Moriah — Ministérios e Departamentos</h2><table><thead><tr><th>Departamento</th><th>Área</th><th>Responsável</th><th>Integrantes</th><th>Situação</th></tr></thead><tbody>'+body+'</tbody></table></body></html>');win.document.close();win.focus();win.print();};
+
+// ETAPA 23 — PATRIMÔNIO. Módulo isolado: não modifica membros, obreiros ou financeiro.
+const pat23Fields=['Number','Category','Name','Brand','Serial','Location','Keeper','Date','Value','Condition','Situation','Notes'];
+function pat23Safe(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function subPat23(){
+ try{const unsubscribe=onSnapshot(collection(db,'patrimonio'),snapshot=>{
+  state.patrimonio23=snapshot.docs.map(d=>({id:d.id,...d.data()}));
+  $('pat23Status').textContent='● Patrimônio sincronizado com o Firebase.';renderPat23();
+ },err=>{$('pat23Status').textContent='Não foi possível consultar o patrimônio ('+(err.code||'erro')+'). Confira a regra da coleção patrimonio no Firestore.';console.error('Patrimônio:',err);state.patrimonio23=[];renderPat23();});state.unsubs.push(unsubscribe);
+ }catch(err){console.error('Patrimônio:',err);$('pat23Status').textContent='Erro ao iniciar consulta do patrimônio.';}
+}
+function pat23Rows(){const q=$('pat23Search').value.trim().toLocaleLowerCase('pt-BR'),f=$('pat23Filter').value;
+ return [...state.patrimonio23].filter(x=>(!f||(x.situation||'ativo')===f)&&(!q||[x.number,x.name,x.category,x.location,x.keeper,x.brand,x.serial].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(q)))).sort((a,b)=>String(a.number||'').localeCompare(String(b.number||''),'pt-BR',{numeric:true}));}
+function pat23History(x){return (Array.isArray(x.history)?x.history:[]).map(h=>'<li>'+pat23Safe(h.date||'')+' — '+pat23Safe(h.description||'')+'</li>').join('');}
+function renderPat23(){if(!$('pat23List'))return;const all=state.patrimonio23,rows=pat23Rows();
+ $('pat23New').style.display=canEdit()?'':'none';
+ $('pat23Stats').innerHTML=[['Bens cadastrados',all.length],['Em uso',all.filter(x=>(x.situation||'ativo')==='ativo').length],['Em manutenção',all.filter(x=>x.situation==='manutencao').length],['Valor registrado',money(all.reduce((n,x)=>n+Number(x.value||0),0))]].map(x=>'<div class="stat"><small>'+x[0]+'</small><strong>'+x[1]+'</strong></div>').join('');
+ $('pat23List').innerHTML=rows.length?rows.map(x=>'<article class="panel" style="margin:12px 0"><div class="page-head"><div><h3>'+pat23Safe(x.number)+' — '+pat23Safe(x.name)+'</h3><p>'+pat23Safe(x.category)+' • '+pat23Safe(({ativo:'Em uso',manutencao:'Em manutenção',emprestado:'Emprestado',baixado:'Baixado'})[x.situation]||x.situation||'Em uso')+'</p></div>'+(canEdit()?'<button type="button" class="secondary" data-pat23-edit="'+pat23Safe(x.id)+'">Editar / movimentar</button>':'')+'</div><p><b>Local:</b> '+pat23Safe(x.location||'Não informado')+' • <b>Responsável:</b> '+pat23Safe(x.keeper||'Não informado')+'<br><b>Marca/modelo:</b> '+pat23Safe(x.brand||'—')+' • <b>Nº de série:</b> '+pat23Safe(x.serial||'—')+'<br><b>Conservação:</b> '+pat23Safe(x.condition||'—')+' • <b>Aquisição:</b> '+pat23Safe(x.date?fmt(x.date):'—')+' • <b>Valor:</b> '+money(x.value)+'</p><details><summary>Histórico e observações</summary><p>'+pat23Safe(x.notes||'Sem observações')+'</p><ul>'+pat23History(x)+'</ul></details></article>').join(''):'<div class="panel">Nenhum patrimônio encontrado.</div>';
+}
+function pat23Open(id=''){
+ if(!canEdit())return toast('Sem permissão para editar patrimônio.');
+ const x=state.patrimonio23.find(d=>d.id===id)||{};$('pat23Form').reset();$('pat23Id').value=id;
+ for(const field of pat23Fields){const key=field[0].toLowerCase()+field.slice(1);if(x[key]!==undefined&&x[key]!==null)$('pat23'+field).value=x[key];}
+ $('pat23FormStatus').textContent='';openDlg('pat23Dlg');
+}
+$('pat23New').onclick=()=>pat23Open();$('pat23Search').oninput=renderPat23;$('pat23Filter').onchange=renderPat23;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-pat23-edit]');if(b)pat23Open(b.dataset.pat23Edit);});
+$('pat23Form').onsubmit=async e=>{
+ e.preventDefault();if(!canEdit())return;const id=$('pat23Id').value,existing=state.patrimonio23.find(x=>x.id===id);
+ const data={};for(const field of pat23Fields){const key=field[0].toLowerCase()+field.slice(1);data[key]=$('pat23'+field).value.trim();}
+ data.number=data.number.toUpperCase();data.value=data.value===''?null:Number(data.value);data.congregationId='moriah';data.updatedAt=serverTimestamp();
+ if(!data.number||!data.name)return;
+ if(state.patrimonio23.some(x=>x.id!==id&&String(x.number||'').toUpperCase()===data.number)){$('pat23FormStatus').textContent='Esse número patrimonial já está em uso. Escolha outro.';return;}
+ const changes=existing?['location','keeper','situation','condition'].filter(k=>String(existing[k]||'')!==String(data[k]||'')).map(k=>({location:'Localização',keeper:'Responsável',situation:'Situação',condition:'Conservação'}[k])+': '+String(existing[k]||'—')+' → '+String(data[k]||'—')):[];
+ const history=Array.isArray(existing?.history)?[...existing.history]:[];
+ if(changes.length)history.push({date:new Date().toLocaleString('pt-BR'),description:changes.join('; ')});
+ data.history=history;$('pat23FormStatus').textContent='Salvando...';
+ try{if(id)await updateDoc(doc(db,'patrimonio',id),data);else await addDoc(collection(db,'patrimonio'),{...data,createdAt:serverTimestamp()});closeDlg('pat23Dlg');toast('Patrimônio salvo com sucesso.');}
+ catch(err){console.error('Salvar patrimônio:',err);$('pat23FormStatus').textContent='Não foi possível salvar ('+(err.code||'erro')+'). Verifique as permissões do Firebase.';}
+};
+function pat23Table(){return [['Número','Descrição','Categoria','Localização','Responsável','Estado','Situação','Aquisição','Valor (R$)','Marca','Série','Observações'],...pat23Rows().map(x=>[x.number,x.name,x.category,x.location,x.keeper,x.condition,x.situation,x.date,x.value??'',x.brand,x.serial,x.notes])];}
+$('pat23Csv').onclick=()=>{const csv='\ufeff'+pat23Table().map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AD_Moriah_Inventario_Patrimonial.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);};
+$('pat23Print').onclick=()=>{const rows=pat23Table(),win=window.open('','_blank');if(!win)return toast('Permita pop-ups para imprimir.');const th=rows[0].slice(0,9).map(x=>'<th>'+pat23Safe(x)+'</th>').join(''),body=rows.slice(1).map(r=>'<tr>'+r.slice(0,9).map(v=>'<td>'+pat23Safe(v)+'</td>').join('')+'</tr>').join('');win.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Inventário AD Moriah</title><style>body{font-family:Arial;margin:20px}table{border-collapse:collapse;width:100%;font-size:10px}td,th{border:1px solid #bbb;padding:5px;text-align:left}@page{size:A4 landscape;margin:12mm}</style></head><body><h2>AD Moriah — Inventário Patrimonial</h2><p>Gerado em '+new Date().toLocaleDateString('pt-BR')+'</p><table><thead><tr>'+th+'</tr></thead><tbody>'+body+'</tbody></table></body></html>');win.document.close();win.focus();win.print();};
 </script>
 <script>
 (function(){
