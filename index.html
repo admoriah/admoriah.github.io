@@ -456,6 +456,93 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 <style>
 .e33-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:12px 0}.e33-stat{background:#f1f6fb;border:1px solid #d9e5f0;border-radius:12px;padding:14px}.e33-stat strong{display:block;font-size:24px}.e33-task{background:#fff;border:1px solid #dbe3ed;border-radius:12px;padding:14px;margin:10px 0}.e33-task h3{margin:0 0 6px}.e33-task p{margin:6px 0}.e33-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.e33-filter{display:flex;flex-wrap:wrap;gap:10px}.e33-filter>*{min-width:155px;flex:1}.e33-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.e33-form label{display:flex;flex-direction:column;gap:5px}.e33-form input,.e33-form select,.e33-form textarea{width:100%;box-sizing:border-box}.e33-wide{grid-column:1/-1}#e33Dialog{border:0;border-radius:16px;padding:22px;width:min(740px,96vw);max-height:90vh;overflow:auto}#e33Dialog::backdrop{background:#0009}@media(max-width:650px){.e33-form{grid-template-columns:1fr}.e33-wide{grid-column:auto}}
 </style>
+
+<style id="etapa37-visual">
+/* Etapa 37: identidade visual e painel profissional; sem mudanças de dados ou permissões. */
+:root{--navy:#0b2344;--navy2:#123d66;--gold:#d9a63b;--bg:#f3f6fa;--text:#1b2b42;--muted:#617188}
+html{scroll-behavior:smooth}
+body{font-family:Inter,"Segoe UI",Arial,sans-serif;letter-spacing:-.008em}
+.app{background:radial-gradient(ellipse at 92% 0%,#e4edf7 0,transparent 38%),#f3f6fa}
+.topbar{min-height:76px;padding:13px clamp(16px,3vw,42px);background:#092341;box-shadow:0 4px 20px #00152f1a;border-bottom:2px solid #d9a63b55;gap:14px}
+.topbar .brand{align-items:center;gap:12px}
+.topbar .brand strong{color:#f1c66a;letter-spacing:.02em}
+.topbar .brand small{color:#e2e9f1}
+.topbar button{border-radius:12px}
+#syncState{font-weight:700}
+main{max-width:1440px;padding:clamp(14px,2.5vw,34px);padding-bottom:100px}
+.page-head{background:#fff;border:1px solid #e4eaf1;padding:19px 22px;border-radius:18px;box-shadow:0 4px 18px #12365b08}
+.page-head h2{font-size:clamp(21px,2vw,28px);color:#102b4b;letter-spacing:-.035em}
+.page-head p{font-size:13px}
+.panel,.card,.stat{border:1px solid #e5eaf0;box-shadow:0 6px 22px #1433540b;border-radius:18px}
+.panel{padding:21px;margin-bottom:16px}
+.panel h3{font-size:16px;color:#12304e;line-height:1.4}
+.card{transition:box-shadow .18s,transform .18s}
+.card:hover{box-shadow:0 12px 30px #14335417}
+.primary{background:#123c67}
+.primary,.secondary,.danger,.approve,.reject{border-radius:11px;min-height:37px;transition:filter .18s,transform .18s}
+.primary:hover,.secondary:hover{filter:brightness(.96)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #e3b34b;outline-offset:2px}
+input,select,textarea{border-color:#d4dfeb;border-radius:11px;min-height:40px}
+input:focus,select:focus,textarea:focus{border-color:#2c6596;box-shadow:0 0 0 3px #2369a51b;outline:0}
+.report-table{background:white;border-radius:10px;overflow:hidden}
+.report-table th{background:#173c62}
+#home{--home-gap:18px;display:none}
+#home.active{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:var(--home-gap)}
+#home>.e27-tools,#home>.e27-quick,#home>.welcome,#home>#stats,#home>#e28Panel,#home>.e37-heading{grid-column:1/-1}
+#home>.panel{margin:0;min-width:0}
+#home>.welcome{padding:clamp(24px,3.5vw,42px);border-radius:24px;background:linear-gradient(115deg,#0a294b 0%,#14446d 70%,#1e5678 100%);box-shadow:0 14px 34px #0a294b28;position:relative;overflow:hidden;min-height:162px}
+#home>.welcome:after{content:"";position:absolute;width:300px;height:300px;right:-100px;top:-150px;border-radius:50%;border:50px solid #ffffff0b;pointer-events:none}
+#home .welcome h2{font-size:clamp(23px,3vw,36px);line-height:1.1;letter-spacing:-.035em;margin:8px 0}
+#home .welcome small{color:#f4cf83;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.11em}
+#home .welcome p{color:#e3edf8;margin:8px 0 0}
+#home .avatar{width:70px;height:70px;background:#ffffff12;box-shadow:0 0 0 7px #ffffff10}
+.e37-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 -4px}
+.e37-heading h2{font-size:19px;color:#143352;margin:0;letter-spacing:-.025em}
+.e37-heading p{font-size:12px;color:#617188;margin:4px 0 0}
+.e37-tag{font-size:11px;font-weight:800;border:1px solid #dbe4ee;border-radius:999px;background:#fff;padding:8px 11px;color:#335777;white-space:nowrap}
+#home .stats{margin:0;gap:14px}
+#home .stat{padding:19px 20px;border:1px solid #e4eaf0;border-top:0;position:relative;overflow:hidden;min-height:112px}
+#home .stat:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#d9a63b}
+#home .stat:nth-child(4n + 2):before{background:#2e8eab}
+#home .stat:nth-child(4n + 3):before{background:#5c7eb5}
+#home .stat:nth-child(4n + 4):before{background:#48a18a}
+#home .stat small{font-size:12px;font-weight:650;color:#60748a}
+#home .stat strong{font-size:clamp(24px,2.5vw,33px);letter-spacing:-.04em;color:#153655}
+#home #e28Panel{border-left:4px solid #d9a63b;background:linear-gradient(90deg,#fffdf7,#fff 34%)}
+#home>.panel:not(#e28Panel){min-height:175px}
+#home .e27-quick{gap:9px}
+#home .e27-quick button{border:1px solid #dce5ef;background:#fff;border-radius:12px;box-shadow:0 3px 12px #1233540b;transition:transform .15s,box-shadow .15s}
+#home .e27-quick button:hover{transform:translateY(-2px);box-shadow:0 8px 22px #1233541b}
+#home .e27-search{border:1px solid #d6e2ee;background:#fff;border-radius:14px;box-shadow:0 3px 15px #1233540c}
+.bottom-nav{box-shadow:0 -8px 24px #0a244123;border-top:1px solid #ffffff24}
+@media(min-width:1050px){
+ #home .stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ #home.active{grid-template-columns:1fr;gap:13px}
+ #home>.panel{grid-column:1}
+ #home .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ #home .stat{padding:14px;min-height:96px}
+ #home>.welcome{min-height:145px;padding:22px}
+ #home .avatar{width:54px;height:54px;font-size:19px}
+ .topbar{min-height:65px;padding:9px 12px}
+ main{padding:13px 12px 100px}
+ .panel{padding:16px}
+ .e37-tag{display:none}
+}
+@media(max-width:390px){
+ #home .stats{grid-template-columns:1fr 1fr}
+ #home .stat strong{font-size:23px}
+ #home .welcome h2{font-size:23px}
+}
+@media print{
+ #home.active{display:block}
+ #home .panel{margin-bottom:12px}
+ .e37-heading{display:none}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important}}
+</style>
+
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -514,6 +601,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
     <button type="button" data-page="financeiro" data-e27module="financeiro">💰 Financeiro</button>
   </div>
 
+  <div class="e37-heading"><div><h2>Visão geral da igreja</h2><p>Informações e atividades em um único lugar</p></div><span class="e37-tag">PAINEL ADMINISTRATIVO</span></div>
   <div class="welcome"><div><small>Bem-vindo(a)</small><h2 id="welcomeName">AD Moriah</h2><p id="welcomeProfile"></p></div><div class="avatar">A</div></div>
   <div id="stats" class="stats" aria-label="Resumo dos indicadores da igreja"></div>
 
