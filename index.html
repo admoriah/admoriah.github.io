@@ -280,6 +280,9 @@ dialog::backdrop{background:#00152fbb}
 .e27-help{font-size:12px;color:#64748b}
 @media(max-width:650px){.e27-quick{grid-template-columns:repeat(2,minmax(0,1fr))}.e27-quick button{min-height:58px;padding:10px}.e27-tools{gap:7px}.e27-shortcut{padding:12px 9px}}
 
+
+/* ETAPA 30 — Integração e acompanhamento */
+.e30-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin:14px 0}.e30-stat{padding:14px;border:1px solid #dbe4ec;border-radius:12px;background:#fff}.e30-stat b{font-size:24px;display:block;color:#17466a}.e30-list{display:grid;gap:12px}.e30-item{padding:15px;border:1px solid #dce4ec;border-radius:13px;background:#fff}.e30-item h3{margin:0 0 6px}.e30-meta{color:#526274;font-size:13px;line-height:1.6}.e30-history{padding:8px 10px;background:#f4f7fa;border-radius:8px;margin:6px 0;white-space:pre-wrap}.e30-item .actions{margin-top:10px}.e30-small{font-size:12px;color:#566577}.e30-filter{display:grid;grid-template-columns:2fr 1fr;gap:12px}@media(max-width:650px){.e30-filter{grid-template-columns:1fr}}
 </style>
 <style>
 /* Cabeçalho AD Moriah: logomarca branca e ampliada, responsiva */
@@ -618,6 +621,13 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 <div id="ev25Status" class="panel" role="status">Aguardando sincronização dos eventos.</div><div id="ev25Stats" class="stats"></div>
 <div class="panel"><div class="grid2"><label>Pesquisar evento ou responsável<input id="ev25Search" type="search" placeholder="Título, local, tipo ou equipe"></label><label>Situação<select id="ev25Filter"><option value="">Todas</option><option value="planejado">Planejado</option><option value="confirmado">Confirmado</option><option value="realizado">Realizado</option><option value="cancelado">Cancelado</option></select></label></div><div class="actions"><button id="ev25Csv" class="secondary" type="button">Exportar CSV</button><button id="ev25Print" class="secondary" type="button">Imprimir relatório</button></div></div>
 <div id="ev25List"></div></section>
+
+<section id="acompanhamento30" class="page">
+ <div class="page-head"><div><h2>🤝 Integração e Acompanhamento</h2><p>Etapa 30 • Visitantes, novos convertidos, contatos e integração.</p></div><button id="e30New" class="primary" type="button">+ Novo acompanhamento</button></div>
+ <div id="e30Status" class="panel" role="status">Aguardando sincronização.</div><div id="e30Stats" class="e30-cards"></div>
+ <div class="panel"><div class="e30-filter"><label>Pesquisar nome, responsável ou contato<input id="e30Search" type="search" placeholder="Digite para pesquisar"></label><label>Situação<select id="e30Filter"><option value="">Todas</option><option value="aguardando">Aguardando contato</option><option value="acompanhamento">Em acompanhamento</option><option value="integrado">Integrado</option><option value="encerrado">Encerrado</option></select></label></div><div class="actions"><button id="e30Csv" class="secondary" type="button">Exportar relatório CSV</button><button id="e30Print" class="secondary" type="button">Imprimir resumo</button></div><p class="e30-small">Dados pastorais: acesso limitado aos usuários autorizados. Não inclua informações íntimas ou sensíveis desnecessárias nas observações.</p></div>
+ <div id="e30List" class="e30-list"></div>
+</section>
 <section id="auditoria29" class="page">
  <div class="page-head"><div><h2>🛡️ Histórico de alterações</h2><p>Etapa 29 • Consulta administrativa de operações realizadas no aplicativo.</p></div></div>
  <div id="e29Status" class="panel" role="status">Aguardando acesso ao histórico.</div>
@@ -638,6 +648,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
       <button class="menu-link" data-page="ministerios22">⛪ Ministérios e Departamentos</button>
       <button class="menu-link" data-page="patrimonio23">🏛️ Controle de Patrimônio</button>
       <button class="menu-link" data-page="visitantes">🙋 Visitantes</button>
+      <button class="menu-link" data-page="acompanhamento30">🤝 Integração e Acompanhamento</button>
     </div></div>
     <div class="panel moriah-menu-group"><h3>📅 Atividades da igreja</h3><div class="moriah-links">
       <button class="menu-link" data-page="agenda">📅 Agenda</button>
@@ -667,6 +678,15 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 </div>
 
 
+
+<dialog id="e30Dlg"><form id="e30Form" class="form"><input type="hidden" id="e30Id"><div class="form-head"><div><h3>Cadastro de acompanhamento</h3><small>Informações administrativas para integração.</small></div><button type="button" data-close="e30Dlg">×</button></div>
+ <div class="grid2"><label>Vincular visitante existente<select id="e30Visitor"><option value="">Sem vínculo — cadastro manual</option></select></label><label>Tipo de acompanhamento<select id="e30Type"><option value="visitante">Visitante</option><option value="convertido">Novo convertido</option></select></label></div>
+ <div class="grid2"><label>Nome completo *<input id="e30Name" maxlength="160" required></label><label>Telefone / WhatsApp<input id="e30Phone" maxlength="30" type="tel"></label></div>
+ <div class="grid2"><label>Responsável<select id="e30Leader"><option value="">Não definido</option></select></label><label>Situação<select id="e30Situation"><option value="aguardando">Aguardando contato</option><option value="acompanhamento">Em acompanhamento</option><option value="integrado">Integrado</option><option value="encerrado">Encerrado</option></select></label></div>
+ <div class="grid2"><label>Data do início<input id="e30Start" type="date" required></label><label>Próximo contato<input id="e30Next" type="date"></label></div>
+ <label>Observação administrativa breve<textarea id="e30Notes" rows="3" maxlength="1000" placeholder="Ex.: convidar para reunião de integração"></textarea></label>
+ <div id="e30FormStatus" role="status" class="e30-small"></div><div class="actions"><button type="submit" class="primary">Salvar acompanhamento</button><button type="button" class="secondary" data-close="e30Dlg">Cancelar</button></div></form></dialog>
+<dialog id="e30ContactDlg"><form id="e30ContactForm" class="form"><input type="hidden" id="e30ContactId"><div class="form-head"><h3>Registrar contato ou visita</h3><button type="button" data-close="e30ContactDlg">×</button></div><label>Data do contato<input id="e30ContactDate" type="date" required></label><label>Tipo<select id="e30ContactType"><option value="telefone">Ligação</option><option value="whatsapp">WhatsApp</option><option value="presencial">Visita presencial</option><option value="culto">Conversa no culto</option><option value="outro">Outro</option></select></label><label>Resultado resumido<textarea id="e30ContactNote" maxlength="500" rows="3" required></textarea></label><label>Próximo contato (opcional)<input id="e30ContactNext" type="date"></label><div id="e30ContactStatus" role="status" class="e30-small"></div><div class="actions"><button type="submit" class="primary">Registrar contato</button><button type="button" class="secondary" data-close="e30ContactDlg">Cancelar</button></div></form></dialog>
 <dialog id="ev25Dlg"><form id="ev25Form" class="form"><input type="hidden" id="ev25Id"><div class="form-head"><div><h3>Cadastro de evento</h3><small>Dados exclusivos do módulo de eventos.</small></div><button type="button" data-close="ev25Dlg">×</button></div>
 <div class="grid2"><label>Nome do evento *<input id="ev25Title" maxlength="180" required></label><label>Tipo<select id="ev25Type"><option>Conferência bíblica</option><option>Congresso</option><option>Festividade</option><option>Encontro de jovens</option><option>Encontro de mulheres</option><option>Encontro de homens</option><option>Curso / capacitação</option><option>Retiro</option><option>Evangelismo</option><option>Outro</option></select></label></div>
 <div class="grid2"><label>Data inicial *<input id="ev25Start" type="date" required></label><label>Data final *<input id="ev25End" type="date" required></label></div>
@@ -801,7 +821,7 @@ const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const $=id=>document.getElementById(id);
 // Auditoria informativa: grava após sucesso, sem interromper o salvamento original.
 // Somente operações diretas (não transações, lotes ou scripts externos).
-const E29_COLLECTIONS=new Set(["membros","obreiros","visitantes","resultadosCulto","festividades","agendaRegional","financeiro","ministerios","patrimonio","escalasCulto","eventosEspeciais","congregacoes","usuarios"]);
+const E29_COLLECTIONS=new Set(["membros","obreiros","visitantes","resultadosCulto","festividades","agendaRegional","financeiro","ministerios","patrimonio","escalasCulto","eventosEspeciais","acompanhamentos","congregacoes","usuarios"]);
 let e29Entries=[];
 let e29Listening=false;
 function e29Log(operation,ref){
@@ -856,7 +876,7 @@ $("e29Csv").addEventListener("click",()=>{
  const blob=new Blob(["\ufeff"+data],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AD_Moriah_Auditoria_Etapa29.csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 
-const state={authUser:null,profile:null,congregacoes:[],obreiros:[],membros:[],festividades:[],agenda:[],usuarios:[],visitantes:[],resultadosCulto:[],ministerios22:[],patrimonio23:[],escalas24:[],eventos25:[],unsubs:[],scaleDate:new Date()};
+const state={authUser:null,profile:null,congregacoes:[],obreiros:[],membros:[],festividades:[],agenda:[],usuarios:[],visitantes:[],resultadosCulto:[],ministerios22:[],patrimonio23:[],escalas24:[],eventos25:[],acompanhamentos30:[],unsubs:[],scaleDate:new Date()};
 
 function toast(m){const e=$("toast");e.textContent=m;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
 function fmt(d){if(!d)return "";const [y,m,dd]=d.split("-");return `${dd}/${m}/${y}`}
@@ -865,7 +885,7 @@ function emailFromLogin(v){v=v.trim().toLowerCase();return v.includes("@")?v:`${
 function simpleLogin(email){return (email||"").split("@")[0]}
 const GENERAL_ADMIN_UID="tKBmnsZ2f6eD1dTFyxNxPYRYP8j2";
 const PERMISSION_MODULES=[
- ["membros","Membros","membros"],["obreiros","Obreiros","obreiros"],["visitantes","Visitantes","visitantes"],
+ ["membros","Membros","membros"],["obreiros","Obreiros","obreiros"],["visitantes","Visitantes","visitantes"],["acompanhamento30","Integração e acompanhamento","acompanhamentos"],
  ["resultadosCulto","Resultados dos cultos","resultadosCulto"],["festividades","Festividades","festividades"],
  ["agenda","Agenda","agendaRegional"],["financeiro","Financeiro","financeiro"],
  ["ministerios22","Ministérios e departamentos","ministerios"],["patrimonio23","Patrimônio","patrimonio"],
@@ -906,7 +926,7 @@ function profileLabel(r){return ({admin:"Administrador",congregacao:"Pastor / Co
 function clearUnsubs(){e29Listening=false;e29Entries=[];financeRows=[];state.unsubs.forEach(fn=>{try{fn()}catch{}});state.unsubs=[]}
 // ETAPA 27: busca local, atalhos e navegação rápida. Não grava nem modifica documentos.
 const e27Modules=[
- ["home","Início"],["membros","Membros"],["obreiros","Obreiros"],["visitantes","Visitantes"],
+ ["home","Início"],["membros","Membros"],["obreiros","Obreiros"],["visitantes","Visitantes"],["acompanhamento30","Integração e acompanhamento"],
  ["agenda","Agenda"],["escalas24","Escalas de cultos"],["eventos25","Eventos especiais"],
  ["ministerios22","Ministérios e departamentos"],["patrimonio23","Patrimônio"],
  ["resultadosCulto","Resultados dos cultos"],["festividades","Festividades"],
@@ -962,6 +982,7 @@ function e28Notices(){
  if(permissionFor("agenda","view"))for(const ev of state.agenda||[]){const d=e28Day(ev.date);if(!d)continue;const days=e28Diff(d);if(days>=0&&days<=14)e28Add(a,"agenda",days===0?"urgent":"normal",ev.name||"Compromisso na agenda",`${days===0?"Hoje":`Em ${days} dia(s)`} • ${fmt(ev.date)} ${e28Text(ev.time)}`,"agenda",days)}
  if(permissionFor("eventos25","view"))for(const ev of state.eventos25||[]){const v=ev.startDate||ev.date||ev.dateStart;const d=e28Day(v);if(!d)continue;const days=e28Diff(d);if(days>=0&&days<=14)e28Add(a,"agenda",days===0?"urgent":"normal",ev.name||ev.title||"Evento especial",`${days===0?"Hoje":`Em ${days} dia(s)`} • ${fmt(v)}`,"eventos25",days)}
  if(permissionFor("visitantes","view"))for(const v of state.visitantes||[]){const d=e28Day(v.date);if(!d)continue;const days=e28Diff(d);const status=e28Text(v.status).toLowerCase();if(days>=0&&days<=14&&(!status||["novo","pendente","new","pending"].includes(status)))e28Add(a,"visitante","normal","Acompanhamento de visitante: "+(v.name||"Sem nome"),`Visita registrada em ${fmt(v.date)} • confira se houve contato`,"visitantes",days)}
+ if(permissionFor("acompanhamento30","view"))for(const x of state.acompanhamentos30||[]){if(["integrado","encerrado"].includes(x.situation)||!x.nextContact||x.nextContact>todayISO())continue;e28Add(a,"visitante","urgent","Contato pendente: "+(x.name||"Sem nome"),"Retorno previsto: "+fmt(x.nextContact),"acompanhamento30",-1)}
  return a.sort((x,y)=>(x.level==="urgent"?-1:0)-(y.level==="urgent"?-1:0)||x.sort-y.sort).slice(0,120)
 }
 function e28Render(){const list=document.getElementById("e28List"),summary=document.getElementById("e28Summary");if(!list||!summary)return;
@@ -973,7 +994,7 @@ function e28Render(){const list=document.getElementById("e28List"),summary=docum
 document.getElementById("e28Filter").addEventListener("change",e28Render);
 document.getElementById("e28Refresh").addEventListener("click",e28Render);
 
-function openPage(id){e27RefreshQuick();if(id==="auditoria29"&&!isGeneralAdmin())return toast("Acesso exclusivo do Administrador Geral.");if(id==="auditoria29")e29Start();if(id==="usuarios"&&!canManageUsers())return toast("Acesso restrito.");if(id!=="mais"&&id!=="usuarios"&&PERMISSION_MODULES.some(x=>x[0]===id)&&!permissionFor(id,"view"))return toast("Sem permissão para visualizar este módulo.");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$(id)?.classList.add("active");if(id==="relatorios")renderReports();if(id==="indicadores")renderIndicators();if(id==="escala")renderScale();if(id==="usuarios")renderUsers();if(id==="financeiro")renderFinance();applyPermissionNavigation()}
+function openPage(id){e27RefreshQuick();if(id==="auditoria29"&&!isGeneralAdmin())return toast("Acesso exclusivo do Administrador Geral.");if(id==="auditoria29")e29Start();if(id==="usuarios"&&!canManageUsers())return toast("Acesso restrito.");if(id!=="mais"&&id!=="usuarios"&&PERMISSION_MODULES.some(x=>x[0]===id)&&!permissionFor(id,"view"))return toast("Sem permissão para visualizar este módulo.");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$(id)?.classList.add("active");if(id==="relatorios")renderReports();if(id==="indicadores")renderIndicators();if(id==="escala")renderScale();if(id==="usuarios")renderUsers();if(id==="financeiro")renderFinance();if(id==="acompanhamento30")e30Render();applyPermissionNavigation()}
 function fillCongSelect(sel,blank=false){if(!sel)return;if(sel.id==="mcong"||sel.id==="importCong"){sel.value="moriah";return;}sel.innerHTML=(blank?'<option value="">Todas as congregações</option>':"")+state.congregacoes.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");if(!isAdmin()&&ownCong())sel.value=ownCong()}
 function closeDlg(id){$(id).close()}
 function openDlg(id){$(id).showModal()}
@@ -1010,8 +1031,8 @@ function sub(name,target,filter=true){
  const u=onSnapshot(q,s=>{state[target]=s.docs.map(d=>({id:d.id,...d.data()}));$("syncState").textContent="● online";renderAll()},e=>{console.error(e);$("syncState").textContent="● erro"});
  state.unsubs.push(u)
 }
-function startRealtime(){$("e29Menu").style.display=isGeneralAdmin()?"":"none";if(permissionFor("financeiro"))startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);if(permissionFor("obreiros"))sub("obreiros","obreiros",true);if(permissionFor("membros"))sub("membros","membros",true);if(permissionFor("festividades"))sub("festividades","festividades",true);if(permissionFor("visitantes"))sub("visitantes","visitantes",true);if(permissionFor("resultadosCulto"))sub("resultadosCulto","resultadosCulto",true);if(permissionFor("agenda"))sub("agendaRegional","agenda",false);if(permissionFor("ministerios22"))subMin22();if(permissionFor("patrimonio23"))subPat23();if(permissionFor("escalas24"))subEsc24();if(permissionFor("eventos25"))subEv25();if(canManageUsers())sub("usuarios","usuarios",false);applyPermissionNavigation()}
-function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();renderMin22();renderPat23();renderEsc24();renderEv25();e28Render();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
+function startRealtime(){$("e29Menu").style.display=isGeneralAdmin()?"":"none";if(permissionFor("financeiro"))startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);if(permissionFor("obreiros"))sub("obreiros","obreiros",true);if(permissionFor("membros"))sub("membros","membros",true);if(permissionFor("festividades"))sub("festividades","festividades",true);if(permissionFor("visitantes"))sub("visitantes","visitantes",true);if(permissionFor("resultadosCulto"))sub("resultadosCulto","resultadosCulto",true);if(permissionFor("agenda"))sub("agendaRegional","agenda",false);if(permissionFor("ministerios22"))subMin22();if(permissionFor("patrimonio23"))subPat23();if(permissionFor("escalas24"))subEsc24();if(permissionFor("eventos25"))subEv25();if(permissionFor("acompanhamento30"))e30Subscribe();if(canManageUsers())sub("usuarios","usuarios",false);applyPermissionNavigation()}
+function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();renderMin22();renderPat23();renderEsc24();renderEv25();e30Render();e28Render();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
 
 // Apenas membros na situação Obreiro entram na contagem ministerial.
 // Registros antigos de Cooperador permanecem no banco, mas não aparecem como obreiros.
@@ -2133,6 +2154,82 @@ async function ev25TogglePresent(index){const id=$('ev25PeopleId').value,x=state
 function ev25Table(){return [['Evento','Tipo','Início','Fim','Local','Situação','Responsável','Ministério','Inscritos','Presentes','Equipe'],...ev25Rows().map(x=>[x.title,x.type,x.startDate,x.endDate,x.place,x.situation,ev25PersonName(x.leader),ev25MinName(x.ministryId),(x.participants||[]).length,(x.participants||[]).filter(p=>p.present).length,(x.team||[]).map(ev25PersonName).join(', ')])];}
 $('ev25Csv').onclick=()=>{const csv='\ufeff'+ev25Table().map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AD_Moriah_Eventos_Etapa25.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);};
 $('ev25Print').onclick=()=>{const rows=ev25Table(),win=window.open('','_blank');if(!win)return toast('Permita pop-ups para imprimir.');win.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Eventos AD Moriah</title><style>body{font-family:Arial;margin:20px}table{border-collapse:collapse;width:100%;font-size:10px}td,th{border:1px solid #bbb;padding:5px;text-align:left}@page{size:A4 landscape;margin:12mm}</style></head><body><h2>AD Moriah — Eventos e Programações Especiais</h2><p>Emitido em '+new Date().toLocaleDateString('pt-BR')+'</p><table><thead><tr>'+rows[0].map(v=>'<th>'+ev25Safe(v)+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(1).map(r=>'<tr>'+r.map(v=>'<td>'+ev25Safe(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></body></html>');win.document.close();win.focus();win.print();};
+
+// ETAPA 30 — Coleção independente "acompanhamentos". Não altera visitantes existentes.
+let e30Subscribed=false;
+const e30Safe=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const e30Labels={aguardando:"Aguardando contato",acompanhamento:"Em acompanhamento",integrado:"Integrado",encerrado:"Encerrado"};
+function e30Can(action="view"){return permissionFor("acompanhamento30",action)}
+function e30Subscribe(){
+ if(e30Subscribed)return;e30Subscribed=true;
+ let q=collection(db,"acompanhamentos");if(!isAdmin()&&ownCong())q=query(q,where("congregationId","==",ownCong()));
+ const unsub=onSnapshot(q,s=>{state.acompanhamentos30=s.docs.map(d=>({id:d.id,...d.data()}));$("e30Status").textContent="● Acompanhamentos sincronizados com Firebase.";e30Render();e28Render();},err=>{$("e30Status").textContent="Não foi possível carregar os acompanhamentos ("+(err.code||"erro")+"). Confira as regras da Etapa 30.";console.error(err)});
+ state.unsubs.push(()=>{e30Subscribed=false;unsub()});
+}
+function e30Filtered(){
+ const q=$("e30Search").value.trim().toLocaleLowerCase("pt-BR"),status=$("e30Filter").value;
+ return (state.acompanhamentos30||[]).filter(x=>(!status||x.situation===status)&&(!q||[x.name,x.phone,e30LeaderName(x.leaderId)].join(" ").toLocaleLowerCase("pt-BR").includes(q))).sort((a,b)=>(b.startDate||"").localeCompare(a.startDate||""));
+}
+function e30LeaderName(id){return state.obreiros.find(x=>x.id===id)?.name||state.membros.find(x=>x.id===id)?.name||"Não definido"}
+function e30Render(){
+ const list=$("e30List"),stats=$("e30Stats");if(!list||!stats)return;
+ if(!e30Can()){list.textContent="Sem permissão para visualizar acompanhamentos.";stats.replaceChildren();return}
+ const all=state.acompanhamentos30||[],today=todayISO(),pending=all.filter(x=>x.situation!=="integrado"&&x.situation!=="encerrado"&&x.nextContact&&x.nextContact<=today).length;
+ stats.innerHTML=[["Total",all.length],["Aguardando",all.filter(x=>x.situation==="aguardando").length],["Contatos vencidos",pending],["Integrados",all.filter(x=>x.situation==="integrado").length]].map(([name,n])=>`<div class="e30-stat"><span>${e30Safe(name)}</span><b>${n}</b></div>`).join("");
+ $("e30New").style.display=e30Can("create")?"":"none";
+ const rows=e30Filtered();list.replaceChildren();if(!rows.length){list.textContent="Nenhum acompanhamento encontrado.";return}
+ for(const x of rows){
+  const card=document.createElement("article");card.className="e30-item";
+  const title=document.createElement("h3");title.textContent=(x.type==="convertido"?"🙏 ":"🤝 ")+(x.name||"Sem nome");
+  const meta=document.createElement("div");meta.className="e30-meta";meta.textContent=`${e30Labels[x.situation]||x.situation||"—"} • Responsável: ${e30LeaderName(x.leaderId)} • Início: ${fmt(x.startDate)||"—"} • Próximo contato: ${fmt(x.nextContact)||"Não agendado"}`;
+  const phone=document.createElement("div");phone.className="e30-meta";phone.textContent="Telefone: "+(x.phone||"Não informado");
+  card.append(title,meta,phone);
+  if(x.notes){const note=document.createElement("p");note.className="e30-small";note.textContent="Observação: "+x.notes;card.append(note)}
+  const hist=Array.isArray(x.history)?x.history:[];
+  if(hist.length){const details=document.createElement("details"),summary=document.createElement("summary");summary.textContent="Histórico de contatos ("+hist.length+")";details.append(summary);for(const h of hist.slice().reverse()){const item=document.createElement("div");item.className="e30-history e30-small";item.textContent=`${fmt(h.date)||h.date} • ${h.type||"Contato"} • ${h.note||""}`;details.append(item)}card.append(details)}
+  const actions=document.createElement("div");actions.className="actions";
+  if(e30Can("edit")){for(const [label,handler] of [["Editar",()=>e30Open(x.id)],["+ Registrar contato",()=>e30OpenContact(x.id)]]){const b=document.createElement("button");b.type="button";b.className="secondary";b.textContent=label;b.addEventListener("click",handler);actions.append(b)}}
+  if(x.phone){const number=String(x.phone).replace(/\D/g,"");if(number.length>=10&&number.length<=13){const a=document.createElement("a");a.className="secondary";a.textContent="Abrir WhatsApp";a.href="https://wa.me/"+(number.startsWith("55")?number:"55"+number);a.target="_blank";a.rel="noopener noreferrer";actions.append(a)}}
+  card.append(actions);list.append(card);
+ }
+}
+function e30FillPeople(){
+ const v=$("e30Visitor");v.replaceChildren(new Option("Sem vínculo — cadastro manual",""));
+ if(permissionFor("visitantes"))for(const item of state.visitantes){v.add(new Option(item.name||"Visitante",item.id))}
+ const l=$("e30Leader");l.replaceChildren(new Option("Não definido",""));
+ if(permissionFor("obreiros"))for(const item of state.obreiros){l.add(new Option(item.name||"Obreiro",item.id))}
+}
+function e30Open(id=""){
+ if(!e30Can(id?"edit":"create"))return toast("Sem permissão.");
+ e30FillPeople();const x=state.acompanhamentos30.find(r=>r.id===id);
+ $("e30Form").reset();$("e30Id").value=id;$("e30Start").value=x?.startDate||todayISO();$("e30Visitor").value=x?.visitorId||"";$("e30Type").value=x?.type||"visitante";$("e30Name").value=x?.name||"";$("e30Phone").value=x?.phone||"";$("e30Leader").value=x?.leaderId||"";$("e30Situation").value=x?.situation||"aguardando";$("e30Next").value=x?.nextContact||"";$("e30Notes").value=x?.notes||"";$("e30FormStatus").textContent="";openDlg("e30Dlg");
+}
+$("e30Visitor").addEventListener("change",()=>{const x=state.visitantes.find(v=>v.id===$("e30Visitor").value);if(x){$("e30Name").value=x.name||"";$("e30Phone").value=x.phone||""}});
+$("e30New").addEventListener("click",()=>e30Open());
+for(const id of ["e30Search","e30Filter"])$(id).addEventListener("input",e30Render);
+$("e30Form").addEventListener("submit",async e=>{
+ e.preventDefault();const id=$("e30Id").value,existing=state.acompanhamentos30.find(x=>x.id===id);if(!e30Can(id?"edit":"create"))return;
+ const data={visitorId:$("e30Visitor").value,type:$("e30Type").value,name:$("e30Name").value.trim(),phone:$("e30Phone").value.trim(),leaderId:$("e30Leader").value,situation:$("e30Situation").value,startDate:$("e30Start").value,nextContact:$("e30Next").value,notes:$("e30Notes").value.trim(),congregationId:existing?.congregationId||ownCong()||"moriah",updatedAt:serverTimestamp()};
+ if(!data.name||!data.startDate)return;
+ $("e30FormStatus").textContent="Salvando...";
+ try{if(id)await updateDoc(doc(db,"acompanhamentos",id),data);else await addDoc(collection(db,"acompanhamentos"),{...data,history:[],createdAt:serverTimestamp()});closeDlg("e30Dlg");toast("Acompanhamento salvo.")}catch(err){console.error(err);$("e30FormStatus").textContent="Erro ao salvar: "+(err.code||err.message)}
+});
+function e30OpenContact(id){if(!e30Can("edit"))return;$("e30ContactForm").reset();$("e30ContactId").value=id;$("e30ContactDate").value=todayISO();$("e30ContactStatus").textContent="";openDlg("e30ContactDlg")}
+$("e30ContactForm").addEventListener("submit",async e=>{
+ e.preventDefault();if(!e30Can("edit"))return;
+ const id=$("e30ContactId").value,ref=doc(db,"acompanhamentos",id),note=$("e30ContactNote").value.trim();if(!note)return;
+ $("e30ContactStatus").textContent="Salvando contato...";
+ try{
+  // Transação evita perder contatos quando dois usuários registram ao mesmo tempo.
+  await runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())throw Error("Registro não encontrado");const x=snap.data();const history=Array.isArray(x.history)?x.history:[];if(history.length>=250)throw Error("Limite de 250 contatos por acompanhamento; arquive o histórico antes de continuar.");history.push({date:$("e30ContactDate").value,type:$("e30ContactType").value,note,actorUid:auth.currentUser?.uid||"",registeredAt:new Date().toISOString()});tx.update(ref,{history,nextContact:$("e30ContactNext").value||x.nextContact||"",situation:x.situation==="aguardando"?"acompanhamento":x.situation,updatedAt:serverTimestamp()})});
+  // Transações não são interceptadas pelo registrador básico da Etapa 29.
+  e29Log("edit",ref);closeDlg("e30ContactDlg");toast("Contato registrado.");
+ }catch(err){console.error(err);$("e30ContactStatus").textContent="Erro ao registrar: "+(err.code||err.message)}
+});
+function e30CsvRows(){return e30Filtered().map(x=>[x.name,x.type,e30Labels[x.situation]||x.situation,x.phone,e30LeaderName(x.leaderId),x.startDate,x.nextContact,(x.history||[]).length])}
+$("e30Csv").addEventListener("click",()=>{if(!e30Can())return;const rows=[["Nome","Tipo","Situação","Telefone","Responsável","Início","Próximo contato","Contatos registrados"],...e30CsvRows()],csv="\ufeff"+rows.map(r=>r.map(v=>'"'+String(v??"").replaceAll('"','""')+'"').join(";")).join("\r\n"),url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download="AD_Moriah_Acompanhamentos_Etapa30.csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+$("e30Print").addEventListener("click",()=>{if(!e30Can())return;const win=window.open("","_blank");if(!win)return toast("Permita pop-ups para imprimir.");const rows=e30CsvRows(),head=["Nome","Tipo","Situação","Telefone","Responsável","Início","Próximo contato","Contatos"];win.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Acompanhamentos AD Moriah</title><style>body{font:12px Arial;margin:25px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:6px;text-align:left}</style></head><body><h2>AD Moriah — Resumo de acompanhamentos</h2><p>Uso interno e confidencial</p><table><thead><tr>'+head.map(v=>'<th>'+e30Safe(v)+'</th>').join("")+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>'<td>'+e30Safe(v)+'</td>').join("")+'</tr>').join("")+'</tbody></table></body></html>');win.document.close();win.print()});
+
 </script>
 <script>
 (function(){
