@@ -845,7 +845,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
  <p class="e29-note">O registro contém usuário, tipo de operação, coleção, identificador e data. Não armazena senhas, dados completos dos cadastros nem valores anteriores. Operações de lote e algumas rotinas antigas podem não constar; este histórico não substitui uma auditoria obrigatória no servidor.</p></div>
  <div id="e29Count" class="muted"></div><div id="e29List" class="panel"></div>
 </section>
-<section id="aniversarios39" class="page"><div class="page-head"><div><h2>🎂 Central de Aniversários e Mensagens</h2><p>Consulte os próximos aniversários, prepare mensagens e acompanhe lembretes neste dispositivo.</p></div></div><div class="panel"><h3>Mensagem padrão</h3><p class="muted">Use <strong>{nome}</strong> para inserir automaticamente o nome do aniversariante. As preferências são salvas somente neste navegador.</p><textarea id="e39Template" rows="4" style="width:100%;max-width:850px" aria-label="Mensagem de aniversário"></textarea><div class="actions" style="margin-top:10px"><button type="button" id="e39SaveTemplate" class="primary">Salvar mensagem</button><button type="button" id="e39ResetTemplate" class="secondary">Restaurar mensagem padrão</button></div></div><div class="panel"><h3>Próximos aniversários</h3><div class="filters"><input id="e39Search" type="search" placeholder="Pesquisar aniversariante" aria-label="Pesquisar aniversariante"><select id="e39Period" aria-label="Período"><option value="30">Próximos 30 dias</option><option value="7">Próximos 7 dias</option><option value="365">Próximos 12 meses</option><option value="0">Somente hoje</option></select></div><p id="e39Summary" class="muted" aria-live="polite"></p><div id="e39List" class="cards"></div></div><div class="panel"><h3>🔔 Lembretes</h3><p class="muted">Os lembretes aparecem nesta Central quando você abre o aplicativo. Não há envio automático de mensagens nem notificações em segundo plano.</p><div id="e39Reminders"></div></div></section>
+<section id="aniversarios39" class="page"><div class="page-head"><div><h2>🎂 Central de Aniversários e Mensagens</h2><p>Consulte os próximos aniversários, prepare mensagens e acompanhe lembretes neste dispositivo.</p></div></div><div class="panel"><h3>Mensagem padrão</h3><p class="muted">Use <strong>{nome}</strong> para inserir automaticamente o nome do aniversariante. As preferências são salvas somente neste navegador.</p><textarea id="e39Template" rows="4" style="width:100%;max-width:850px" aria-label="Mensagem de aniversário"></textarea><div class="actions" style="margin-top:10px"><button type="button" id="e39SaveTemplate" class="primary">Salvar mensagem</button><button type="button" id="e39ResetTemplate" class="secondary">Restaurar mensagem padrão</button></div></div><div class="panel"><h3>Próximos aniversários</h3><div class="filters"><input id="e39Search" type="search" placeholder="Pesquisar aniversariante" aria-label="Pesquisar aniversariante"><select id="e39Period" aria-label="Período"><option value="14">Próximos 14 dias</option><option value="30">Próximos 30 dias</option><option value="7">Próximos 7 dias</option><option value="365">Próximos 12 meses</option><option value="0">Somente hoje</option></select></div><p id="e39Summary" class="muted" aria-live="polite"></p><div id="e39List" class="cards"></div></div><div class="panel"><h3>🔔 Lembretes</h3><p class="muted">Os lembretes aparecem nesta Central quando você abre o aplicativo. Não há envio automático de mensagens nem notificações em segundo plano.</p><div id="e39Reminders"></div></div></section>
 <section id="mais" class="page">
   <div class="page-head"><div><h2>Explorar o AD Moriah</h2><p>Acesse todas as áreas do aplicativo.</p></div></div>
   <div class="moriah-menu-groups">
@@ -1201,7 +1201,7 @@ function e28Render(){const list=document.getElementById("e28List"),summary=docum
  const all=e28Notices(),filter=document.getElementById("e28Filter").value,items=filter==="all"?all:all.filter(x=>x.kind===filter);
  summary.replaceChildren();for(const [label,n] of [["Avisos",all.length],["Pendências",all.filter(x=>x.kind==="pendencia").length],["Aniversários (14 dias)",all.filter(x=>x.kind==="aniversario").length],["Compromissos (14 dias)",all.filter(x=>x.kind==="agenda").length]]){const b=document.createElement("span");b.className="e28-chip";b.textContent=label+": "+n;summary.append(b)}
  list.replaceChildren();if(!items.length){const e=document.createElement("p");e.className="e28-empty";e.textContent="Nenhum aviso encontrado para este filtro nos dados disponíveis.";list.append(e);return}
- for(const item of items){const row=document.createElement("div");row.className="e28-item"+(item.level==="urgent"?" e28-urgent":"");const content=document.createElement("div"),title=document.createElement("strong"),sub=document.createElement("small"),btn=document.createElement("button");title.textContent=item.title;sub.textContent=item.detail;content.append(title,sub);btn.type="button";btn.textContent="Abrir módulo →";btn.addEventListener("click",()=>openPage(item.page));row.append(content,btn);list.append(row)}
+ for(const item of items){const row=document.createElement("div");row.className="e28-item"+(item.level==="urgent"?" e28-urgent":"");const content=document.createElement("div"),title=document.createElement("strong"),sub=document.createElement("small"),btn=document.createElement("button");title.textContent=item.title;sub.textContent=item.detail;content.append(title,sub);btn.type="button";btn.textContent="Abrir módulo →";btn.addEventListener("click",()=>{if(item.kind==="aniversario"){const period=document.getElementById("e39Period");if(period)period.value="14";}openPage(item.page)});row.append(content,btn);list.append(row)}
 }
 document.getElementById("e28Filter").addEventListener("change",e28Render);
 document.getElementById("e28Refresh").addEventListener("click",e28Render);
@@ -2562,11 +2562,23 @@ function e39StoreKey(suffix){return "admoriah_e39_"+String(state.authUser?.uid||
 function e39Read(suffix,fallback){try{const x=localStorage.getItem(e39StoreKey(suffix));return x===null?fallback:JSON.parse(x)}catch{return fallback}}
 function e39Write(suffix,value){try{localStorage.setItem(e39StoreKey(suffix),JSON.stringify(value));return true}catch{toast("Não foi possível salvar neste navegador.");return false}}
 function e39Name(x){return String(x.name||x.nome||"").trim()}
+function e39ParseBirth(value){
+ if(value==null||value==="")return null;
+ if(value instanceof Date)return Number.isNaN(value.getTime())?null:value;
+ if(typeof value==="object"&&typeof value.toDate==="function")return e39ParseBirth(value.toDate());
+ if(typeof value==="object"&&typeof value.seconds==="number")return e39ParseBirth(new Date(value.seconds*1000));
+ const v=String(value).trim();let y,m,d,match;
+ if((match=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))){[,y,m,d]=match}
+ else if((match=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/))){[,d,m,y]=match}
+ else return null;
+ const date=new Date(Number(y),Number(m)-1,Number(d),12);
+ return date.getFullYear()===Number(y)&&date.getMonth()===Number(m)-1&&date.getDate()===Number(d)?date:null;
+}
 function e39Records(){
  if(!permissionFor("membros","view"))return [];
  const map=new Map();
  for(const x of [...(state.membros||[]),...(state.obreiros||[])]){
-  const name=e39Name(x),birth=e28Day(x.birth);if(!name||!birth)continue;
+  const name=e39Name(x),birth=e39ParseBirth(x.birth||x.dataNascimento||x.data_nascimento||x.nascimento||x.birthDate);if(!name||!birth)continue;
   const unique=(x.memberId||x.memberNumber||x.cpf||name.toLocaleLowerCase("pt-BR").trim())+"|"+(birth.getMonth()+1)+"-"+birth.getDate();
   if(map.has(unique))continue;
   const today=e28Today(),y=today.getFullYear();let next=new Date(y,birth.getMonth(),birth.getDate(),12);
@@ -2592,7 +2604,7 @@ function e39Render(){
  const matches=all.filter(p=>p.diff<=days&&p.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().includes(q));
  document.getElementById("e39Summary").textContent=matches.length+" aniversariante(s) no período selecionado.";
  list.replaceChildren();
- if(!matches.length){const p=document.createElement("p");p.textContent="Nenhum aniversariante encontrado.";list.append(p)}
+ if(!matches.length){const p=document.createElement("p");p.textContent=all.length?"Nenhum aniversariante encontrado neste período. Selecione Próximos 12 meses para visualizar mais datas.":"Nenhuma data de nascimento válida foi encontrada nos cadastros carregados.";list.append(p)}
  const reminders=e39Read("reminders",{});
  for(const p of matches){
   const card=document.createElement("article");card.className="card";
