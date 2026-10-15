@@ -249,6 +249,27 @@ dialog::backdrop{background:#00152fbb}
 .form-modern-v4 .v4-photo-row label{flex:1;min-width:180px}
 .form-modern-v4 .form-actions{position:sticky;bottom:0;background:var(--card,#fff);padding:12px 0;z-index:2;border-top:1px solid #e2e8f0}
 @media(max-width:600px){.form-modern-v4 .grid2{grid-template-columns:1fr}.form-modern-v4 .v4-photo-row{align-items:flex-start}.form-modern-v4 .form-actions button{min-height:44px}}
+
+/* ETAPA 27 — Navegação e busca local, sem alterar Firebase */
+.e27-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 15px}
+.e27-search{flex:1;min-width:180px;border:1px solid #cbd5e1;border-radius:12px;padding:13px 14px;background:white;color:#172033}
+.e27-shortcut{border:1px solid #cbd5e1;background:#fff;color:#102a4c;border-radius:12px;padding:12px 14px;font-weight:700}
+.e27-quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:17px}
+.e27-quick button{min-height:64px;text-align:left;border:1px solid #d9e2ed;border-radius:14px;background:white;padding:13px;font-weight:700;color:#122b4d}
+.e27-quick button:hover,.e27-shortcut:hover{background:#edf5ff;border-color:#7ea7d6}
+#e27SearchDlg{width:min(680px,calc(100vw - 20px));max-height:85vh;border:0;border-radius:17px;padding:0;box-shadow:0 20px 70px #001a3866}
+#e27SearchDlg::backdrop{background:#00142b99}
+.e27-dialog-body{padding:20px}
+.e27-dialog-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.e27-dialog-head h2{margin:0;font-size:21px}
+#e27Query{width:100%;padding:15px;border-radius:12px;border:1px solid #a9b9cc;margin:14px 0}
+#e27Results{overflow-y:auto;max-height:55vh}
+.e27-result{display:block;width:100%;padding:12px;text-align:left;border:0;border-bottom:1px solid #e2e8f0;background:white;color:#172033}
+.e27-result:hover{background:#edf5ff}
+.e27-result small{display:block;color:#5e6f82;margin-top:4px}
+.e27-help{font-size:12px;color:#64748b}
+@media(max-width:650px){.e27-quick{grid-template-columns:repeat(2,minmax(0,1fr))}.e27-quick button{min-height:58px;padding:10px}.e27-tools{gap:7px}.e27-shortcut{padding:12px 9px}}
+
 </style>
 <style>
 /* Cabeçalho AD Moriah: logomarca branca e ampliada, responsiva */
@@ -439,6 +460,18 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 </header>
 <main>
 <section id="home" class="page active">
+  <div class="e27-tools"><button id="e27OpenSearch" type="button" class="e27-search" style="text-align:left">🔎 Buscar pessoas, documentos e áreas do aplicativo...</button><button id="e27OpenMenu" type="button" class="e27-shortcut">☰ Todos os módulos</button></div>
+  <div id="e27Quick" class="e27-quick" aria-label="Atalhos rápidos">
+    <button type="button" data-page="membros" data-e27module="membros">👥 Membros</button>
+    <button type="button" data-page="obreiros" data-e27module="obreiros">👔 Obreiros</button>
+    <button type="button" data-page="visitantes" data-e27module="visitantes">🙋 Visitantes</button>
+    <button type="button" data-page="agenda" data-e27module="agenda">📅 Agenda</button>
+    <button type="button" data-page="escalas24" data-e27module="escalas24">📋 Escalas</button>
+    <button type="button" data-page="eventos25" data-e27module="eventos25">🎉 Eventos</button>
+    <button type="button" data-page="relatorios" data-e27module="relatorios">📊 Relatórios</button>
+    <button type="button" data-page="financeiro" data-e27module="financeiro">💰 Financeiro</button>
+  </div>
+
   <div class="welcome"><div><small>Bem-vindo(a)</small><h2 id="welcomeName">AD Moriah</h2><p id="welcomeProfile"></p></div><div class="avatar">A</div></div>
   <div id="stats" class="stats" aria-label="Resumo dos indicadores da igreja"></div>
   <div class="panel"><h3>🎂 Aniversariantes de hoje</h3><p>Veja quem faz aniversário hoje. Enviar uma homenagem é opcional e só acontece quando você escolher.</p><div id="birthdays"></div></div>
@@ -710,6 +743,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 
 <dialog id="userDlg"><form id="userForm" class="form"><input type="hidden" id="uid"><div class="form-head"><h3 id="userDlgTitle">Novo usuário</h3><button type="button" data-close="userDlg">×</button></div><label>Nome<input id="uname" required></label><div class="grid2"><label>Usuário<input id="ulogin" required></label><label>Perfil<select id="urole"><option value="congregacao">Pastor / Congregação</option><option value="secretario">Secretário</option><option value="consulta">Consulta</option><option value="admin">Administrador</option></select></label></div><input type="hidden" id="ucong" value="moriah"><div class="grid2"><label>Senha<input id="upass" type="password" placeholder="Mínimo 6 caracteres"></label><label>Confirmar<input id="upass2" type="password"></label></div><label><input id="uactive" type="checkbox" checked style="width:auto"> Usuário ativo</label><div id="permissionEditor" style="margin-top:14px;border:1px solid #d9e2ed;border-radius:12px;padding:12px"><h4 style="margin:0 0 6px">Permissões individuais por módulo</h4><p style="font-size:12px;color:#526477;margin:0 0 10px">Somente o Administrador Geral pode alterar estas permissões. Marque Visualizar para habilitar um módulo.</p><div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr><th style="text-align:left">Módulo</th><th>Visualizar</th><th>Cadastrar</th><th>Editar</th><th>Excluir</th></tr></thead><tbody id="permissionRows"></tbody></table></div><p id="permissionInfo" style="font-size:12px;color:#526477"></p></div><small>O sistema converte internamente para usuario@admoriah.app.</small><div class="form-actions"><button type="button" class="secondary" data-close="userDlg">Cancelar</button><button class="primary">Salvar usuário</button></div></form></dialog>
 
+<dialog id="e27SearchDlg" aria-label="Busca geral"><div class="e27-dialog-body"><div class="e27-dialog-head"><h2>🔎 Busca geral</h2><button type="button" class="e27-shortcut" id="e27CloseSearch" aria-label="Fechar busca">✕ Fechar</button></div><input id="e27Query" type="search" autocomplete="off" placeholder="Digite nome, número ou módulo..." aria-label="Pesquisar"><div id="e27Results" aria-live="polite"></div><p class="e27-help">Busca nos dados já carregados para seu usuário. Selecione um resultado para abrir o módulo correspondente. Nenhum dado é enviado a serviços externos.</p></div></dialog>
 <script type="module">
 const firebaseConfig = {apiKey:"AIzaSyBjcEDhS9nNcMo0DCr6Yzde70KLBe_VMfw",authDomain:"ad-moriah.firebaseapp.com",projectId:"ad-moriah",storageBucket:"ad-moriah.firebasestorage.app",messagingSenderId:"910875544773",appId:"1:910875544773:web:a23243e7b1c339cf2c74ac",measurementId:"G-C46FPTH2P4"};
 const LOGIN_DOMAIN="admoriah.app";
@@ -785,7 +819,46 @@ function ownCong(){return state.profile?.congregationId||""}
 function cname(id){return state.congregacoes.find(c=>c.id===id)?.name||"—"}
 function profileLabel(r){return ({admin:"Administrador",congregacao:"Pastor / Congregação",secretario:"Secretário",consulta:"Consulta"})[r]||r||"—"}
 function clearUnsubs(){financeRows=[];state.unsubs.forEach(fn=>{try{fn()}catch{}});state.unsubs=[]}
-function openPage(id){if(id==="usuarios"&&!canManageUsers())return toast("Acesso restrito.");if(id!=="mais"&&id!=="usuarios"&&PERMISSION_MODULES.some(x=>x[0]===id)&&!permissionFor(id,"view"))return toast("Sem permissão para visualizar este módulo.");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$(id)?.classList.add("active");if(id==="relatorios")renderReports();if(id==="indicadores")renderIndicators();if(id==="escala")renderScale();if(id==="usuarios")renderUsers();if(id==="financeiro")renderFinance();applyPermissionNavigation()}
+// ETAPA 27: busca local, atalhos e navegação rápida. Não grava nem modifica documentos.
+const e27Modules=[
+ ["home","Início"],["membros","Membros"],["obreiros","Obreiros"],["visitantes","Visitantes"],
+ ["agenda","Agenda"],["escalas24","Escalas de cultos"],["eventos25","Eventos especiais"],
+ ["ministerios22","Ministérios e departamentos"],["patrimonio23","Patrimônio"],
+ ["resultadosCulto","Resultados dos cultos"],["festividades","Festividades"],
+ ["escala","Escala oficial"],["indicadores","Indicadores"],["relatorios","Relatórios"],
+ ["financeiro","Financeiro"],["usuarios","Usuários"]
+];
+function e27Allowed(id){return id==="home"||id==="mais"||(id==="usuarios"?canManageUsers():permissionFor(id,"view"))}
+function e27Normalize(v){return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim()}
+function e27ResultsFor(q){
+ const term=e27Normalize(q),found=[];
+ if(!term)return e27Modules.filter(([id])=>e27Allowed(id)).map(([id,label])=>({id,label,sub:"Abrir módulo"}));
+ for(const [id,label] of e27Modules){if(e27Allowed(id)&&e27Normalize(label).includes(term))found.push({id,label,sub:"Módulo"})}
+ for(const [id,items,label] of [["membros",state.membros,"Membro"],["obreiros",obreirosContabilizaveis(),"Obreiro"],["visitantes",state.visitantes,"Visitante"],["ministerios22",state.ministerios22,"Ministério / departamento"],["patrimonio23",state.patrimonio23,"Patrimônio"],["eventos25",state.eventos25,"Evento"]]){
+  if(!e27Allowed(id))continue;
+  for(const item of items||[]){
+   const name=String(item.name||item.title||item.nome||item.description||""),number=String(item.memberNumber||item.number||item.code||"");
+   if(name&&(e27Normalize(name).includes(term)||e27Normalize(number).includes(term))){found.push({id,label:name,sub:label+(number?" • "+number:"")});if(found.length>=70)return found}
+  }
+ }
+ return found;
+}
+function e27RenderSearch(){
+ const box=$("e27Results");box.replaceChildren();const results=e27ResultsFor($("e27Query").value);
+ if(!results.length){const p=document.createElement("p");p.textContent="Nenhum resultado encontrado nos dados disponíveis.";box.append(p);return}
+ for(const result of results){const btn=document.createElement("button");btn.type="button";btn.className="e27-result";
+  const title=document.createElement("strong");title.textContent=result.label;const sub=document.createElement("small");sub.textContent=result.sub;
+  btn.append(title,sub);btn.addEventListener("click",()=>{$("e27SearchDlg").close();openPage(result.id);if(result.id==="membros"&&result.sub.startsWith("Membro")){const input=$("memberSearch");if(input){input.value=result.label;input.dispatchEvent(new Event("input",{bubbles:true}))}}else if(result.id==="obreiros"&&result.sub.startsWith("Obreiro")){const input=$("workerSearch");if(input){input.value=result.label;input.dispatchEvent(new Event("input",{bubbles:true}))}}});box.append(btn)
+ }
+}
+function e27RefreshQuick(){document.querySelectorAll("[data-e27module]").forEach(b=>b.classList.toggle("hidden",!e27Allowed(b.dataset.e27module)))}
+$("e27OpenSearch").addEventListener("click",()=>{$("e27SearchDlg").showModal();$("e27Query").value="";e27RenderSearch();$("e27Query").focus()});
+$("e27CloseSearch").addEventListener("click",()=>$("e27SearchDlg").close());
+$("e27OpenMenu").addEventListener("click",()=>openPage("mais"));
+$("e27Query").addEventListener("input",e27RenderSearch);
+document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"&&!$("app").classList.contains("hidden")){e.preventDefault();$("e27OpenSearch").click()}});
+
+function openPage(id){e27RefreshQuick();if(id==="usuarios"&&!canManageUsers())return toast("Acesso restrito.");if(id!=="mais"&&id!=="usuarios"&&PERMISSION_MODULES.some(x=>x[0]===id)&&!permissionFor(id,"view"))return toast("Sem permissão para visualizar este módulo.");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$(id)?.classList.add("active");if(id==="relatorios")renderReports();if(id==="indicadores")renderIndicators();if(id==="escala")renderScale();if(id==="usuarios")renderUsers();if(id==="financeiro")renderFinance();applyPermissionNavigation()}
 function fillCongSelect(sel,blank=false){if(!sel)return;if(sel.id==="mcong"||sel.id==="importCong"){sel.value="moriah";return;}sel.innerHTML=(blank?'<option value="">Todas as congregações</option>':"")+state.congregacoes.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");if(!isAdmin()&&ownCong())sel.value=ownCong()}
 function closeDlg(id){$(id).close()}
 function openDlg(id){$(id).showModal()}
