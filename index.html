@@ -2488,74 +2488,6 @@ function e30CsvRows(){return e30Filtered().map(x=>[x.name,x.type,e30Labels[x.sit
 $("e30Csv").addEventListener("click",()=>{if(!e30Can())return;const rows=[["Nome","Tipo","Situação","Telefone","Responsável","Início","Próximo contato","Contatos registrados"],...e30CsvRows()],csv="\ufeff"+rows.map(r=>r.map(v=>'"'+String(v??"").replaceAll('"','""')+'"').join(";")).join("\r\n"),url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download="AD_Moriah_Acompanhamentos_Etapa30.csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
 $("e30Print").addEventListener("click",()=>{if(!e30Can())return;const win=window.open("","_blank");if(!win)return toast("Permita pop-ups para imprimir.");const rows=e30CsvRows(),head=["Nome","Tipo","Situação","Telefone","Responsável","Início","Próximo contato","Contatos"];win.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Acompanhamentos AD Moriah</title><style>body{font:12px Arial;margin:25px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:6px;text-align:left}</style></head><body><h2>AD Moriah — Resumo de acompanhamentos</h2><p>Uso interno e confidencial</p><table><thead><tr>'+head.map(v=>'<th>'+e30Safe(v)+'</th>').join("")+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>'<td>'+e30Safe(v)+'</td>').join("")+'</tr>').join("")+'</tbody></table></body></html>');win.document.close();win.print()});
 
-</script>
-<script>
-(function(){
- const f=document.getElementById('memberForm');
- if(!f)return;
- f.addEventListener('invalid',function(e){
-   const el=e.target;
-   const label=el.closest('label')?.textContent?.trim()||el.id||'Campo obrigatório';
-   const status=document.getElementById('memberSaveNotice');
-   if(status){status.textContent='Verifique: '+label+' — '+el.validationMessage;status.style.color='#a4262c';}
- },true);
- f.addEventListener('submit',function(){
-   const status=document.getElementById('memberSaveNotice');
-   if(status){status.textContent='Solicitação de salvamento recebida';status.style.color='#134b82';}
- },true);
-})();
-</script><script id="secretaria14script">
-(function(){
-'use strict';
-const $=id=>document.getElementById(id);
-const root=$('secretaria14');if(!root)return;
-const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const label={membro:'Membro',congregado:'Congregado',obreiro:'Obreiro',cooperador:'Cooperador'};
-let snapshot=[];let rows=[];let headers=[];
-const dt=v=>{if(!v)return '—';try{const d=typeof v==='string'?new Date(v):v?.toDate?.()||new Date(v);return isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR')}catch{return '—'}};
-function currentMembers(){
- // Os cartões de membros são alimentados pelo Firestore. O painel utiliza os mesmos dados
- // através de um evento emitido pelo renderMembers da aplicação principal.
- return Array.isArray(window.__sec14Members)?window.__sec14Members:[];
-}
-function incomplete(m){return [!String(m.name||'').trim(),!String(m.phone||'').trim(),!m.birth,!m.sex,!String(m.address||'').trim(),!m.entryDate].filter(Boolean).length}
-function render(){
- snapshot=currentMembers();
- const q=$('sec14Search').value.toLocaleLowerCase('pt-BR').trim(),st=$('sec14Status').value,view=$('sec14View').value;
- const base=snapshot.filter(m=>(!q||`${m.name||''} ${m.memberNumber||''}`.toLocaleLowerCase('pt-BR').includes(q))&&(!st||m.status===st));
- const total=snapshot.length;const counts={membro:0,congregado:0,obreiro:0,cooperador:0};snapshot.forEach(m=>{if(counts[m.status]!==undefined)counts[m.status]++});
- $('sec14Stats').innerHTML=[['Total',total],['Membros',counts.membro],['Congregados',counts.congregado],['Obreiros',counts.obreiro],['Cooperadores',counts.cooperador],['A completar',snapshot.filter(m=>incomplete(m)>0).length]].map(([a,b])=>`<div class="sec14-stat"><b>${b}</b><span>${safe(a)}</span></div>`).join('');
- if(view==='movimentos'){
- headers=['Cadastro','Nome','Data','Movimentação','Situação anterior','Nova situação','Observações'];
- rows=base.flatMap(m=>(Array.isArray(m.membershipHistory)?m.membershipHistory:[]).map(h=>[m.memberNumber||'—',m.name||'—',dt(h.date),String(h.type||'').replace(/_/g,' '),label[h.previousStatus]||h.previousStatus||'—',label[h.newStatus]||h.newStatus||'—',h.notes||'—']));
- }else if(view==='incompletos'){
- headers=['Cadastro','Nome','Situação','Campos a completar'];
- rows=base.map(m=>[m.memberNumber||'—',m.name||'—',label[m.status]||m.status||'—',[!m.name&&'Nome',!m.phone&&'Telefone',!m.birth&&'Nascimento',!m.sex&&'Sexo',!m.address&&'Endereço',!m.entryDate&&'Data de ingresso'].filter(Boolean).join(', ')]).filter(r=>r[3]);
- }else{
- headers=['Cadastro','Nome','Situação','Cargo','Telefone','Ingresso'];
- rows=base.map(m=>[m.memberNumber||'—',m.name||'—',label[m.status]||m.status||'—',m.ministerialRole||'—',m.phone||'—',dt(m.entryDate)]);
- }
- $('sec14Head').innerHTML='<tr>'+headers.map(h=>'<th>'+safe(h)+'</th>').join('')+'</tr>';
- $('sec14Body').innerHTML=rows.length?rows.map(r=>'<tr>'+r.map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+headers.length+'">Nenhum registro encontrado para os filtros selecionados.</td></tr>';
- $('sec14Count').textContent=rows.length+' registro(s) no relatório. '+total+' cadastro(s) carregado(s).';
-}
-function csvCell(v){const t=String(v??'');return '"'+( /^[=+@\-\t\r]/.test(t)?"'":'')+t.replace(/"/g,'""')+'"'}
-$('sec14Csv').addEventListener('click',()=>{
- const data='\uFEFF'+[headers,...rows].map(r=>r.map(csvCell).join(';')).join('\r\n');
- const blob=new Blob([data],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='AD_Moriah_Secretaria_Etapa14.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
-});
-$('sec14Print').addEventListener('click',()=>{
- const w=window.open('','_blank');if(!w){alert('Permita pop-ups para imprimir o relatório.');return;}
- const title=$('sec14View').selectedOptions[0].textContent;
- w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Secretaria - '+safe(title)+'</title><style>body{font:12px Arial;padding:24px}h1{font-size:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:6px;text-align:left}th{background:#eee}</style></head><body><h1>Assembleia de Deus Moriah — Secretaria</h1><h2>'+safe(title)+'</h2><p>Emitido em '+new Date().toLocaleString('pt-BR')+' • '+rows.length+' registros</p><table><thead>'+ $('sec14Head').innerHTML+'</thead><tbody>'+ $('sec14Body').innerHTML+'</tbody></table><p>Documento de conferência interna.</p></body></html>');w.document.close();w.focus();w.print();
-});
-['sec14Search','sec14Status','sec14View'].forEach(id=>$(id).addEventListener(id==='sec14Search'?'input':'change',render));
-window.addEventListener('sec14-members-updated',render);
-render();
-})();
-</script><script id="e38-pwa-install">
-(()=>{let promptEvent=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();promptEvent=e;const b=document.getElementById('e38InstallBtn');if(b)b.hidden=false});window.addEventListener('DOMContentLoaded',()=>{const b=document.createElement('button');b.id='e38InstallBtn';b.hidden=true;b.type='button';b.textContent='Instalar aplicativo';b.style.cssText='position:fixed;right:14px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:2000;background:#123d66;color:white;border:1px solid #d9a63b;border-radius:14px;padding:12px 17px;box-shadow:0 8px 25px #001a3266;font:600 14px system-ui;cursor:pointer';b.onclick=async()=>{if(!promptEvent)return;const p=promptEvent;promptEvent=null;b.hidden=true;await p.prompt()};document.body.appendChild(b)});window.addEventListener('appinstalled',()=>{promptEvent=null;const b=document.getElementById('e38InstallBtn');if(b)b.hidden=true})})();
-
 // ETAPA 39 — Central de Aniversários: nenhum novo documento Firestore.
 const e39Default="Que Deus abençoe sua vida, {nome}! 🎉 Feliz aniversário! A Assembleia de Deus Moriah deseja muita paz, saúde e alegria. Que o Senhor continue guiando seus passos!";
 function e39StoreKey(suffix){return "admoriah_e39_"+String(state.authUser?.uid||"anon")+"_"+suffix}
@@ -2626,6 +2558,75 @@ document.getElementById("e39SaveTemplate").addEventListener("click",()=>{const v
 document.getElementById("e39ResetTemplate").addEventListener("click",()=>{if(e39Write("template",e39Default)){document.getElementById("e39Template").value=e39Default;e39Render()}});
 document.getElementById("e39Search").addEventListener("input",e39Render);
 document.getElementById("e39Period").addEventListener("change",e39Render);
+
+</script>
+<script>
+(function(){
+ const f=document.getElementById('memberForm');
+ if(!f)return;
+ f.addEventListener('invalid',function(e){
+   const el=e.target;
+   const label=el.closest('label')?.textContent?.trim()||el.id||'Campo obrigatório';
+   const status=document.getElementById('memberSaveNotice');
+   if(status){status.textContent='Verifique: '+label+' — '+el.validationMessage;status.style.color='#a4262c';}
+ },true);
+ f.addEventListener('submit',function(){
+   const status=document.getElementById('memberSaveNotice');
+   if(status){status.textContent='Solicitação de salvamento recebida';status.style.color='#134b82';}
+ },true);
+})();
+</script><script id="secretaria14script">
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const root=$('secretaria14');if(!root)return;
+const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const label={membro:'Membro',congregado:'Congregado',obreiro:'Obreiro',cooperador:'Cooperador'};
+let snapshot=[];let rows=[];let headers=[];
+const dt=v=>{if(!v)return '—';try{const d=typeof v==='string'?new Date(v):v?.toDate?.()||new Date(v);return isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR')}catch{return '—'}};
+function currentMembers(){
+ // Os cartões de membros são alimentados pelo Firestore. O painel utiliza os mesmos dados
+ // através de um evento emitido pelo renderMembers da aplicação principal.
+ return Array.isArray(window.__sec14Members)?window.__sec14Members:[];
+}
+function incomplete(m){return [!String(m.name||'').trim(),!String(m.phone||'').trim(),!m.birth,!m.sex,!String(m.address||'').trim(),!m.entryDate].filter(Boolean).length}
+function render(){
+ snapshot=currentMembers();
+ const q=$('sec14Search').value.toLocaleLowerCase('pt-BR').trim(),st=$('sec14Status').value,view=$('sec14View').value;
+ const base=snapshot.filter(m=>(!q||`${m.name||''} ${m.memberNumber||''}`.toLocaleLowerCase('pt-BR').includes(q))&&(!st||m.status===st));
+ const total=snapshot.length;const counts={membro:0,congregado:0,obreiro:0,cooperador:0};snapshot.forEach(m=>{if(counts[m.status]!==undefined)counts[m.status]++});
+ $('sec14Stats').innerHTML=[['Total',total],['Membros',counts.membro],['Congregados',counts.congregado],['Obreiros',counts.obreiro],['Cooperadores',counts.cooperador],['A completar',snapshot.filter(m=>incomplete(m)>0).length]].map(([a,b])=>`<div class="sec14-stat"><b>${b}</b><span>${safe(a)}</span></div>`).join('');
+ if(view==='movimentos'){
+ headers=['Cadastro','Nome','Data','Movimentação','Situação anterior','Nova situação','Observações'];
+ rows=base.flatMap(m=>(Array.isArray(m.membershipHistory)?m.membershipHistory:[]).map(h=>[m.memberNumber||'—',m.name||'—',dt(h.date),String(h.type||'').replace(/_/g,' '),label[h.previousStatus]||h.previousStatus||'—',label[h.newStatus]||h.newStatus||'—',h.notes||'—']));
+ }else if(view==='incompletos'){
+ headers=['Cadastro','Nome','Situação','Campos a completar'];
+ rows=base.map(m=>[m.memberNumber||'—',m.name||'—',label[m.status]||m.status||'—',[!m.name&&'Nome',!m.phone&&'Telefone',!m.birth&&'Nascimento',!m.sex&&'Sexo',!m.address&&'Endereço',!m.entryDate&&'Data de ingresso'].filter(Boolean).join(', ')]).filter(r=>r[3]);
+ }else{
+ headers=['Cadastro','Nome','Situação','Cargo','Telefone','Ingresso'];
+ rows=base.map(m=>[m.memberNumber||'—',m.name||'—',label[m.status]||m.status||'—',m.ministerialRole||'—',m.phone||'—',dt(m.entryDate)]);
+ }
+ $('sec14Head').innerHTML='<tr>'+headers.map(h=>'<th>'+safe(h)+'</th>').join('')+'</tr>';
+ $('sec14Body').innerHTML=rows.length?rows.map(r=>'<tr>'+r.map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+headers.length+'">Nenhum registro encontrado para os filtros selecionados.</td></tr>';
+ $('sec14Count').textContent=rows.length+' registro(s) no relatório. '+total+' cadastro(s) carregado(s).';
+}
+function csvCell(v){const t=String(v??'');return '"'+( /^[=+@\-\t\r]/.test(t)?"'":'')+t.replace(/"/g,'""')+'"'}
+$('sec14Csv').addEventListener('click',()=>{
+ const data='\uFEFF'+[headers,...rows].map(r=>r.map(csvCell).join(';')).join('\r\n');
+ const blob=new Blob([data],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='AD_Moriah_Secretaria_Etapa14.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
+});
+$('sec14Print').addEventListener('click',()=>{
+ const w=window.open('','_blank');if(!w){alert('Permita pop-ups para imprimir o relatório.');return;}
+ const title=$('sec14View').selectedOptions[0].textContent;
+ w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Secretaria - '+safe(title)+'</title><style>body{font:12px Arial;padding:24px}h1{font-size:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:6px;text-align:left}th{background:#eee}</style></head><body><h1>Assembleia de Deus Moriah — Secretaria</h1><h2>'+safe(title)+'</h2><p>Emitido em '+new Date().toLocaleString('pt-BR')+' • '+rows.length+' registros</p><table><thead>'+ $('sec14Head').innerHTML+'</thead><tbody>'+ $('sec14Body').innerHTML+'</tbody></table><p>Documento de conferência interna.</p></body></html>');w.document.close();w.focus();w.print();
+});
+['sec14Search','sec14Status','sec14View'].forEach(id=>$(id).addEventListener(id==='sec14Search'?'input':'change',render));
+window.addEventListener('sec14-members-updated',render);
+render();
+})();
+</script><script id="e38-pwa-install">
+(()=>{let promptEvent=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();promptEvent=e;const b=document.getElementById('e38InstallBtn');if(b)b.hidden=false});window.addEventListener('DOMContentLoaded',()=>{const b=document.createElement('button');b.id='e38InstallBtn';b.hidden=true;b.type='button';b.textContent='Instalar aplicativo';b.style.cssText='position:fixed;right:14px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:2000;background:#123d66;color:white;border:1px solid #d9a63b;border-radius:14px;padding:12px 17px;box-shadow:0 8px 25px #001a3266;font:600 14px system-ui;cursor:pointer';b.onclick=async()=>{if(!promptEvent)return;const p=promptEvent;promptEvent=null;b.hidden=true;await p.prompt()};document.body.appendChild(b)});window.addEventListener('appinstalled',()=>{promptEvent=null;const b=document.getElementById('e38InstallBtn');if(b)b.hidden=true})})();
+
 
 </script>
 </body></html>
