@@ -845,11 +845,12 @@ button:disabled{opacity:.55;cursor:not-allowed}
  <p class="e29-note">O registro contém usuário, tipo de operação, coleção, identificador e data. Não armazena senhas, dados completos dos cadastros nem valores anteriores. Operações de lote e algumas rotinas antigas podem não constar; este histórico não substitui uma auditoria obrigatória no servidor.</p></div>
  <div id="e29Count" class="muted"></div><div id="e29List" class="panel"></div>
 </section>
+<section id="aniversarios39" class="page"><div class="page-head"><div><h2>🎂 Central de Aniversários e Mensagens</h2><p>Consulte os próximos aniversários, prepare mensagens e acompanhe lembretes neste dispositivo.</p></div></div><div class="panel"><h3>Mensagem padrão</h3><p class="muted">Use <strong>{nome}</strong> para inserir automaticamente o nome do aniversariante. As preferências são salvas somente neste navegador.</p><textarea id="e39Template" rows="4" style="width:100%;max-width:850px" aria-label="Mensagem de aniversário"></textarea><div class="actions" style="margin-top:10px"><button type="button" id="e39SaveTemplate" class="primary">Salvar mensagem</button><button type="button" id="e39ResetTemplate" class="secondary">Restaurar mensagem padrão</button></div></div><div class="panel"><h3>Próximos aniversários</h3><div class="filters"><input id="e39Search" type="search" placeholder="Pesquisar aniversariante" aria-label="Pesquisar aniversariante"><select id="e39Period" aria-label="Período"><option value="30">Próximos 30 dias</option><option value="7">Próximos 7 dias</option><option value="365">Próximos 12 meses</option><option value="0">Somente hoje</option></select></div><p id="e39Summary" class="muted" aria-live="polite"></p><div id="e39List" class="cards"></div></div><div class="panel"><h3>🔔 Lembretes</h3><p class="muted">Os lembretes aparecem nesta Central quando você abre o aplicativo. Não há envio automático de mensagens nem notificações em segundo plano.</p><div id="e39Reminders"></div></div></section>
 <section id="mais" class="page">
   <div class="page-head"><div><h2>Explorar o AD Moriah</h2><p>Acesse todas as áreas do aplicativo.</p></div></div>
   <div class="moriah-menu-groups">
     <div class="panel moriah-menu-group"><h3>👥 Pessoas e ministérios</h3><div class="moriah-links">
-      <button class="menu-link" data-page="membros">👥 Membros</button>
+      <button class="menu-link" data-page="membros">👥 Membros</button><button class="menu-link" data-page="aniversarios39">🎂 Central de Aniversários</button>
       <button class="menu-link" data-page="obreiros">👔 Obreiros</button>
       <button class="menu-link" data-page="ministerios22">⛪ Ministérios e Departamentos</button>
       <button class="menu-link" data-page="patrimonio23">🏛️ Controle de Patrimônio</button>
@@ -1135,14 +1136,14 @@ function profileLabel(r){return ({admin:"Administrador",congregacao:"Pastor / Co
 function clearUnsubs(){state.pastoral35=[];state.tarefas33=[];e33Subscribed=false;e35Subscribed=false;e29Listening=false;e29Entries=[];financeRows=[];state.unsubs.forEach(fn=>{try{fn()}catch{}});state.unsubs=[]}
 // ETAPA 27: busca local, atalhos e navegação rápida. Não grava nem modifica documentos.
 const e27Modules=[
- ["home","Início"],["tarefas33","Tarefas e responsabilidades"],["pastoral35","Gestão Pastoral"],["membros","Membros"],["obreiros","Obreiros"],["visitantes","Visitantes"],["acompanhamento30","Integração e acompanhamento"],
+ ["home","Início"],["aniversarios39","Central de Aniversários"],["tarefas33","Tarefas e responsabilidades"],["pastoral35","Gestão Pastoral"],["membros","Membros"],["obreiros","Obreiros"],["visitantes","Visitantes"],["acompanhamento30","Integração e acompanhamento"],
  ["agenda","Agenda"],["escalas24","Escalas de cultos"],["eventos25","Eventos especiais"],
  ["ministerios22","Ministérios e departamentos"],["patrimonio23","Patrimônio"],
  ["resultadosCulto","Resultados dos cultos"],["festividades","Festividades"],
  ["escala","Escala oficial"],["indicadores","Indicadores"],["relatorios","Relatórios"],
  ["financeiro","Financeiro"],["usuarios","Usuários"]
 ];
-function e27Allowed(id){return id==="home"||id==="mais"||(id==="usuarios"?canManageUsers():permissionFor(id,"view"))}
+function e27Allowed(id){return id==="aniversarios39"?permissionFor("membros","view"):id==="home"||id==="mais"||(id==="usuarios"?canManageUsers():permissionFor(id,"view"))}
 function e27Normalize(v){return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim()}
 function e27ResultsFor(q){
  const term=e27Normalize(q),found=[];
@@ -1186,7 +1187,7 @@ function e28Notices(){
  if(permissionFor("membros","view")){
   const seen=new Set();for(const m of state.membros||[]){const n=e28Text(m.name);if(!n)continue;const birth=e28Day(m.birth);if(!birth)continue;
    let next=new Date(e28Today().getFullYear(),birth.getMonth(),birth.getDate(),12);if(next<e28Today())next=new Date(e28Today().getFullYear()+1,birth.getMonth(),birth.getDate(),12);
-   const days=e28Diff(next),key=e28Text(m.id)||n;if(days>=0&&days<=14&&!seen.has(key)){seen.add(key);e28Add(a,"aniversario",days===0?"urgent":"normal",days===0?"🎂 Aniversário hoje: "+n:"🎂 Aniversário: "+n,days===0?"Hoje":`Em ${days} dia(s) — ${next.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}`,"membros",days)}}
+   const days=e28Diff(next),key=e28Text(m.id)||n;if(days>=0&&days<=14&&!seen.has(key)){seen.add(key);e28Add(a,"aniversario",days===0?"urgent":"normal",days===0?"🎂 Aniversário hoje: "+n:"🎂 Aniversário: "+n,days===0?"Hoje":`Em ${days} dia(s) — ${next.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}`,"aniversarios39",days)}}
  }
  if(permissionFor("agenda","view"))for(const ev of state.agenda||[]){const d=e28Day(ev.date);if(!d)continue;const days=e28Diff(d);if(days>=0&&days<=14)e28Add(a,"agenda",days===0?"urgent":"normal",ev.name||"Compromisso na agenda",`${days===0?"Hoje":`Em ${days} dia(s)`} • ${fmt(ev.date)} ${e28Text(ev.time)}`,"agenda",days)}
  if(permissionFor("eventos25","view"))for(const ev of state.eventos25||[]){const v=ev.startDate||ev.date||ev.dateStart;const d=e28Day(v);if(!d)continue;const days=e28Diff(d);if(days>=0&&days<=14)e28Add(a,"agenda",days===0?"urgent":"normal",ev.name||ev.title||"Evento especial",`${days===0?"Hoje":`Em ${days} dia(s)`} • ${fmt(v)}`,"eventos25",days)}
@@ -1251,7 +1252,7 @@ $('e33New').addEventListener('click',()=>e33Open());$('e33Cancel').addEventListe
 $('e33Form').addEventListener('submit',async ev=>{ev.preventDefault();const id=$('e33Id').value;if(!e33Can(id?'edit':'create'))return toast('Sem permissão.');const old=id?state.tarefas33.find(x=>x.id===id):null;if(id&&!old)return toast('Tarefa não encontrada.');const data={title:$('e33Title').value.trim(),area:$('e33Area').value,congregationId:old?.congregationId||$('e33Cong').value,responsible:$('e33Responsible').value.trim(),dueDate:$('e33Due').value,priority:$('e33Priority').value,situation:$('e33Situation').value,description:$('e33Description').value.trim(),updatedAt:serverTimestamp()};if(!data.title||!data.congregationId||!data.responsible||!data.dueDate)return toast('Preencha os campos obrigatórios.');$('e33Save').disabled=true;try{if(id)await updateDoc(doc(db,'tarefas33',id),data);else await addDoc(collection(db,'tarefas33'),{...data,createdBy:state.authUser.uid,createdAt:serverTimestamp()});$('e33Dialog').close();toast('Tarefa salva com sucesso.')}catch(err){console.error(err);$('e33FormStatus').textContent='Erro ao salvar: '+(err.code||err.message)}finally{$('e33Save').disabled=false}});
 $('e33Csv').addEventListener('click',()=>{if(!e33Can())return;const rows=[['Título','Área','Responsável','Prazo','Prioridade','Situação','Descrição'],...e33Filtered().map(x=>[x.title,e33Areas[x.area]||x.area,x.responsible,x.dueDate,e33Priorities[x.priority]||x.priority,e33Situations[x.situation]||x.situation,x.description])];const csv='\ufeff'+rows.map(row=>row.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(';')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='AD_Moriah_Tarefas.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
 
-function openPage(id){e27RefreshQuick();if(id==="auditoria29"&&!isGeneralAdmin())return toast("Acesso exclusivo do Administrador Geral.");if(id==="auditoria29")e29Start();if(id==="usuarios"&&!canManageUsers())return toast("Acesso restrito.");if(id!=="mais"&&id!=="usuarios"&&PERMISSION_MODULES.some(x=>x[0]===id)&&!permissionFor(id,"view"))return toast("Sem permissão para visualizar este módulo.");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$(id)?.classList.add("active");if(id==="relatorios")renderReports();if(id==="indicadores")renderIndicators();if(id==="escala")renderScale();if(id==="usuarios")renderUsers();if(id==="financeiro")renderFinance();if(id==="acompanhamento30")e30Render();if(id==="pastoral35")e35Render();if(id==="tarefas33")e33Render();applyPermissionNavigation()}
+function openPage(id){e27RefreshQuick();if(id==="aniversarios39"&&!permissionFor("membros","view"))return toast("Sem permissão para visualizar membros.");if(id==="auditoria29"&&!isGeneralAdmin())return toast("Acesso exclusivo do Administrador Geral.");if(id==="auditoria29")e29Start();if(id==="usuarios"&&!canManageUsers())return toast("Acesso restrito.");if(id!=="mais"&&id!=="usuarios"&&PERMISSION_MODULES.some(x=>x[0]===id)&&!permissionFor(id,"view"))return toast("Sem permissão para visualizar este módulo.");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$(id)?.classList.add("active");if(id==="aniversarios39")e39Render();if(id==="relatorios")renderReports();if(id==="indicadores")renderIndicators();if(id==="escala")renderScale();if(id==="usuarios")renderUsers();if(id==="financeiro")renderFinance();if(id==="acompanhamento30")e30Render();if(id==="pastoral35")e35Render();if(id==="tarefas33")e33Render();applyPermissionNavigation()}
 function fillCongSelect(sel,blank=false){if(!sel)return;if(sel.id==="mcong"||sel.id==="importCong"){sel.value="moriah";return;}sel.innerHTML=(blank?'<option value="">Todas as congregações</option>':"")+state.congregacoes.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");if(!isAdmin()&&ownCong())sel.value=ownCong()}
 function closeDlg(id){$(id).close()}
 function openDlg(id){$(id).showModal()}
@@ -2554,5 +2555,65 @@ render();
 })();
 </script><script id="e38-pwa-install">
 (()=>{let promptEvent=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();promptEvent=e;const b=document.getElementById('e38InstallBtn');if(b)b.hidden=false});window.addEventListener('DOMContentLoaded',()=>{const b=document.createElement('button');b.id='e38InstallBtn';b.hidden=true;b.type='button';b.textContent='Instalar aplicativo';b.style.cssText='position:fixed;right:14px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:2000;background:#123d66;color:white;border:1px solid #d9a63b;border-radius:14px;padding:12px 17px;box-shadow:0 8px 25px #001a3266;font:600 14px system-ui;cursor:pointer';b.onclick=async()=>{if(!promptEvent)return;const p=promptEvent;promptEvent=null;b.hidden=true;await p.prompt()};document.body.appendChild(b)});window.addEventListener('appinstalled',()=>{promptEvent=null;const b=document.getElementById('e38InstallBtn');if(b)b.hidden=true})})();
+
+// ETAPA 39 — Central de Aniversários: nenhum novo documento Firestore.
+const e39Default="Que Deus abençoe sua vida, {nome}! 🎉 Feliz aniversário! A Assembleia de Deus Moriah deseja muita paz, saúde e alegria. Que o Senhor continue guiando seus passos!";
+function e39StoreKey(suffix){return "admoriah_e39_"+String(state.authUser?.uid||"anon")+"_"+suffix}
+function e39Read(suffix,fallback){try{const x=localStorage.getItem(e39StoreKey(suffix));return x===null?fallback:JSON.parse(x)}catch{return fallback}}
+function e39Write(suffix,value){try{localStorage.setItem(e39StoreKey(suffix),JSON.stringify(value));return true}catch{toast("Não foi possível salvar neste navegador.");return false}}
+function e39Name(x){return String(x.name||x.nome||"").trim()}
+function e39Records(){
+ if(!permissionFor("membros","view"))return [];
+ const map=new Map();
+ for(const x of [...(state.membros||[]),...(state.obreiros||[])]){
+  const name=e39Name(x),birth=e28Day(x.birth);if(!name||!birth)continue;
+  const unique=(x.memberId||x.memberNumber||x.cpf||name.toLocaleLowerCase("pt-BR").trim())+"|"+(birth.getMonth()+1)+"-"+birth.getDate();
+  if(map.has(unique))continue;
+  const today=e28Today(),y=today.getFullYear();let next=new Date(y,birth.getMonth(),birth.getDate(),12);
+  if(next<today)next=new Date(y+1,birth.getMonth(),birth.getDate(),12);
+  const diff=e28Diff(next);map.set(unique,{x,name,next,diff,key:unique});
+ }
+ return [...map.values()].sort((a,b)=>a.diff-b.diff||a.name.localeCompare(b.name,"pt-BR"));
+}
+function e39Message(name){return String(e39Read("template",e39Default)||e39Default).replace(/\{nome\}/gi,name)}
+function e39Phone(x){return String(x.whatsapp||x.phone||x.telefone||x.cellphone||x.mobile||"").replace(/\D/g,"")}
+function e39Whatsapp(person){
+ const phone=e39Phone(person.x);if(!phone){toast("Este cadastro não possui telefone. Copie a mensagem e envie manualmente.");return}
+ const full=phone.length===10||phone.length===11?"55"+phone:phone;
+ if(!/^\d{12,13}$/.test(full)){toast("Confira o telefone do membro antes de enviar.");return}
+ window.open("https://wa.me/"+full+"?text="+encodeURIComponent(e39Message(person.name)),"_blank","noopener,noreferrer");
+}
+function e39Render(){
+ if(!permissionFor("membros","view"))return;
+ const template=document.getElementById("e39Template"),list=document.getElementById("e39List"),rem=document.getElementById("e39Reminders");if(!template||!list||!rem)return;
+ if(document.activeElement!==template)template.value=e39Read("template",e39Default);
+ const q=String(document.getElementById("e39Search").value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+ const days=Number(document.getElementById("e39Period").value||30),all=e39Records();
+ const matches=all.filter(p=>p.diff<=days&&p.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().includes(q));
+ document.getElementById("e39Summary").textContent=matches.length+" aniversariante(s) no período selecionado.";
+ list.replaceChildren();
+ if(!matches.length){const p=document.createElement("p");p.textContent="Nenhum aniversariante encontrado.";list.append(p)}
+ const reminders=e39Read("reminders",{});
+ for(const p of matches){
+  const card=document.createElement("article");card.className="card";
+  const h=document.createElement("h3");h.textContent="🎂 "+p.name;
+  const meta=document.createElement("p");meta.textContent=(p.diff===0?"Hoje":p.diff===1?"Amanhã":"Em "+p.diff+" dias")+" • "+p.next.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"});
+  const preview=document.createElement("p");preview.className="muted";preview.textContent=e39Message(p.name);
+  const actions=document.createElement("div");actions.className="actions";
+  const wa=document.createElement("button");wa.type="button";wa.className="primary";wa.textContent="💬 Abrir WhatsApp";wa.addEventListener("click",()=>e39Whatsapp(p));
+  const copy=document.createElement("button");copy.type="button";copy.className="secondary";copy.textContent="📋 Copiar mensagem";copy.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(e39Message(p.name));toast("Mensagem copiada.")}catch{toast("Não foi possível copiar automaticamente.")}});
+  const remind=document.createElement("button");remind.type="button";remind.className="secondary";remind.textContent=reminders[p.key]?"🔕 Remover lembrete":"🔔 Lembrar no aniversário";
+  remind.addEventListener("click",()=>{const r=e39Read("reminders",{});if(r[p.key])delete r[p.key];else r[p.key]={name:p.name,month:p.next.getMonth()+1,day:p.next.getDate()};if(e39Write("reminders",r))e39Render()});
+  actions.append(wa,copy,remind);card.append(h,meta,preview,actions);list.append(card);
+ }
+ rem.replaceChildren();const today=e28Today();const due=Object.entries(reminders).filter(([,r])=>r&&r.month===today.getMonth()+1&&r.day===today.getDate());
+ if(!due.length){const p=document.createElement("p");p.textContent="Nenhum lembrete para hoje.";rem.append(p)}
+ for(const [key,r] of due){const p=document.createElement("p");p.textContent="🎉 Hoje é aniversário de "+r.name+". Abra a lista acima para preparar a mensagem.";rem.append(p)}
+}
+document.getElementById("e39SaveTemplate").addEventListener("click",()=>{const v=document.getElementById("e39Template").value.trim();if(!v)return toast("Digite uma mensagem.");if(e39Write("template",v)){toast("Mensagem salva neste navegador.");e39Render()}});
+document.getElementById("e39ResetTemplate").addEventListener("click",()=>{if(e39Write("template",e39Default)){document.getElementById("e39Template").value=e39Default;e39Render()}});
+document.getElementById("e39Search").addEventListener("input",e39Render);
+document.getElementById("e39Period").addEventListener("change",e39Render);
+
 </script>
 </body></html>
