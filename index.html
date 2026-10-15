@@ -250,6 +250,16 @@ dialog::backdrop{background:#00152fbb}
 .form-modern-v4 .form-actions{position:sticky;bottom:0;background:var(--card,#fff);padding:12px 0;z-index:2;border-top:1px solid #e2e8f0}
 @media(max-width:600px){.form-modern-v4 .grid2{grid-template-columns:1fr}.form-modern-v4 .v4-photo-row{align-items:flex-start}.form-modern-v4 .form-actions button{min-height:44px}}
 
+
+/* ETAPA 28 — Central de pendências e avisos, somente leitura */
+.e28-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.e28-head h3{margin:0}.e28-actions{display:flex;gap:8px;flex-wrap:wrap}
+.e28-actions button,.e28-item button{border:1px solid #b9cbe0;border-radius:9px;background:#fff;padding:9px 12px;color:#143457;font-weight:650;cursor:pointer}
+.e28-summary{display:flex;gap:9px;flex-wrap:wrap;margin:13px 0}.e28-chip{background:#edf4fc;border:1px solid #d7e5f6;border-radius:10px;padding:8px 12px;font-size:13px;color:#143457}
+.e28-list{display:grid;gap:9px}.e28-item{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid #e0e8f2;border-left:4px solid #7d9fca;border-radius:10px;padding:11px;background:#fff}
+.e28-item.e28-urgent{border-left-color:#c66b22}.e28-item.e28-overdue{border-left-color:#c43737}.e28-item strong{display:block;font-size:14px}.e28-item small{display:block;color:#64748b;margin-top:4px}.e28-empty{color:#64748b;padding:12px 0}.e28-filter{padding:9px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;max-width:100%}
+@media(max-width:600px){.e28-item{align-items:flex-start;flex-direction:column}.e28-item button{width:100%}}
+
 /* ETAPA 27 — Navegação e busca local, sem alterar Firebase */
 .e27-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 15px}
 .e27-search{flex:1;min-width:180px;border:1px solid #cbd5e1;border-radius:12px;padding:13px 14px;background:white;color:#172033}
@@ -474,6 +484,8 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 
   <div class="welcome"><div><small>Bem-vindo(a)</small><h2 id="welcomeName">AD Moriah</h2><p id="welcomeProfile"></p></div><div class="avatar">A</div></div>
   <div id="stats" class="stats" aria-label="Resumo dos indicadores da igreja"></div>
+
+  <div class="panel" id="e28Panel"><div class="e28-head"><h3>🔔 Central de pendências e avisos</h3><div class="e28-actions"><select id="e28Filter" class="e28-filter" aria-label="Filtrar avisos"><option value="all">Todos os avisos</option><option value="pendencia">Pendências</option><option value="aniversario">Aniversários</option><option value="agenda">Agenda e eventos</option><option value="visitante">Visitantes</option></select><button id="e28Refresh" type="button">↻ Atualizar</button></div></div><p class="muted">Avisos gerados automaticamente a partir dos registros disponíveis para seu perfil. Não são enviadas mensagens nem alterados dados.</p><div class="e28-summary" id="e28Summary" aria-live="polite"></div><div class="e28-list" id="e28List" aria-live="polite"></div></div>
   <div class="panel"><h3>🎂 Aniversariantes de hoje</h3><p>Veja quem faz aniversário hoje. Enviar uma homenagem é opcional e só acontece quando você escolher.</p><div id="birthdays"></div></div>
   <div class="panel"><h3>⛪ Próximas escalas da sede</h3><div id="nextScales"></div></div>
   <div class="panel"><h3>📅 Próximos eventos regionais</h3><div id="nextAgenda"></div></div>
@@ -858,6 +870,36 @@ $("e27OpenMenu").addEventListener("click",()=>openPage("mais"));
 $("e27Query").addEventListener("input",e27RenderSearch);
 document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"&&!$("app").classList.contains("hidden")){e.preventDefault();$("e27OpenSearch").click()}});
 
+
+// ETAPA 28: alertas locais baseados apenas em coleções já autorizadas e carregadas.
+// Nenhuma nova coleção, permissão ou gravação no Firestore é necessária.
+function e28Day(v){if(typeof v!=="string"||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(v))return null;const d=new Date(v+"T12:00:00");return Number.isNaN(d.getTime())?null:d}
+function e28Today(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate(),12)}
+function e28Diff(date){return Math.round((date-e28Today())/86400000)}
+function e28Text(x){return String(x??"").trim()}
+function e28Add(list,kind,level,title,detail,page,sort){list.push({kind,level,title:e28Text(title),detail:e28Text(detail),page,sort})}
+function e28Notices(){
+ const a=[];
+ if(permissionFor("festividades","view"))for(const f of state.festividades||[]){if(f.status==="pending")e28Add(a,"pendencia","urgent","Festividade aguardando análise",f.name||f.title||"Solicitação pendente","festividades",-1)}
+ if(permissionFor("membros","view")){
+  const seen=new Set();for(const m of state.membros||[]){const n=e28Text(m.name);if(!n)continue;const birth=e28Day(m.birth);if(!birth)continue;
+   let next=new Date(e28Today().getFullYear(),birth.getMonth(),birth.getDate(),12);if(next<e28Today())next=new Date(e28Today().getFullYear()+1,birth.getMonth(),birth.getDate(),12);
+   const days=e28Diff(next),key=e28Text(m.id)||n;if(days>=0&&days<=14&&!seen.has(key)){seen.add(key);e28Add(a,"aniversario",days===0?"urgent":"normal",days===0?"🎂 Aniversário hoje: "+n:"🎂 Aniversário: "+n,days===0?"Hoje":`Em ${days} dia(s) — ${next.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}`,"membros",days)}}
+ }
+ if(permissionFor("agenda","view"))for(const ev of state.agenda||[]){const d=e28Day(ev.date);if(!d)continue;const days=e28Diff(d);if(days>=0&&days<=14)e28Add(a,"agenda",days===0?"urgent":"normal",ev.name||"Compromisso na agenda",`${days===0?"Hoje":`Em ${days} dia(s)`} • ${fmt(ev.date)} ${e28Text(ev.time)}`,"agenda",days)}
+ if(permissionFor("eventos25","view"))for(const ev of state.eventos25||[]){const v=ev.startDate||ev.date||ev.dateStart;const d=e28Day(v);if(!d)continue;const days=e28Diff(d);if(days>=0&&days<=14)e28Add(a,"agenda",days===0?"urgent":"normal",ev.name||ev.title||"Evento especial",`${days===0?"Hoje":`Em ${days} dia(s)`} • ${fmt(v)}`,"eventos25",days)}
+ if(permissionFor("visitantes","view"))for(const v of state.visitantes||[]){const d=e28Day(v.date);if(!d)continue;const days=e28Diff(d);const status=e28Text(v.status).toLowerCase();if(days>=0&&days<=14&&(!status||["novo","pendente","new","pending"].includes(status)))e28Add(a,"visitante","normal","Acompanhamento de visitante: "+(v.name||"Sem nome"),`Visita registrada em ${fmt(v.date)} • confira se houve contato`,"visitantes",days)}
+ return a.sort((x,y)=>(x.level==="urgent"?-1:0)-(y.level==="urgent"?-1:0)||x.sort-y.sort).slice(0,120)
+}
+function e28Render(){const list=document.getElementById("e28List"),summary=document.getElementById("e28Summary");if(!list||!summary)return;
+ const all=e28Notices(),filter=document.getElementById("e28Filter").value,items=filter==="all"?all:all.filter(x=>x.kind===filter);
+ summary.replaceChildren();for(const [label,n] of [["Avisos",all.length],["Pendências",all.filter(x=>x.kind==="pendencia").length],["Aniversários (14 dias)",all.filter(x=>x.kind==="aniversario").length],["Compromissos (14 dias)",all.filter(x=>x.kind==="agenda").length]]){const b=document.createElement("span");b.className="e28-chip";b.textContent=label+": "+n;summary.append(b)}
+ list.replaceChildren();if(!items.length){const e=document.createElement("p");e.className="e28-empty";e.textContent="Nenhum aviso encontrado para este filtro nos dados disponíveis.";list.append(e);return}
+ for(const item of items){const row=document.createElement("div");row.className="e28-item"+(item.level==="urgent"?" e28-urgent":"");const content=document.createElement("div"),title=document.createElement("strong"),sub=document.createElement("small"),btn=document.createElement("button");title.textContent=item.title;sub.textContent=item.detail;content.append(title,sub);btn.type="button";btn.textContent="Abrir módulo →";btn.addEventListener("click",()=>openPage(item.page));row.append(content,btn);list.append(row)}
+}
+document.getElementById("e28Filter").addEventListener("change",e28Render);
+document.getElementById("e28Refresh").addEventListener("click",e28Render);
+
 function openPage(id){e27RefreshQuick();if(id==="usuarios"&&!canManageUsers())return toast("Acesso restrito.");if(id!=="mais"&&id!=="usuarios"&&PERMISSION_MODULES.some(x=>x[0]===id)&&!permissionFor(id,"view"))return toast("Sem permissão para visualizar este módulo.");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$(id)?.classList.add("active");if(id==="relatorios")renderReports();if(id==="indicadores")renderIndicators();if(id==="escala")renderScale();if(id==="usuarios")renderUsers();if(id==="financeiro")renderFinance();applyPermissionNavigation()}
 function fillCongSelect(sel,blank=false){if(!sel)return;if(sel.id==="mcong"||sel.id==="importCong"){sel.value="moriah";return;}sel.innerHTML=(blank?'<option value="">Todas as congregações</option>':"")+state.congregacoes.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");if(!isAdmin()&&ownCong())sel.value=ownCong()}
 function closeDlg(id){$(id).close()}
@@ -896,7 +938,7 @@ function sub(name,target,filter=true){
  state.unsubs.push(u)
 }
 function startRealtime(){if(permissionFor("financeiro"))startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);if(permissionFor("obreiros"))sub("obreiros","obreiros",true);if(permissionFor("membros"))sub("membros","membros",true);if(permissionFor("festividades"))sub("festividades","festividades",true);if(permissionFor("visitantes"))sub("visitantes","visitantes",true);if(permissionFor("resultadosCulto"))sub("resultadosCulto","resultadosCulto",true);if(permissionFor("agenda"))sub("agendaRegional","agenda",false);if(permissionFor("ministerios22"))subMin22();if(permissionFor("patrimonio23"))subPat23();if(permissionFor("escalas24"))subEsc24();if(permissionFor("eventos25"))subEv25();if(canManageUsers())sub("usuarios","usuarios",false);applyPermissionNavigation()}
-function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();renderMin22();renderPat23();renderEsc24();renderEv25();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
+function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();renderMin22();renderPat23();renderEsc24();renderEv25();e28Render();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
 
 // Apenas membros na situação Obreiro entram na contagem ministerial.
 // Registros antigos de Cooperador permanecem no banco, mas não aparecem como obreiros.
