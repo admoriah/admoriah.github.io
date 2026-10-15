@@ -708,7 +708,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 <div class="form-actions"><button type="button" class="secondary" data-close="importMembersDlg">Cancelar</button><button id="confirmImportMembers" type="button" class="primary" disabled>Importar registros válidos</button></div>
 </div></dialog>
 
-<dialog id="userDlg"><form id="userForm" class="form"><input type="hidden" id="uid"><div class="form-head"><h3 id="userDlgTitle">Novo usuário</h3><button type="button" data-close="userDlg">×</button></div><label>Nome<input id="uname" required></label><div class="grid2"><label>Usuário<input id="ulogin" required></label><label>Perfil<select id="urole"><option value="congregacao">Pastor / Congregação</option><option value="secretario">Secretário</option><option value="consulta">Consulta</option><option value="admin">Administrador</option></select></label></div><input type="hidden" id="ucong" value="moriah"><div class="grid2"><label>Senha<input id="upass" type="password" placeholder="Mínimo 6 caracteres"></label><label>Confirmar<input id="upass2" type="password"></label></div><label><input id="uactive" type="checkbox" checked style="width:auto"> Usuário ativo</label><small>O sistema converte internamente para usuario@admoriah.app.</small><div class="form-actions"><button type="button" class="secondary" data-close="userDlg">Cancelar</button><button class="primary">Salvar usuário</button></div></form></dialog>
+<dialog id="userDlg"><form id="userForm" class="form"><input type="hidden" id="uid"><div class="form-head"><h3 id="userDlgTitle">Novo usuário</h3><button type="button" data-close="userDlg">×</button></div><label>Nome<input id="uname" required></label><div class="grid2"><label>Usuário<input id="ulogin" required></label><label>Perfil<select id="urole"><option value="congregacao">Pastor / Congregação</option><option value="secretario">Secretário</option><option value="consulta">Consulta</option><option value="admin">Administrador</option></select></label></div><input type="hidden" id="ucong" value="moriah"><div class="grid2"><label>Senha<input id="upass" type="password" placeholder="Mínimo 6 caracteres"></label><label>Confirmar<input id="upass2" type="password"></label></div><label><input id="uactive" type="checkbox" checked style="width:auto"> Usuário ativo</label><div id="permissionEditor" style="margin-top:14px;border:1px solid #d9e2ed;border-radius:12px;padding:12px"><h4 style="margin:0 0 6px">Permissões individuais por módulo</h4><p style="font-size:12px;color:#526477;margin:0 0 10px">Somente o Administrador Geral pode alterar estas permissões. Marque Visualizar para habilitar um módulo.</p><div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr><th style="text-align:left">Módulo</th><th>Visualizar</th><th>Cadastrar</th><th>Editar</th><th>Excluir</th></tr></thead><tbody id="permissionRows"></tbody></table></div><p id="permissionInfo" style="font-size:12px;color:#526477"></p></div><small>O sistema converte internamente para usuario@admoriah.app.</small><div class="form-actions"><button type="button" class="secondary" data-close="userDlg">Cancelar</button><button class="primary">Salvar usuário</button></div></form></dialog>
 
 <script type="module">
 const firebaseConfig = {apiKey:"AIzaSyBjcEDhS9nNcMo0DCr6Yzde70KLBe_VMfw",authDomain:"ad-moriah.firebaseapp.com",projectId:"ad-moriah",storageBucket:"ad-moriah.firebasestorage.app",messagingSenderId:"910875544773",appId:"1:910875544773:web:a23243e7b1c339cf2c74ac",measurementId:"G-C46FPTH2P4"};
@@ -744,13 +744,48 @@ function fmt(d){if(!d)return "";const [y,m,dd]=d.split("-");return `${dd}/${m}/$
 function money(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
 function emailFromLogin(v){v=v.trim().toLowerCase();return v.includes("@")?v:`${v}@${LOGIN_DOMAIN}`}
 function simpleLogin(email){return (email||"").split("@")[0]}
-function isAdmin(){return state.profile?.role==="admin"}
+const GENERAL_ADMIN_UID="tKBmnsZ2f6eD1dTFyxNxPYRYP8j2";
+const PERMISSION_MODULES=[
+ ["membros","Membros","membros"],["obreiros","Obreiros","obreiros"],["visitantes","Visitantes","visitantes"],
+ ["resultadosCulto","Resultados dos cultos","resultadosCulto"],["festividades","Festividades","festividades"],
+ ["agenda","Agenda","agendaRegional"],["financeiro","Financeiro","financeiro"],
+ ["ministerios22","Ministérios e departamentos","ministerios"],["patrimonio23","Patrimônio","patrimonio"],
+ ["escalas24","Escalas de cultos","escalasCulto"],["eventos25","Eventos especiais","eventosEspeciais"],
+ ["congregacoes","Congregações","congregacoes"],["relatorios","Relatórios",null],["indicadores","Indicadores",null],
+ ["escala","Escala oficial",null],["home","Painel inicial",null]
+];
+const PERMISSION_ACTIONS=["view","create","edit","delete"];
+function isGeneralAdmin(){return state.authUser?.uid===GENERAL_ADMIN_UID && state.profile?.role==="admin" && state.profile?.active===true}
+function isAdmin(){return state.profile?.role==="admin" && state.profile?.active===true}
+function canManageUsers(){return isAdmin()}
+function permissionFor(mod,action="view"){
+ if(isGeneralAdmin()||isAdmin())return true;
+ const custom=state.profile?.permissions;
+ if(custom && typeof custom==="object")return custom[mod]?.[action]===true;
+ // Compatibilidade com usuários anteriores à Etapa 26.
+ if(action==="view")return mod!=="financeiro";
+ return ["secretario","congregacao"].includes(state.profile?.role) && !["financeiro","agenda","congregacoes"].includes(mod);
+}
+function permissionDefault(role){const p={};for(const [key] of PERMISSION_MODULES){const allow=role!=="consulta" && key!=="financeiro" && key!=="congregacoes";p[key]={view:key!=="financeiro",create:allow,edit:allow,delete:allow && !["ministerios22","patrimonio23","escalas24","eventos25"].includes(key)};}return p;}
+function renderPermissionEditor(existing){
+ const editable=isGeneralAdmin();const area=$("permissionEditor");area.style.display=editable?"block":"none";
+ if(!editable)return;
+ const role=$("urole").value;
+ const values=existing?.permissions || permissionDefault(role);
+ $("permissionRows").innerHTML=PERMISSION_MODULES.map(([key,label])=>`<tr><td style="padding:7px 4px;border-bottom:1px solid #e8edf3">${label}</td>${PERMISSION_ACTIONS.map(a=>`<td style="text-align:center;border-bottom:1px solid #e8edf3"><input type="checkbox" data-perm-mod="${key}" data-perm-act="${a}" ${values[key]?.[a]===true?"checked":""} style="width:16px;height:16px"></td>`).join("")}</tr>`).join("");
+ $("permissionInfo").textContent="Permissões personalizadas são aplicadas imediatamente após o usuário entrar novamente.";
+}
+function collectPermissions(){const p={};for(const [key] of PERMISSION_MODULES){p[key]={};for(const a of PERMISSION_ACTIONS)p[key][a]=!!document.querySelector(`[data-perm-mod="${key}"]`+`[data-perm-act="${a}"]`)?.checked;if(!p[key].view)for(const a of ["create","edit","delete"])p[key][a]=false;}return p;}
+function applyPermissionNavigation(){
+ document.querySelectorAll("[data-page]").forEach(el=>{const id=el.dataset.page;if(id==="usuarios"){el.classList.toggle("hidden",!canManageUsers());return;}if(PERMISSION_MODULES.some(x=>x[0]===id))el.classList.toggle("hidden",!permissionFor(id,"view"));});
+}
+
 function canEdit(){return ["admin","congregacao","secretario"].includes(state.profile?.role)}
 function ownCong(){return state.profile?.congregationId||""}
 function cname(id){return state.congregacoes.find(c=>c.id===id)?.name||"—"}
 function profileLabel(r){return ({admin:"Administrador",congregacao:"Pastor / Congregação",secretario:"Secretário",consulta:"Consulta"})[r]||r||"—"}
 function clearUnsubs(){financeRows=[];state.unsubs.forEach(fn=>{try{fn()}catch{}});state.unsubs=[]}
-function openPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$(id)?.classList.add("active");if(id==="relatorios")renderReports();if(id==="indicadores")renderIndicators();if(id==="escala")renderScale();if(id==="usuarios")renderUsers();if(id==="financeiro")renderFinance()}
+function openPage(id){if(id==="usuarios"&&!canManageUsers())return toast("Acesso restrito.");if(id!=="mais"&&id!=="usuarios"&&PERMISSION_MODULES.some(x=>x[0]===id)&&!permissionFor(id,"view"))return toast("Sem permissão para visualizar este módulo.");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$(id)?.classList.add("active");if(id==="relatorios")renderReports();if(id==="indicadores")renderIndicators();if(id==="escala")renderScale();if(id==="usuarios")renderUsers();if(id==="financeiro")renderFinance();applyPermissionNavigation()}
 function fillCongSelect(sel,blank=false){if(!sel)return;if(sel.id==="mcong"||sel.id==="importCong"){sel.value="moriah";return;}sel.innerHTML=(blank?'<option value="">Todas as congregações</option>':"")+state.congregacoes.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");if(!isAdmin()&&ownCong())sel.value=ownCong()}
 function closeDlg(id){$(id).close()}
 function openDlg(id){$(id).showModal()}
@@ -787,7 +822,7 @@ function sub(name,target,filter=true){
  const u=onSnapshot(q,s=>{state[target]=s.docs.map(d=>({id:d.id,...d.data()}));$("syncState").textContent="● online";renderAll()},e=>{console.error(e);$("syncState").textContent="● erro"});
  state.unsubs.push(u)
 }
-function startRealtime(){startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);sub("obreiros","obreiros",true);sub("membros","membros",true);sub("festividades","festividades",true);sub("visitantes","visitantes",true);sub("resultadosCulto","resultadosCulto",true);sub("agendaRegional","agenda",false);subMin22();subPat23();subEsc24();subEv25();if(isAdmin())sub("usuarios","usuarios",false)}
+function startRealtime(){if(permissionFor("financeiro"))startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);if(permissionFor("obreiros"))sub("obreiros","obreiros",true);if(permissionFor("membros"))sub("membros","membros",true);if(permissionFor("festividades"))sub("festividades","festividades",true);if(permissionFor("visitantes"))sub("visitantes","visitantes",true);if(permissionFor("resultadosCulto"))sub("resultadosCulto","resultadosCulto",true);if(permissionFor("agenda"))sub("agendaRegional","agenda",false);if(permissionFor("ministerios22"))subMin22();if(permissionFor("patrimonio23"))subPat23();if(permissionFor("escalas24"))subEsc24();if(permissionFor("eventos25"))subEv25();if(canManageUsers())sub("usuarios","usuarios",false);applyPermissionNavigation()}
 function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();renderMin22();renderPat23();renderEsc24();renderEv25();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
 
 // Apenas membros na situação Obreiro entram na contagem ministerial.
@@ -953,14 +988,14 @@ function renderScalesNext(){const now=new Date(),arr=[];state.congregacoes.forEa
 function renderScale(){const ms=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"],y=state.scaleDate.getFullYear(),m=state.scaleDate.getMonth();$("scaleMonth").textContent=`${ms[m]} de ${y}`;const rows=[];for(let n=1;n<=5;n++){const d=nthTuesday(y,m,n);if(!d)continue;const c=state.congregacoes.find(c=>c.fixedScale?.active==="sim"&&Number(c.fixedScale.occurrence)===n);rows.push({n,d,c})}$("scaleList").innerHTML=rows.map(r=>`<article class="card"><h3>${r.n}ª terça-feira — ${r.d.toLocaleDateString("pt-BR")}</h3>${r.c?`<p><b>${r.c.name}</b> • ${r.c.fixedScale.time||""}</p>`:"<p>Nenhum departamento escalada.</p>"}</article>`).join("")}
 $("prevMonth").onclick=()=>{state.scaleDate=new Date(state.scaleDate.getFullYear(),state.scaleDate.getMonth()-1,1);renderScale()};$("nextMonth").onclick=()=>{state.scaleDate=new Date(state.scaleDate.getFullYear(),state.scaleDate.getMonth()+1,1);renderScale()};
 function renderUsers(){
- if(!isAdmin()||!$("userList"))return;
+ if(!canManageUsers()||!$("userList"))return;
  const q=($("userSearch")?.value||"").trim().toLocaleLowerCase("pt-BR"),c=$("userCongFilter")?.value||"",role=$("userRoleFilter")?.value||"",status=$("userStatusFilter")?.value||"";
  const all=state.usuarios||[];
  const active=all.filter(u=>u.active!==false).length;
  if($("userKpis"))$("userKpis").innerHTML=`<div class="user-kpi"><small>Total de usuários</small><strong>${all.length}</strong></div><div class="user-kpi"><small>Ativos</small><strong>${active}</strong></div><div class="user-kpi"><small>Inativos</small><strong>${all.length-active}</strong></div>`;
  const l=all.filter(u=>(!q||(u.name||"").toLocaleLowerCase("pt-BR").includes(q)||(u.login||u.email||"").toLocaleLowerCase("pt-BR").includes(q))&&(!c||u.congregationId===c)&&(!role||u.role===role)&&(!status||(status==="active"?u.active!==false:u.active===false))).sort((a,b)=>String(a.name||a.email||"").localeCompare(String(b.name||b.email||""),"pt-BR",{sensitivity:"base"}));
  const esc=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
- $("userList").innerHTML=l.length?l.map(u=>`<article class="card user-modern-card"><div class="person-head"><h3>${esc(u.name||u.email||"Usuário sem nome")}</h3><span class="badge ${u.active===false?"bad":"ok"}">${u.active===false?"Inativo":"Ativo"}</span></div><p><b>${esc(u.login||u.email||"Não informado")}</b></p><p class="user-role-line">${esc(profileLabel(u.role))}</p><div class="actions"><button class="secondary" onclick="editUser('${u.id}')">Editar perfil</button>${u.id!==state.authUser.uid?`<button class="${u.active===false?"approve":"reject"}" onclick="toggleUser('${u.id}',${u.active===false})">${u.active===false?"Ativar":"Inativar"}</button>`:""}</div></article>`).join(""):'<div class="card">Nenhum usuário corresponde aos filtros selecionados.</div>';
+ $("userList").innerHTML=l.length?l.map(u=>`<article class="card user-modern-card"><div class="person-head"><h3>${esc(u.name||u.email||"Usuário sem nome")}</h3><span class="badge ${u.active===false?"bad":"ok"}">${u.active===false?"Inativo":"Ativo"}</span></div><p><b>${esc(u.login||u.email||"Não informado")}</b></p><p class="user-role-line">${esc(profileLabel(u.role))}</p><div class="actions"><button class="secondary" onclick="editUser('${u.id}')">${isGeneralAdmin()?"Editar perfil e permissões":"Ver perfil"}</button>${isGeneralAdmin()&&u.id!==state.authUser.uid?`<button class="${u.active===false?"approve":"reject"}" onclick="toggleUser('${u.id}',${u.active===false})">${u.active===false?"Ativar":"Inativar"}</button>`:""}</div></article>`).join(""):'<div class="card">Nenhum usuário corresponde aos filtros selecionados.</div>';
 }
 ["userSearch","userCongFilter","userRoleFilter","userStatusFilter"].forEach(id=>{if($(id))$(id).addEventListener(id==="userSearch"?"input":"change",renderUsers)});
 if($("userClearFilters"))$("userClearFilters").onclick=()=>{["userSearch","userCongFilter","userRoleFilter","userStatusFilter"].forEach(id=>{if($(id))$(id).value=""});renderUsers()};
@@ -1144,11 +1179,26 @@ window.deleteItem=async(col,id,name)=>{
  finally{exclusoesEmAndamento.delete(chave)}
 };
 
-$("newUserBtn").onclick=()=>{$("userForm").reset();$("uid").value="";$("ulogin").disabled=false;$("userDlgTitle").textContent="Novo usuário";$("ucong").value="moriah";$("uactive").checked=true;openDlg("userDlg")};
-$("urole").onchange=()=>{$("ucong").value="moriah"};
-$("userForm").onsubmit=async e=>{e.preventDefault();const editId=$("uid").value,role=$("urole").value,pass=$("upass").value,pass2=$("upass2").value;if(pass!==pass2)return toast("Senhas diferentes.");if(!editId&&pass.length<6)return toast("Senha mínima: 6 caracteres.");const profile={name:$("uname").value.trim(),login:$("ulogin").value.trim().toLowerCase(),role,congregationId:"moriah",active:$("uactive").checked,updatedAt:serverTimestamp()};try{if(editId){await updateDoc(doc(db,"usuarios",editId),profile);toast("Perfil atualizado.")}else{const secondary=initializeApp(firebaseConfig,"creator-"+Date.now()),sa=getAuth(secondary),cred=await createUserWithEmailAndPassword(sa,emailFromLogin(profile.login),pass);await setDoc(doc(db,"usuarios",cred.user.uid),{...profile,email:cred.user.email,createdAt:serverTimestamp()});await signOut(sa);await deleteApp(secondary);toast("Usuário criado.")}closeDlg("userDlg")}catch(e){console.error(e);toast(({"auth/email-already-in-use":"Este e-mail já está cadastrado.","auth/invalid-email":"E-mail inválido.","auth/weak-password":"A senha precisa ter pelo menos 6 caracteres.","permission-denied":"Sem permissão para salvar no Firebase."})[e.code]||"Não foi possível salvar: "+(e.code||"verifique o console"))}};
-window.editUser=id=>{const u=state.usuarios.find(x=>x.id===id);if(!u)return;$("uid").value=id;$("userDlgTitle").textContent="Editar perfil";$("uname").value=u.name||"";$("ulogin").value=u.login||"";$("ulogin").disabled=true;$("urole").value=u.role;$("ucong").value="moriah";$("ucong").value="moriah";$("uactive").checked=u.active!==false;$("upass").value="";$("upass2").value="";openDlg("userDlg")};
-window.toggleUser=async(id,active)=>{await updateDoc(doc(db,"usuarios",id),{active,updatedAt:serverTimestamp()});toast(active?"Ativado.":"Inativado.")};
+$("newUserBtn").onclick=()=>{$("userForm").querySelectorAll("input,select").forEach(el=>el.disabled=false);$("userForm").querySelector("button.primary").disabled=false;$("userForm").reset();$("uid").value="";$("ulogin").disabled=false;$("userDlgTitle").textContent="Novo usuário";$("ucong").value="moriah";$("uactive").checked=true;$("urole").querySelector('option[value="admin"]').disabled=!isGeneralAdmin();renderPermissionEditor(null);openDlg("userDlg")};
+$("urole").addEventListener("change",()=>{if(isGeneralAdmin()&&!$("uid").value)renderPermissionEditor(null)});
+$("userForm").onsubmit=async e=>{
+ e.preventDefault();const editId=$("uid").value,role=$("urole").value,pass=$("upass").value,pass2=$("upass2").value;
+ if(!canManageUsers())return toast("Acesso restrito.");
+ if(!isGeneralAdmin() && (editId||role==="admin"))return toast("Somente o Administrador Geral pode alterar perfis e conceder acesso administrativo.");
+ if(editId===GENERAL_ADMIN_UID && (!isGeneralAdmin()||role!=="admin"||!$("uactive").checked))return toast("O Administrador Geral não pode ser desativado.");
+ if(pass!==pass2)return toast("Senhas diferentes.");if(!editId&&pass.length<6)return toast("Senha mínima: 6 caracteres.");
+ const profile={name:$("uname").value.trim(),login:$("ulogin").value.trim().toLowerCase(),role,congregationId:"moriah",active:$("uactive").checked,updatedAt:serverTimestamp()};
+ if(isGeneralAdmin())profile.permissions=collectPermissions();
+ try{
+  if(editId){await updateDoc(doc(db,"usuarios",editId),profile);toast("Perfil e permissões atualizados.")}
+  else{const secondary=initializeApp(firebaseConfig,"creator-"+Date.now()),sa=getAuth(secondary);
+   try{const cred=await createUserWithEmailAndPassword(sa,emailFromLogin(profile.login),pass);await setDoc(doc(db,"usuarios",cred.user.uid),{...profile,email:cred.user.email,createdAt:serverTimestamp()});toast("Usuário criado.")}
+   finally{await signOut(sa).catch(()=>{});await deleteApp(secondary).catch(()=>{})}}
+  closeDlg("userDlg")
+ }catch(err){console.error(err);toast(({"auth/email-already-in-use":"Este e-mail já está cadastrado.","auth/invalid-email":"E-mail inválido.","auth/weak-password":"A senha precisa ter pelo menos 6 caracteres.","permission-denied":"Sem permissão para salvar no Firebase."})[err.code]||"Não foi possível salvar: "+(err.code||"verifique o console"))}
+};
+window.editUser=id=>{const u=state.usuarios.find(x=>x.id===id);if(!u)return;$("uid").value=id;$("userDlgTitle").textContent=isGeneralAdmin()?"Editar perfil e permissões":"Consultar perfil";$("uname").value=u.name||"";$("ulogin").value=u.login||"";$("ulogin").disabled=true;$("urole").value=u.role;$("urole").querySelector('option[value="admin"]').disabled=!isGeneralAdmin();$("ucong").value="moriah";$("uactive").checked=u.active!==false;$("upass").value="";$("upass2").value="";renderPermissionEditor(u);$("userForm").querySelectorAll("input,select").forEach(el=>{if(el.id!=="uid")el.disabled=!isGeneralAdmin()});$("userForm").querySelector('button.primary').disabled=!isGeneralAdmin();openDlg("userDlg")};
+window.toggleUser=async(id,active)=>{if(!isGeneralAdmin()||id===GENERAL_ADMIN_UID)return toast("Somente o Administrador Geral pode alterar usuários.");await updateDoc(doc(db,"usuarios",id),{active,updatedAt:serverTimestamp()});toast(active?"Ativado.":"Inativado.")};
 
 
 // ============= AD Moriah 10 =============
@@ -1473,10 +1523,13 @@ $("printReport").onclick=()=>{const s=$("moriahReportSection"),q=$("moriahReport
 
 // Corrige rótulo de relatório no menu conforme perfil
 function updateAccessLabels(){
- document.querySelectorAll('[data-page="usuarios"]').forEach(x=>x.classList.toggle("hidden",!isAdmin()));
+ document.querySelectorAll('[data-page="usuarios"]').forEach(x=>x.classList.toggle("hidden",!canManageUsers()));applyPermissionNavigation();
  if(!isAdmin())document.querySelectorAll(".admin-only").forEach(x=>x.classList.add("hidden"));
 }
 
+// ETAPA 26: bloqueio de edição por módulo (a segurança definitiva está nas regras Firestore).
+const FORM_PERMISSION_MAP={memberForm:"membros",workerForm:"obreiros",visitorForm:"visitantes",congForm:"congregacoes",financeForm:"financeiro",userForm:"usuarios"};
+document.addEventListener("submit",e=>{const mod=FORM_PERMISSION_MAP[e.target?.id];if(!mod||mod==="usuarios")return;const hiddenId=e.target.querySelector('input[type="hidden"][id$="id"]');const action=hiddenId?.value?"edit":"create";if(!permissionFor(mod,action)){e.preventDefault();e.stopImmediatePropagation();toast("Sem permissão para "+(action==="edit"?"editar":"cadastrar")+" neste módulo.");}},true);
 // ETAPA 8: proteção contra salvamentos repetidos e fechamento acidental.
 // Não altera coleções, campos ou regras do Firebase.
 const formulariosProtegidos=["memberForm","workerForm","visitorForm"];
