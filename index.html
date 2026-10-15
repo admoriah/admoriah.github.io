@@ -437,7 +437,11 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 </style>
 <style id="secretaria14style">
 .sec14{margin:18px 0;padding:18px;background:white;border:1px solid #d9e3ed;border-radius:16px}.sec14 h3{margin:0 0 5px;color:#102c4b}.sec14 .muted{font-size:12px;color:#667085}.sec14-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:15px 0}.sec14-stat{padding:12px;background:#f2f6fa;border-radius:10px}.sec14-stat b{font-size:23px;display:block;color:#102c4b}.sec14-tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.sec14-tools input,.sec14-tools select{padding:9px;border:1px solid #c8d5e3;border-radius:8px;max-width:240px}.sec14-tablewrap{max-height:330px;overflow:auto}.sec14 table{width:100%;border-collapse:collapse;font-size:12px}.sec14 th,.sec14 td{text-align:left;padding:9px;border-bottom:1px solid #e6ebf0}.sec14 th{position:sticky;top:0;background:#eef3f8}.sec14-actions{display:flex;gap:8px;flex-wrap:wrap}.sec14-actions button{padding:9px 12px}.sec14 .sec14-note{font-size:12px;color:#576579;margin-top:9px}
-</style></head>
+</style><style>
+/* ETAPA 29 — auditoria administrativa */
+.e29-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end}.e29-bar label{flex:1;min-width:155px}.e29-bar input,.e29-bar select{width:100%}.e29-note{font-size:12px;color:#64748b}.e29-item{padding:12px 0;border-bottom:1px solid #e5e7eb}.e29-item:last-child{border-bottom:0}.e29-item strong{display:block}.e29-meta{font-size:12px;color:#64748b;overflow-wrap:anywhere}
+</style>
+</head>
 <body>
 <div id="toast" class="toast"></div>
 
@@ -614,6 +618,17 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
 <div id="ev25Status" class="panel" role="status">Aguardando sincronização dos eventos.</div><div id="ev25Stats" class="stats"></div>
 <div class="panel"><div class="grid2"><label>Pesquisar evento ou responsável<input id="ev25Search" type="search" placeholder="Título, local, tipo ou equipe"></label><label>Situação<select id="ev25Filter"><option value="">Todas</option><option value="planejado">Planejado</option><option value="confirmado">Confirmado</option><option value="realizado">Realizado</option><option value="cancelado">Cancelado</option></select></label></div><div class="actions"><button id="ev25Csv" class="secondary" type="button">Exportar CSV</button><button id="ev25Print" class="secondary" type="button">Imprimir relatório</button></div></div>
 <div id="ev25List"></div></section>
+<section id="auditoria29" class="page">
+ <div class="page-head"><div><h2>🛡️ Histórico de alterações</h2><p>Etapa 29 • Consulta administrativa de operações realizadas no aplicativo.</p></div></div>
+ <div id="e29Status" class="panel" role="status">Aguardando acesso ao histórico.</div>
+ <div class="panel"><div class="e29-bar">
+ <label>Pesquisar usuário, coleção ou registro<input type="search" id="e29Search" placeholder="Nome, e-mail, coleção ou identificador"></label>
+ <label>Operação<select id="e29Action"><option value="">Todas</option><option value="create">Cadastros</option><option value="edit">Alterações</option><option value="delete">Exclusões</option></select></label>
+ <label>Data inicial<input type="date" id="e29From"></label><label>Data final<input type="date" id="e29To"></label>
+ </div><div class="actions"><button class="secondary" type="button" id="e29Csv">Exportar histórico CSV</button><button class="secondary" type="button" id="e29Refresh">Atualizar lista</button></div>
+ <p class="e29-note">O registro contém usuário, tipo de operação, coleção, identificador e data. Não armazena senhas, dados completos dos cadastros nem valores anteriores. Operações de lote e algumas rotinas antigas podem não constar; este histórico não substitui uma auditoria obrigatória no servidor.</p></div>
+ <div id="e29Count" class="muted"></div><div id="e29List" class="panel"></div>
+</section>
 <section id="mais" class="page">
   <div class="page-head"><div><h2>Explorar o AD Moriah</h2><p>Acesse todas as áreas do aplicativo.</p></div></div>
   <div class="moriah-menu-groups">
@@ -637,6 +652,7 @@ html,body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
       <button class="menu-link" data-page="relatorios">📊 Relatórios</button>
       <button class="menu-link admin-only" data-page="financeiro">💰 Gestão Financeira</button>
       <button class="menu-link admin-only" data-page="usuarios">👤 Gerenciar Usuários</button>
+      <button class="menu-link" id="e29Menu" data-page="auditoria29" style="display:none">🛡️ Histórico de Alterações</button>
     </div></div>
   </div>
 </section>
@@ -777,12 +793,69 @@ const {
 }=authMod;
 
 const {
-  getFirestore,doc,getDoc,setDoc,addDoc,updateDoc,deleteDoc,
+  getFirestore,doc,getDoc,setDoc:rawSetDoc,addDoc:rawAddDoc,updateDoc:rawUpdateDoc,deleteDoc:rawDeleteDoc,
   collection,query,where,onSnapshot,writeBatch,runTransaction,serverTimestamp
 }=fsMod;
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const $=id=>document.getElementById(id);
+// Auditoria informativa: grava após sucesso, sem interromper o salvamento original.
+// Somente operações diretas (não transações, lotes ou scripts externos).
+const E29_COLLECTIONS=new Set(["membros","obreiros","visitantes","resultadosCulto","festividades","agendaRegional","financeiro","ministerios","patrimonio","escalasCulto","eventosEspeciais","congregacoes","usuarios"]);
+let e29Entries=[];
+let e29Listening=false;
+function e29Log(operation,ref){
+ try{
+  const segments=ref?.path?.split("/")||[];
+  if(segments.length!==2||!E29_COLLECTIONS.has(segments[0])||!auth.currentUser)return;
+  const actor=auth.currentUser;
+  const payload={actorUid:actor.uid,actorEmail:actor.email||"",actorName:state.profile?.name||state.profile?.login||"",action:operation,collection:segments[0],recordId:segments[1],createdAt:serverTimestamp()};
+  rawAddDoc(collection(db,"auditoria"),payload).catch(err=>console.warn("Auditoria não registrada:",err.code||err.message));
+ }catch(err){console.warn("Auditoria:",err)}
+}
+async function addDoc(reference,data){const result=await rawAddDoc(reference,data);e29Log("create",result);return result}
+async function updateDoc(reference,...args){const result=await rawUpdateDoc(reference,...args);e29Log("edit",reference);return result}
+async function setDoc(reference,...args){const result=await rawSetDoc(reference,...args);e29Log("edit",reference);return result}
+async function deleteDoc(reference){const result=await rawDeleteDoc(reference);e29Log("delete",reference);return result}
+function e29Start(){
+ if(e29Listening||!isGeneralAdmin())return;
+ e29Listening=true;
+ const unsub=onSnapshot(collection(db,"auditoria"),snap=>{
+  e29Entries=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)).slice(0,500);
+  $("e29Status").textContent="● Histórico sincronizado com o Firebase (até 500 registros recentes).";e29Render();
+ },err=>{$("e29Status").textContent="Erro ao consultar histórico: "+(err.code||err.message)+". Confira as regras da Etapa 29.";console.error(err)});
+ state.unsubs.push(unsub);
+}
+function e29Filtered(){
+ const term=$("e29Search").value.trim().toLocaleLowerCase("pt-BR"),action=$("e29Action").value,from=$("e29From").value,to=$("e29To").value;
+ return e29Entries.filter(x=>{
+  const day=x.createdAt?.toDate?.().toISOString().slice(0,10)||"";
+  return (!term||[x.actorName,x.actorEmail,x.collection,x.recordId,x.actorUid].join(" ").toLocaleLowerCase("pt-BR").includes(term))&&(!action||x.action===action)&&(!from||day>=from)&&(!to||day<=to);
+ });
+}
+function e29Render(){
+ const root=$("e29List");if(!root)return;
+ if(!isGeneralAdmin()){root.textContent="Somente o Administrador Geral pode consultar o histórico.";return}
+ const rows=e29Filtered();$("e29Count").textContent=rows.length+" registro(s) exibido(s).";
+ root.replaceChildren();if(!rows.length){root.textContent="Nenhuma operação encontrada para os filtros.";return}
+ for(const x of rows){
+  const item=document.createElement("article");item.className="e29-item";
+  const title=document.createElement("strong");title.textContent=({create:"Cadastro",edit:"Alteração",delete:"Exclusão"}[x.action]||x.action)+" · "+x.collection;
+  const meta=document.createElement("div");meta.className="e29-meta";
+  meta.textContent="Usuário: "+(x.actorName||x.actorEmail||x.actorUid)+" · Registro: "+x.recordId+" · "+(x.createdAt?.toDate?.().toLocaleString("pt-BR")||"Aguardando data");
+  item.append(title,meta);root.append(item);
+ }
+}
+for(const id of ["e29Search","e29Action","e29From","e29To"])$(id).addEventListener("input",e29Render);
+$("e29Refresh").addEventListener("click",e29Render);
+$("e29Csv").addEventListener("click",()=>{
+ if(!isGeneralAdmin())return;
+ const rows=e29Filtered(),cols=["Data","Operação","Coleção","ID do registro","Usuário","E-mail","UID"];
+ const quote=x=>'"'+String(x??"").replaceAll('"','""')+'"';
+ const data=[cols,...rows.map(x=>[x.createdAt?.toDate?.().toLocaleString("pt-BR")||"",x.action,x.collection,x.recordId,x.actorName,x.actorEmail,x.actorUid])].map(row=>row.map(quote).join(";")).join("\r\n");
+ const blob=new Blob(["\ufeff"+data],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AD_Moriah_Auditoria_Etapa29.csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+
 const state={authUser:null,profile:null,congregacoes:[],obreiros:[],membros:[],festividades:[],agenda:[],usuarios:[],visitantes:[],resultadosCulto:[],ministerios22:[],patrimonio23:[],escalas24:[],eventos25:[],unsubs:[],scaleDate:new Date()};
 
 function toast(m){const e=$("toast");e.textContent=m;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2500)}
@@ -830,7 +903,7 @@ function canEdit(){return ["admin","congregacao","secretario"].includes(state.pr
 function ownCong(){return state.profile?.congregationId||""}
 function cname(id){return state.congregacoes.find(c=>c.id===id)?.name||"—"}
 function profileLabel(r){return ({admin:"Administrador",congregacao:"Pastor / Congregação",secretario:"Secretário",consulta:"Consulta"})[r]||r||"—"}
-function clearUnsubs(){financeRows=[];state.unsubs.forEach(fn=>{try{fn()}catch{}});state.unsubs=[]}
+function clearUnsubs(){e29Listening=false;e29Entries=[];financeRows=[];state.unsubs.forEach(fn=>{try{fn()}catch{}});state.unsubs=[]}
 // ETAPA 27: busca local, atalhos e navegação rápida. Não grava nem modifica documentos.
 const e27Modules=[
  ["home","Início"],["membros","Membros"],["obreiros","Obreiros"],["visitantes","Visitantes"],
@@ -900,7 +973,7 @@ function e28Render(){const list=document.getElementById("e28List"),summary=docum
 document.getElementById("e28Filter").addEventListener("change",e28Render);
 document.getElementById("e28Refresh").addEventListener("click",e28Render);
 
-function openPage(id){e27RefreshQuick();if(id==="usuarios"&&!canManageUsers())return toast("Acesso restrito.");if(id!=="mais"&&id!=="usuarios"&&PERMISSION_MODULES.some(x=>x[0]===id)&&!permissionFor(id,"view"))return toast("Sem permissão para visualizar este módulo.");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$(id)?.classList.add("active");if(id==="relatorios")renderReports();if(id==="indicadores")renderIndicators();if(id==="escala")renderScale();if(id==="usuarios")renderUsers();if(id==="financeiro")renderFinance();applyPermissionNavigation()}
+function openPage(id){e27RefreshQuick();if(id==="auditoria29"&&!isGeneralAdmin())return toast("Acesso exclusivo do Administrador Geral.");if(id==="auditoria29")e29Start();if(id==="usuarios"&&!canManageUsers())return toast("Acesso restrito.");if(id!=="mais"&&id!=="usuarios"&&PERMISSION_MODULES.some(x=>x[0]===id)&&!permissionFor(id,"view"))return toast("Sem permissão para visualizar este módulo.");document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.querySelectorAll("[data-page]").forEach(b=>b.classList.toggle("active",b.dataset.page===id));$(id)?.classList.add("active");if(id==="relatorios")renderReports();if(id==="indicadores")renderIndicators();if(id==="escala")renderScale();if(id==="usuarios")renderUsers();if(id==="financeiro")renderFinance();applyPermissionNavigation()}
 function fillCongSelect(sel,blank=false){if(!sel)return;if(sel.id==="mcong"||sel.id==="importCong"){sel.value="moriah";return;}sel.innerHTML=(blank?'<option value="">Todas as congregações</option>':"")+state.congregacoes.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");if(!isAdmin()&&ownCong())sel.value=ownCong()}
 function closeDlg(id){$(id).close()}
 function openDlg(id){$(id).showModal()}
@@ -937,7 +1010,7 @@ function sub(name,target,filter=true){
  const u=onSnapshot(q,s=>{state[target]=s.docs.map(d=>({id:d.id,...d.data()}));$("syncState").textContent="● online";renderAll()},e=>{console.error(e);$("syncState").textContent="● erro"});
  state.unsubs.push(u)
 }
-function startRealtime(){if(permissionFor("financeiro"))startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);if(permissionFor("obreiros"))sub("obreiros","obreiros",true);if(permissionFor("membros"))sub("membros","membros",true);if(permissionFor("festividades"))sub("festividades","festividades",true);if(permissionFor("visitantes"))sub("visitantes","visitantes",true);if(permissionFor("resultadosCulto"))sub("resultadosCulto","resultadosCulto",true);if(permissionFor("agenda"))sub("agendaRegional","agenda",false);if(permissionFor("ministerios22"))subMin22();if(permissionFor("patrimonio23"))subPat23();if(permissionFor("escalas24"))subEsc24();if(permissionFor("eventos25"))subEv25();if(canManageUsers())sub("usuarios","usuarios",false);applyPermissionNavigation()}
+function startRealtime(){$("e29Menu").style.display=isGeneralAdmin()?"":"none";if(permissionFor("financeiro"))startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);if(permissionFor("obreiros"))sub("obreiros","obreiros",true);if(permissionFor("membros"))sub("membros","membros",true);if(permissionFor("festividades"))sub("festividades","festividades",true);if(permissionFor("visitantes"))sub("visitantes","visitantes",true);if(permissionFor("resultadosCulto"))sub("resultadosCulto","resultadosCulto",true);if(permissionFor("agenda"))sub("agendaRegional","agenda",false);if(permissionFor("ministerios22"))subMin22();if(permissionFor("patrimonio23"))subPat23();if(permissionFor("escalas24"))subEsc24();if(permissionFor("eventos25"))subEv25();if(canManageUsers())sub("usuarios","usuarios",false);applyPermissionNavigation()}
 function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();renderMin22();renderPat23();renderEsc24();renderEv25();e28Render();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
 
 // Apenas membros na situação Obreiro entram na contagem ministerial.
