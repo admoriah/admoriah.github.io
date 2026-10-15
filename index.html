@@ -543,6 +543,86 @@ input:focus,select:focus,textarea:focus{border-color:#2c6596;box-shadow:0 0 0 3p
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important}}
 </style>
 
+
+<style id="etapa38-mobile-profissional">
+/* Etapa 38: adaptação mobile. Não altera autenticação, permissões nem dados. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overflow-x:hidden}
+.app,main,.page,.panel,.card{min-width:0}
+button,input,select,textarea{font:inherit}
+button,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:disabled{opacity:.55;cursor:not-allowed}
+:where(.panel,.card,.form,.filters,.grid2,.stats)>*{min-width:0}
+:where(.report-table,table){max-width:100%}
+:where(.report-table,table) th{white-space:nowrap}
+:where(.report-table,table) td{overflow-wrap:anywhere}
+:where(.report-table,table) a{overflow-wrap:anywhere}
+@media (max-width: 800px){
+ html,body{width:100%;max-width:100%;overflow-x:hidden}
+ .app{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+ main{width:100%;max-width:100%;padding:14px 12px calc(106px + env(safe-area-inset-bottom,0px))}
+ .topbar{padding:9px 12px;min-height:64px;gap:8px;flex-wrap:wrap}
+ .topbar .brand{min-width:0;flex:1 1 auto}
+ .topbar .brand img{max-width:100px;max-height:46px;object-fit:contain}
+ .topbar .brand strong{font-size:14px}
+ .topbar .brand small{font-size:10px}
+ .topbar :is(button,select){min-height:40px}
+ .page-head{padding:17px 15px;border-radius:15px}
+ .page-head h2{font-size:21px;line-height:1.25}
+ .panel,.card{padding:15px;border-radius:15px}
+ .panel h3{line-height:1.35}
+ .filters,.grid2{grid-template-columns:minmax(0,1fr)!important}
+ .form{padding:17px 15px;gap:13px}
+ .form label{font-size:13px}
+ :where(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:16px!important;max-width:100%;min-height:44px}
+ textarea{min-height:84px}
+ .form-actions{flex-wrap:wrap;gap:9px}
+ .form-actions button{flex:1 1 130px;min-height:44px}
+ button.primary,button.secondary,button.danger{min-height:42px}
+ dialog{width:calc(100vw - 20px)!important;max-width:650px!important;max-height:calc(100dvh - 24px)!important;overflow-y:auto;overscroll-behavior:contain;border-radius:17px}
+ dialog::backdrop{background:#00172dba}
+ .bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr));padding:7px max(6px,env(safe-area-inset-right,0px)) calc(7px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px));min-height:calc(65px + env(safe-area-inset-bottom,0px));background:#082440;border-top:1px solid #ffffff24;box-shadow:0 -6px 28px #08244035}
+ .bottom-nav button{font-size:21px;min-width:0;min-height:52px;border-radius:11px;padding:6px 1px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;line-height:1}
+ .bottom-nav button span{font-size:10px;font-weight:650;line-height:1.2;margin:0}
+ .bottom-nav button.active{background:#ffffff13;color:#f4ca73}
+ .bottom-nav button:focus-visible{outline:2px solid #f4ca73;outline-offset:-2px}
+ #home.active{grid-template-columns:minmax(0,1fr)}
+ #home>.welcome{padding:22px 18px;border-radius:19px}
+ #home .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ #home .stat{min-height:101px;padding:15px 12px}
+ #home .stat strong{font-size:clamp(22px,6vw,30px)}
+ #home .e27-tools{display:flex;flex-wrap:wrap;gap:8px}
+ #home .e27-tools button{min-height:44px;max-width:100%}
+ #home .e27-search{flex:1 1 210px}
+ #home .e27-quick{display:flex;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding:4px 0 12px;scrollbar-width:thin}
+ #home .e27-quick button{flex:0 0 auto;min-height:44px;padding:10px 13px;scroll-snap-align:start;white-space:nowrap}
+ .month-nav{gap:6px}
+ .month-nav button{min-width:42px;min-height:42px}
+ .report-table{display:block;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+ .report-table th,.report-table td{min-width:90px}
+ .table-wrap,.table-responsive,[class*="table-wrap"],[class*="tableWrap"]{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+ .panel:has(>table),.card:has(>table){overflow-x:auto}
+ .panel:has(>.report-table){overflow-x:hidden}
+}
+@media(max-width:390px){
+ .topbar{padding:8px 10px}
+ main{padding-left:10px;padding-right:10px}
+ .bottom-nav button{font-size:19px}
+ .bottom-nav button span{font-size:9px}
+ .panel{padding:13px}
+ #home .stat{padding:12px 10px}
+}
+@media(min-width:801px) and (max-width:1100px){
+ main{padding:20px}
+ .bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr))}
+ .bottom-nav button{min-height:52px}
+}
+@media(hover:none) and (pointer:coarse){
+ :where(button,input,select,textarea){touch-action:manipulation}
+ .bottom-nav button,.form-actions button{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important}}
+</style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
