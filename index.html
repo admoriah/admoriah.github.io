@@ -7,7 +7,10 @@
 <meta name="theme-color" content="#061a35">
 <title>AD Moriah — Aplicativo</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="./icons/icon-192.png">\n<link rel="apple-touch-icon" href="./icons/icon-192.png">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="AD Moriah">\n<meta name="description" content="Gestão administrativa da Assembleia de Deus Moriah.">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AD Moriah">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -1605,39 +1608,7 @@ $("transfer15Form").addEventListener("submit",async e=>{e.preventDefault();if(!c
 window.decideTransfer15=async(id,transferId,decision)=>{if(!isAdmin())return toast("Somente administrador pode decidir.");const label=decision==="aprovada"?"aprovar":"recusar";if(!confirm("Deseja "+label+" esta solicitação? O cadastro não será excluído nem terá a situação alterada automaticamente."))return;try{await runTransaction(db,async t=>{const ref=doc(db,"membros",id),snap=await t.get(ref);if(!snap.exists())throw Error("Membro não encontrado");let found=false;const history=(Array.isArray(snap.data().membershipHistory)?snap.data().membershipHistory:[]).map(h=>{if(h.transferId!==transferId)return h;if((h.transferStatus||"pendente")!=="pendente")throw Error("Solicitação já analisada");found=true;return {...h,transferStatus:decision,decidedAt:new Date().toISOString(),decidedBy:state.authUser?.uid||""};});if(!found)throw Error("Solicitação não encontrada");t.update(ref,{membershipHistory:history,updatedAt:serverTimestamp()});});toast("Transferência "+(decision==="aprovada"?"aprovada":"recusada")+".");}catch(err){console.error(err);alert("Não foi possível concluir: "+(err.message||err.code||"erro"));}};
 $("tr15Search").addEventListener("input",renderTransfers15);$("tr15Filter").addEventListener("change",renderTransfers15);
 $("tr15Csv").addEventListener("click",()=>{const lines=[["Data","Membro","Número","Tipo","Igreja","Cidade","Situação","Observações"],...tr15Filtered().map(r=>[r.requestDate,r.memberName,r.memberNumber,tr15TypeLabel(r.type),r.church,r.city,r.transferStatus,r.notes])];const csv="\uFEFF"+lines.map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="ad-moriah-transferencias.csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
-$("tr15Print").addEventListener("click",()=>{const w=window.open("","_blank");if(!w)return toast("Permita pop-ups para imprimir.");w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Transferências - AD Moriah</title><style>body{font:12px Arial;padding:25px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:7px;text-align:left}button{display:none}</style></head><body><h2>Assembleia de Deus Moriah — Transferências</h2><p>Relatório administrativo — '+new Date().toLocaleDateString("pt-BR")+'</p><table><thead><tr><th>Data</th><th>Membro</th><th>Tipo</th><th>Igreja / Cidade</th><th>Situação</th><th>Ações</th></tr></thead><tbody>'+$("tr15Body").innerHTML+'</tbody></table><script id="e38-pwa-install" defer>
-(() => {
-  let deferredPrompt = null;
-  window.addEventListener("beforeinstallprompt", ev => {
-    ev.preventDefault();
-    deferredPrompt = ev;
-    const b = document.getElementById("e38InstallBtn");
-    if (b) b.hidden = false;
-  });
-  window.addEventListener("appinstalled", () => {
-    deferredPrompt = null;
-    const b = document.getElementById("e38InstallBtn");
-    if (b) b.hidden = true;
-  });
-  window.addEventListener("DOMContentLoaded", () => {
-    const b = document.createElement("button");
-    b.id = "e38InstallBtn";
-    b.type = "button";
-    b.hidden = true;
-    b.textContent = "Instalar aplicativo";
-    b.setAttribute("aria-label","Instalar AD Moriah neste dispositivo");
-    b.style.cssText = "position:fixed;right:14px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:2000;background:#123d66;color:white;border:1px solid #d9a63b;border-radius:14px;padding:12px 17px;box-shadow:0 8px 25px #001a3266;font:600 14px system-ui;cursor:pointer";
-    b.addEventListener("click", async () => {
-      if (!deferredPrompt) return;
-      const p = deferredPrompt; deferredPrompt = null;
-      b.hidden = true;
-      await p.prompt();
-    });
-    document.body.appendChild(b);
-  });
-})();
-</script>
-</body></html>');w.document.close();w.focus();w.print();});
+$("tr15Print").addEventListener("click",()=>{const w=window.open("","_blank");if(!w)return toast("Permita pop-ups para imprimir.");w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Transferências - AD Moriah</title><style>body{font:12px Arial;padding:25px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:7px;text-align:left}button{display:none}</style></head><body><h2>Assembleia de Deus Moriah — Transferências</h2><p>Relatório administrativo — '+new Date().toLocaleDateString("pt-BR")+'</p><table><thead><tr><th>Data</th><th>Membro</th><th>Tipo</th><th>Igreja / Cidade</th><th>Situação</th><th>Ações</th></tr></thead><tbody>'+$("tr15Body").innerHTML+'</tbody></table></body></html>');w.document.close();w.focus();w.print();});
 window.addEventListener("sec14-members-updated",renderTransfers15);
 
 window.editMember=id=>{
@@ -2168,12 +2139,7 @@ $("memberDocPrint").addEventListener("click",()=>{
  win.document.open();win.document.write(html);win.document.close();win.focus();
 });
 
-if ("serviceWorker" in navigator && window.isSecureContext) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js", {scope:"./"})
-      .catch(err => console.warn("Instalação PWA indisponível:", err));
-  });
-}
+if("serviceWorker" in navigator && window.isSecureContext)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(err=>console.warn("PWA:",err)));
 
 // Etapa 14 — Gestão Financeira. Somente administradores; regras do Firestore devem reforçar a autorização.
 let financeRows=[];
@@ -2586,4 +2552,7 @@ $('sec14Print').addEventListener('click',()=>{
 window.addEventListener('sec14-members-updated',render);
 render();
 })();
-</script></body></html>
+</script><script id="e38-pwa-install">
+(()=>{let promptEvent=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();promptEvent=e;const b=document.getElementById('e38InstallBtn');if(b)b.hidden=false});window.addEventListener('DOMContentLoaded',()=>{const b=document.createElement('button');b.id='e38InstallBtn';b.hidden=true;b.type='button';b.textContent='Instalar aplicativo';b.style.cssText='position:fixed;right:14px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:2000;background:#123d66;color:white;border:1px solid #d9a63b;border-radius:14px;padding:12px 17px;box-shadow:0 8px 25px #001a3266;font:600 14px system-ui;cursor:pointer';b.onclick=async()=>{if(!promptEvent)return;const p=promptEvent;promptEvent=null;b.hidden=true;await p.prompt()};document.body.appendChild(b)});window.addEventListener('appinstalled',()=>{promptEvent=null;const b=document.getElementById('e38InstallBtn');if(b)b.hidden=true})})();
+</script>
+</body></html>
