@@ -1,0 +1,501 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // ADMINISTRADOR GERAL DA AD MORIAH
+    // ==========================================
+
+    function adminUid() {
+      return 'tKBmnsZ2f6eD1dTFyxNxPYRYP8j2';
+    }
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner() {
+      return signedIn() &&
+        request.auth.uid == adminUid();
+    }
+
+    function profileExists() {
+      return signedIn() &&
+        exists(
+          /databases/$(database)/documents/usuarios/$(request.auth.uid)
+        );
+    }
+
+    function profile() {
+      return get(
+        /databases/$(database)/documents/usuarios/$(request.auth.uid)
+      ).data;
+    }
+
+    function active() {
+      return profileExists() &&
+        profile().active == true;
+    }
+
+    // Administrador geral
+    function isGeneralAdmin() {
+      return isOwner() &&
+        active() &&
+        profile().role == 'admin';
+    }
+
+    // Administradores autorizados
+    function isAdmin() {
+      return active() &&
+        profile().role == 'admin';
+    }
+
+    function ownCong() {
+      return profile().congregationId;
+    }
+
+    function canEditOwn() {
+      return active() &&
+        (
+          isAdmin() ||
+          profile().role == 'congregacao' ||
+          profile().role == 'secretario'
+        );
+    }
+
+    // ETAPA 26 — Permissões específicas. Administradores mantêm acesso operacional;
+    // somente o Administrador Geral pode atribuir ou modificar permissões.
+    function permitted(module, action) {
+      return active() && (
+        isAdmin() ||
+        (profile().keys().hasAny(['permissions'])
+          ? (profile().permissions is map
+             && profile().permissions.get(module, {}) is map
+             && profile().permissions.get(module, {}).get(action, false) == true)
+          : (action == 'view' && module != 'financeiro' && module != 'pastoral35')
+            || (action != 'view'
+              && profile().role in ['secretario','congregacao']
+              && !(module in ['financeiro','agenda','congregacoes','pastoral35']))
+        )
+      );
+    }
+    function canRead(module, id) {
+      return permitted(module, 'view') && (isAdmin() || id == ownCong());
+    }
+    function canWrite(module, action, id) {
+      return permitted(module, action) && (isAdmin() || id == ownCong());
+    }
+    function canCreateUser() { return isAdmin(); }
+    function normalRole() { return request.resource.data.role in ['secretario','congregacao','consulta']; }
+    function immutablePrivileges() {
+      return !request.resource.data.keys().hasAny(['permissions','isGeneralAdmin','owner','adminUid']);
+    }
+
+    // ==========================================
+    // CONFIGURAÇÃO DO APLICATIVO
+    // ==========================================
+
+    match /config/app {
+
+      allow read: if isOwner();
+
+      allow create: if isOwner()
+        && !exists(
+          /databases/$(database)/documents/config/app
+        )
+        && request.resource.data.adminUid == adminUid();
+
+      allow update: if isGeneralAdmin()
+        && request.resource.data.adminUid == adminUid();
+
+      allow delete: if false;
+    }
+
+    // ==========================================
+    // GERENCIAMENTO DE USUÁRIOS
+    // ==========================================
+
+    match /usuarios/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if (
+        isGeneralAdmin() && uid != adminUid()
+        && request.resource.data.role in ['admin','secretario','congregacao','consulta']
+      ) || (
+        isAdmin() && !isGeneralAdmin() && uid != adminUid()
+        && normalRole() && immutablePrivileges()
+        && request.resource.data.active == true
+        && request.resource.data.congregationId == ownCong()
+      ) || (
+        isOwner() && uid == adminUid()
+        && !exists(/databases/$(database)/documents/config/app)
+        && request.resource.data.role == 'admin'
+        && request.resource.data.active == true
+      );
+      allow update: if isGeneralAdmin()
+        && (uid != adminUid() || (
+          request.resource.data.role == 'admin'
+          && request.resource.data.active == true
+        ));
+      allow delete: if isGeneralAdmin() && uid != adminUid();
+    }
+
+    // ==========================================
+    // IDENTIFICAÇÃO DA IGREJA
+    // ==========================================
+
+    match /congregacoes/{id} {
+
+      allow read: if active() &&
+        (
+          isAdmin() ||
+          id == ownCong()
+        );
+
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ==========================================
+    // CADASTRO DE OBREIROS
+    // ==========================================
+
+    match /obreiros/{id} {
+      allow read: if canRead('obreiros', resource.data.congregationId);
+      allow create: if canWrite('obreiros', 'create', request.resource.data.congregationId);
+      allow update: if canWrite('obreiros', 'edit', resource.data.congregationId)
+        && (isAdmin() || request.resource.data.congregationId == ownCong());
+      allow delete: if canWrite('obreiros', 'delete', resource.data.congregationId);
+    }
+
+    // ==========================================
+    // CADASTRO DE MEMBROS
+    // ==========================================
+
+    match /membros/{id} {
+      allow read: if canRead('membros', resource.data.congregationId);
+      allow create: if canWrite('membros', 'create', request.resource.data.congregationId);
+      allow update: if canWrite('membros', 'edit', resource.data.congregationId)
+        && (isAdmin() || request.resource.data.congregationId == ownCong());
+      allow delete: if canWrite('membros', 'delete', resource.data.congregationId);
+    }
+
+    // ==========================================
+    // CADASTRO DE VISITANTES
+    // ==========================================
+
+    match /visitantes/{id} {
+      allow read: if canRead('visitantes', resource.data.congregationId);
+      allow create: if canWrite('visitantes', 'create', request.resource.data.congregationId);
+      allow update: if canWrite('visitantes', 'edit', resource.data.congregationId)
+        && (isAdmin() || request.resource.data.congregationId == ownCong());
+      allow delete: if canWrite('visitantes', 'delete', resource.data.congregationId);
+    }
+
+    // ==========================================
+    // RESULTADOS DOS CULTOS
+    // ==========================================
+
+    match /resultadosCulto/{id} {
+      allow read: if canRead('resultadosCulto', resource.data.congregationId);
+      allow create: if canWrite('resultadosCulto', 'create', request.resource.data.congregationId);
+      allow update: if canWrite('resultadosCulto', 'edit', resource.data.congregationId)
+        && (isAdmin() || request.resource.data.congregationId == ownCong());
+      allow delete: if canWrite('resultadosCulto', 'delete', resource.data.congregationId);
+    }
+
+    // ==========================================
+    // FESTIVIDADES
+    // ==========================================
+
+    match /festividades/{id} {
+      allow read: if canRead('festividades', resource.data.congregationId);
+      allow create: if canWrite('festividades', 'create', request.resource.data.congregationId);
+      allow update: if canWrite('festividades', 'edit', resource.data.congregationId)
+        && (isAdmin() || request.resource.data.congregationId == ownCong());
+      allow delete: if canWrite('festividades', 'delete', resource.data.congregationId);
+    }
+
+    // ==========================================
+    // AGENDA REGIONAL
+    // ==========================================
+
+    match /agendaRegional/{id} {
+
+      allow read: if permitted('agenda','view');
+      allow create: if permitted('agenda','create');
+      allow update: if permitted('agenda','edit');
+      allow delete: if permitted('agenda','delete');
+    }
+
+    // ==========================================
+    // NUMERAÇÃO AUTOMÁTICA DOS MEMBROS
+    // ==========================================
+
+    match /contadores/membros {
+
+      allow read: if permitted('membros','view');
+
+      allow create, delete: if false;
+
+      allow update: if permitted('membros','create')
+        && resource.data.keys().hasOnly([
+          'ultimoNumero'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'ultimoNumero'
+        ])
+        && resource.data.ultimoNumero is int
+        && request.resource.data.ultimoNumero is int
+        && request.resource.data.ultimoNumero
+           == resource.data.ultimoNumero + 1;
+    }
+
+    // ==========================================
+    // GESTÃO FINANCEIRA
+    // ==========================================
+
+    match /financeiro/{id} {
+
+      allow read: if permitted('financeiro','view');
+      allow create: if permitted('financeiro','create');
+      allow update: if permitted('financeiro','edit');
+      allow delete: if permitted('financeiro','delete');
+    }
+
+    // ==========================================
+    // ETAPA 22 — MINISTÉRIOS E DEPARTAMENTOS
+    // ==========================================
+
+    match /ministerios/{id} {
+      allow read: if canRead('ministerios22', resource.data.congregationId);
+      allow create: if canWrite('ministerios22', 'create', request.resource.data.congregationId);
+      allow update: if canWrite('ministerios22', 'edit', resource.data.congregationId)
+        && (isAdmin() || request.resource.data.congregationId == ownCong());
+      allow delete: if false;
+    }
+
+    // ==========================================
+    // ETAPA 23 — CONTROLE DE PATRIMÔNIO
+    // ==========================================
+
+    match /patrimonio/{id} {
+      allow read: if canRead('patrimonio23', resource.data.congregationId);
+      allow create: if canWrite('patrimonio23', 'create', request.resource.data.congregationId);
+      allow update: if canWrite('patrimonio23', 'edit', resource.data.congregationId)
+        && (isAdmin() || request.resource.data.congregationId == ownCong());
+      allow delete: if false;
+    }
+
+    // ==========================================
+    // ETAPA 24 — ESCALAS DE CULTOS E OBREIROS
+    // ==========================================
+
+    match /escalasCulto/{id} {
+      allow read: if canRead('escalas24', resource.data.congregationId);
+      allow create: if canWrite('escalas24', 'create', request.resource.data.congregationId);
+      allow update: if canWrite('escalas24', 'edit', resource.data.congregationId)
+        && (isAdmin() || request.resource.data.congregationId == ownCong());
+      allow delete: if false;
+    }
+
+    // ==========================================
+    // ETAPA 25 — EVENTOS E PROGRAMACOES ESPECIAIS
+    // ==========================================
+
+    match /eventosEspeciais/{id} {
+      allow read: if canRead('eventos25', resource.data.congregationId);
+      allow create: if canWrite('eventos25', 'create', request.resource.data.congregationId);
+      allow update: if canWrite('eventos25', 'edit', resource.data.congregationId)
+        && (isAdmin() || request.resource.data.congregationId == ownCong());
+      allow delete: if false;
+    }
+
+
+    // ETAPA 30 — INTEGRAÇÃO E ACOMPANHAMENTO
+    // Dados restritos por módulo e congregação; sem exclusão direta.
+    match /acompanhamentos/{id} {
+      allow read: if canRead('acompanhamento30', resource.data.congregationId);
+      allow create: if canWrite('acompanhamento30', 'create', request.resource.data.congregationId)
+        && request.resource.data.keys().hasAll(['name','type','situation','congregationId','history'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.type in ['visitante','convertido']
+        && request.resource.data.situation in ['aguardando','acompanhamento','integrado','encerrado']
+        && request.resource.data.history is list
+        && request.resource.data.history.size() == 0;
+      allow update: if canWrite('acompanhamento30', 'edit', resource.data.congregationId)
+        && (isAdmin() || request.resource.data.congregationId == ownCong())
+        && request.resource.data.congregationId == resource.data.congregationId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.type in ['visitante','convertido']
+        && request.resource.data.situation in ['aguardando','acompanhamento','integrado','encerrado']
+        && request.resource.data.history is list
+        && request.resource.data.history.size() <= 250;
+      allow delete: if false;
+    }
+
+    // ==========================================
+    // BLOQUEIO DE ACESSOS NÃO AUTORIZADOS
+    // ==========================================
+
+    // ETAPA 29 — HISTÓRICO INFORMATIVO DE ALTERAÇÕES
+    // Somente o Administrador Geral pode consultar. Registros imutáveis.
+    // O cliente informa os metadados: para auditoria inviolável, usar Cloud Functions.
+    match /auditoria/{id} {
+      allow read: if isGeneralAdmin();
+      allow create: if active()
+        && request.resource.data.keys().hasOnly(['actorUid','actorEmail','actorName','action','collection','recordId','createdAt'])
+        && request.resource.data.keys().hasAll(['actorUid','action','collection','recordId','createdAt'])
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.actorUid is string
+        && request.resource.data.action in ['create','edit','delete']
+        && request.resource.data.collection in ['membros','obreiros','visitantes','resultadosCulto','festividades','agendaRegional','financeiro','ministerios','patrimonio','escalasCulto','eventosEspeciais','acompanhamentos','pastoral35','tarefas33','congregacoes','usuarios']
+        && request.resource.data.recordId is string
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+
+    // ETAPA 34 — COMUNICADOS GERAIS
+    // Mensagens sem dados sensíveis; somente administradores ativos publicam.
+    match /comunicados34/{id} {
+      allow read: if active();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['title','body','active','authorUid','createdAt'])
+        && request.resource.data.keys().hasAll(['title','body','active','authorUid','createdAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.body is string
+        && request.resource.data.body.size() > 0
+        && request.resource.data.body.size() <= 1500
+        && request.resource.data.active == true
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // ETAPA 34 — LEITURAS INDIVIDUAIS
+    // Cada usuário ativo acessa exclusivamente suas próprias leituras.
+    match /notificacoesLeituras/{uid}/itens/{id} {
+      allow read: if active() && request.auth.uid == uid;
+      allow create, update: if active() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['read','updatedAt'])
+        && request.resource.data.keys().hasAll(['read','updatedAt'])
+        && request.resource.data.read == true
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if active() && request.auth.uid == uid;
+    }
+
+
+    // ETAPA 35 — REGISTROS PASTORAIS RESTRITOS
+    // Por padrão, somente administradores ativos; demais usuários precisam de
+    // permissão explícita na Etapa 26. Escopo por congregação, sem exclusão.
+    function validPastoral35(d) {
+      return d.keys().hasOnly(['name','congregationId','memberId','leader','type','situation','scheduledDate','completedDate','note','createdBy','createdAt','updatedAt'])
+        && d.keys().hasAll(['name','congregationId','memberId','leader','type','situation','scheduledDate','completedDate','note','createdBy','createdAt','updatedAt'])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 130
+        && d.congregationId is string && d.congregationId.size() > 0
+        && d.memberId is string && d.memberId.size() <= 160
+        && d.leader is string && d.leader.size() <= 120
+        && d.type in ['visita','contato','oracao','apoio']
+        && d.situation in ['agendado','andamento','concluido','cancelado']
+        && d.scheduledDate is string && d.scheduledDate.size() == 10
+        && d.completedDate is string && d.completedDate.size() <= 10
+        && d.note is string && d.note.size() <= 400
+        && d.createdBy is string && d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+    match /pastoral35/{id} {
+      allow read: if canRead('pastoral35', resource.data.congregationId);
+      allow create: if canWrite('pastoral35','create',request.resource.data.congregationId)
+        && validPastoral35(request.resource.data)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if canWrite('pastoral35','edit',resource.data.congregationId)
+        && request.resource.data.congregationId == resource.data.congregationId
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validPastoral35(request.resource.data)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+
+    // ETAPA 33 — TAREFAS E RESPONSABILIDADES (incorporada à Etapa 35)
+    function validTask33(d) {
+      return d.keys().hasOnly(['title','area','congregationId','responsible','dueDate','priority','situation','description','createdBy','createdAt','updatedAt'])
+        && d.keys().hasAll(['title','area','congregationId','responsible','dueDate','priority','situation','description','createdBy','createdAt','updatedAt'])
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 150
+        && d.area in ['secretaria','tesouraria','ministerios','eventos','administracao','outros']
+        && d.congregationId is string && d.congregationId.size() > 0
+        && d.responsible is string && d.responsible.size() > 0 && d.responsible.size() <= 120
+        && d.dueDate is string && d.dueDate.size() == 10
+        && d.priority in ['baixa','media','alta','urgente']
+        && d.situation in ['pendente','andamento','concluida','cancelada']
+        && d.description is string && d.description.size() <= 1000
+        && d.createdBy is string && d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+    match /tarefas33/{id} {
+      allow read: if canRead('tarefas33', resource.data.congregationId);
+      allow create: if canWrite('tarefas33','create',request.resource.data.congregationId)
+        && validTask33(request.resource.data)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if canWrite('tarefas33','edit',resource.data.congregationId)
+        && request.resource.data.congregationId == resource.data.congregationId
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validTask33(request.resource.data)
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+
+    // Portal da Família: cada conta só lê e edita o próprio cadastro.
+    // Aprovação reservada à secretaria e administradores ativos.
+    function portalSecretaria() {
+      return signedIn() && active() &&
+        (profile().role == 'admin' || profile().role == 'secretario');
+    }
+    match /portalFamilias/{uid} {
+      allow read: if (signedIn() && request.auth.uid == uid) || portalSecretaria();
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.ownerUid == uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.status in ['rascunho', 'pendente']
+        && request.resource.data.keys().hasOnly(['ownerUid','email','responsavel','telefone','endereco','observacoes','familiares','status','createdAt','updatedAt','retorno'])
+        && request.resource.data.familiares is list
+        && request.resource.data.familiares.size() <= 20
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.retorno == '';
+      allow update: if (portalSecretaria()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','retorno','updatedAt'])
+          && request.resource.data.status in ['aprovado','correcao','rejeitado']
+          && request.resource.data.updatedAt == request.time)
+        || (signedIn() && request.auth.uid == uid
+          && resource.data.ownerUid == uid
+          && resource.data.status in ['rascunho','correcao','rejeitado']
+          && request.resource.data.ownerUid == uid
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.status in ['rascunho','pendente']
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['responsavel','telefone','endereco','observacoes','familiares','status','updatedAt','retorno'])
+          && request.resource.data.familiares is list
+          && request.resource.data.familiares.size() <= 20
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.retorno == resource.data.retorno);
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+
+      allow read, write: if false;
+    }
+
+  }
+}
