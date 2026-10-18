@@ -1348,12 +1348,15 @@ function pfRender(){
 async function pfDeleteRequest(r){
  if(!isGeneralAdmin()){toast('Somente o administrador geral pode excluir solicitações do portal.');return}
  const nome=String(r.responsavel||'Cadastro sem nome');
- if(!confirm('EXCLUSÃO DEFINITIVA\n\nCadastro: '+nome+'\nSituação: '+(r.status||'Não informada')+'\nFamiliares: '+(Array.isArray(r.familiares)?r.familiares.length:0)+'\n\nA solicitação será removida do Portal da Família e da conta que a enviou. Os membros já cadastrados no App AD Moriah NÃO serão excluídos.\n\nDeseja continuar?'))return;
+ if(!confirm('EXCLUSÃO DEFINITIVA\n\nCadastro: '+nome+'\nSituação: '+(r.status||'Não informada')+'\nFamiliares: '+(Array.isArray(r.familiares)?r.familiares.length:0)+'\n\nA solicitação será removida da coleção portalFamilias no Firestore. A conta de acesso da família e os membros já cadastrados no App AD Moriah NÃO serão excluídos.\n\nDeseja continuar?'))return;
  const typed=prompt('Para confirmar a exclusão definitiva de '+nome+', digite EXCLUIR:');
  if(typed!== 'EXCLUIR'){if(typed!==null)toast('Exclusão cancelada: confirmação incorreta.');return}
  try{
   await deleteDoc(doc(db,'portalFamilias',r.id));
-  toast('Solicitação de '+nome+' excluída do Portal da Família.');
+  // Remove imediatamente da lista local após confirmação do Firestore.
+  pfRecords=pfRecords.filter(item=>item.id!==r.id);
+  pfRender();
+  toast('Solicitação de '+nome+' excluída com sucesso.');
  }catch(e){console.error('Falha ao excluir solicitação do portal:',e);toast('Não foi possível excluir: '+(e.code==='permission-denied'?'permissão negada pelas regras do Firebase. Autorize a exclusão para o administrador geral.':(e.code||e.message)))}
 }
 function pfRegisterMember(r,index=0){
