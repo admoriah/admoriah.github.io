@@ -1,11 +1,67 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portal da Família | AD Moriah</title><style>
-:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#16253b;background:#f1f5fa}*{box-sizing:border-box}body{margin:0}header{background:#071e40;color:white;padding:25px 18px;text-align:center}header h1{margin:0;font-size:1.65rem}header p{margin:7px 0 0;color:#d1deee}.wrap{max-width:960px;margin:24px auto;padding:0 14px}.panel{background:white;border-radius:15px;padding:24px;margin-bottom:18px;box-shadow:0 5px 22px #0c285116}h2{margin-top:0;font-size:1.25rem}label{display:block;font-size:.91rem;font-weight:650;margin:12px 0 5px}input,select,textarea{width:100%;padding:11px;border:1px solid #b9c7d8;border-radius:8px;font:inherit;background:white}textarea{min-height:80px}button{background:#0b4a91;color:white;border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer;margin:8px 7px 0 0}button.secondary{background:#e7eef8;color:#193a66}button.danger{background:#a23434}button:disabled{opacity:.5;cursor:not-allowed}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 15px}.hidden{display:none!important}.muted{color:#566b82;font-size:.92rem}.member{border:1px solid #d8e1ec;border-radius:10px;padding:15px;margin:12px 0}.notice{padding:12px 15px;background:#e9f3fc;border-radius:10px;margin-bottom:16px;white-space:pre-wrap}.error{background:#fff0ed;color:#922d1e}.success{background:#e7f6eb;color:#205b31}.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px}.topbar button{margin:0}.small{font-size:.86rem}h3{margin:26px 0 9px;color:#123d70;font-size:1.05rem;border-bottom:1px solid #e1e9f2;padding-bottom:7px}.actions{margin-top:20px} .history-card{border:1px solid #d5e2ef;border-radius:10px;padding:13px;margin:10px 0}.history-card p{margin:6px 0}.history-card button{font-size:.88rem;padding:8px 11px}.history-card.selected{border-color:#0b4a91;background:#f2f7fd}input:focus,select:focus,textarea:focus{outline:2px solid #75a9e5;outline-offset:1px}@media(max-width:620px){.grid{grid-template-columns:1fr}.panel{padding:17px}.topbar{align-items:flex-start;flex-direction:column}}</style></head><body>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#16253b;background:#f1f5fa}*{box-sizing:border-box}body{margin:0}header{background:#071e40;color:white;padding:25px 18px;text-align:center}header h1{margin:0;font-size:1.65rem}header p{margin:7px 0 0;color:#d1deee}.wrap{max-width:960px;margin:24px auto;padding:0 14px}.panel{background:white;border-radius:15px;padding:24px;margin-bottom:18px;box-shadow:0 5px 22px #0c285116}h2{margin-top:0;font-size:1.25rem}label{display:block;font-size:.91rem;font-weight:650;margin:12px 0 5px}input,select,textarea{width:100%;padding:11px;border:1px solid #b9c7d8;border-radius:8px;font:inherit;background:white}textarea{min-height:80px}button{background:#0b4a91;color:white;border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer;margin:8px 7px 0 0}button.secondary{background:#e7eef8;color:#193a66}button.danger{background:#a23434}button:disabled{opacity:.5;cursor:not-allowed}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 15px}.hidden{display:none!important}.muted{color:#566b82;font-size:.92rem}.member{border:1px solid #d8e1ec;border-radius:10px;padding:15px;margin:12px 0}.notice{padding:12px 15px;background:#e9f3fc;border-radius:10px;margin-bottom:16px;white-space:pre-wrap}.error{background:#fff0ed;color:#922d1e}.success{background:#e7f6eb;color:#205b31}.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px}.topbar button{margin:0}.small{font-size:.86rem}h3{margin:26px 0 9px;color:#123d70;font-size:1.05rem;border-bottom:1px solid #e1e9f2;padding-bottom:7px}.actions{margin-top:20px} .history-card{border:1px solid #d5e2ef;border-radius:10px;padding:13px;margin:10px 0}.history-card p{margin:6px 0}.history-card button{font-size:.88rem;padding:8px 11px}.history-card.selected{border-color:#0b4a91;background:#f2f7fd}input:focus,select:focus,textarea:focus{outline:2px solid #75a9e5;outline-offset:1px}@media(max-width:620px){.grid{grid-template-columns:1fr}.panel{padding:17px}.topbar{align-items:flex-start;flex-direction:column}}</style>
+<style id="portal-v2-style">
+:root{--brand:#0b4a91;--ink:#16253b;--line:#dce5f0}
+body{background:#eef3f9}header{padding:27px 18px;background:linear-gradient(120deg,#071e40,#0d4d89)}
+header h1{font-size:clamp(1.5rem,3vw,2rem)}
+.wrap{max-width:1040px}.panel{box-shadow:0 6px 28px #0c285113}
+button{min-height:44px;transition:filter .15s,transform .15s}button:hover:not(:disabled){filter:brightness(1.08)}
+button:focus-visible{outline:3px solid #e7a33e;outline-offset:2px}
+input,select,textarea{min-height:44px;font-size:16px}
+#authPanel{max-width:680px;margin:0 auto 20px}
+.auth-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.auth-actions button{margin:0}
+.password-line{display:flex;gap:7px;align-items:center}
+.password-line input{flex:1;min-width:0}
+.password-line button{flex:0 0 auto;margin:0;padding:9px 12px}
+.v2-progress-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:18px 0 9px}
+.v2-progress{display:flex;gap:5px;margin-bottom:13px}
+.v2-progress span{flex:1;height:8px;border-radius:10px;background:#dce5f0}
+.v2-progress span.active{background:#1474c5}
+.v2-steps-menu{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.v2-steps-menu button{font-size:.82rem;padding:8px 11px;margin:0;background:#e8eff8;color:#214364;min-height:39px}
+.v2-steps-menu button.current{background:#0b4a91;color:white}
+.v2-step{display:none}.v2-step.active{display:block}
+.v2-step h3{margin-top:5px}
+.v2-nav{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:24px}
+.v2-nav button{margin:0;min-width:115px}
+.v2-help{background:#eff6ff;border-left:4px solid #2775b9;border-radius:7px;padding:12px;margin:12px 0;color:#25466b;font-size:.93rem}
+.v2-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.v2-summary div{border:1px solid var(--line);border-radius:9px;padding:12px}
+.v2-summary b{display:block;margin-bottom:4px}
+.v2-review-note{margin-top:14px}
+#familyPanel .actions{display:none}
+#familyPanel .actions.v2-visible{display:flex;flex-wrap:wrap;gap:8px}
+#familyPanel .actions button{margin:0}
+.v2-bottom-save{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 0;display:flex;gap:9px;justify-content:flex-end;z-index:3}
+.v2-bottom-save button{margin:0}
+.v2-hidden{display:none!important}
+.history-card{border-left:4px solid #94a8bd}
+.history-card[data-status="pendente"]{border-left-color:#c58b20}
+.history-card[data-status="aprovado"]{border-left-color:#2d8650}
+.history-card[data-status="correcao"]{border-left-color:#d26435}
+.history-card[data-status="rascunho"]{border-left-color:#3678b9}
+.v2-fam-title{font-weight:700;color:#173c68;margin:4px 0 10px}
+.v2-confirm{background:#f1f8f3;border:1px solid #badfc7;padding:12px;border-radius:9px}
+@media(max-width:620px){
+.wrap{margin:12px auto;padding:0 10px}.panel{padding:17px 14px;border-radius:12px}
+header{padding:18px 12px}header p{font-size:.86rem}
+.v2-summary{grid-template-columns:1fr}.v2-steps-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.v2-steps-menu button{font-size:.78rem;min-width:0;padding:8px 5px}
+.v2-nav button{flex:1;min-width:0}
+#familyPanel .actions.v2-visible{flex-direction:column}
+#familyPanel .actions.v2-visible button{width:100%}
+.v2-bottom-save button{flex:1}
+.auth-actions{flex-direction:column}.auth-actions button{width:100%}
+}
+</style>
+</head><body>
 <header><h1>Portal da Família</h1><p>Assembleia de Deus Moriah · Cadastro sujeito à aprovação da secretaria</p></header><main class="wrap"><div id="msg" class="notice hidden" role="status"></div>
-<section id="authPanel" class="panel"><h2>Acesso da família</h2><p class="muted">Cada responsável deve entrar com seu próprio e-mail e senha. Se ainda não possui conta, clique em Criar conta. Não utilize a conta de outro membro ou da Secretaria.</p><div class="grid"><div><label>E-mail</label><input id="email" type="email" autocomplete="email"></div><div><label>Senha (mínimo 6 caracteres)</label><input id="password" type="password" autocomplete="current-password"></div></div><button id="login">Entrar</button><button id="signup" class="secondary">Criar conta</button><button id="reset" class="secondary">Recuperar senha</button></section>
+<section id="authPanel" class="panel"><h2>Acesso da família</h2><p class="muted">Cada responsável deve entrar com seu próprio e-mail e senha. Se ainda não possui conta, clique em Criar conta. Não utilize a conta de outro membro ou da Secretaria.</p><div class="grid"><div><label>E-mail</label><input id="email" type="email" autocomplete="email"></div><div><label>Senha (mínimo 6 caracteres)</label><div class="password-line"><input id="password" type="password" autocomplete="current-password" aria-label="Senha"><button id="showPassword" type="button" class="secondary" aria-label="Mostrar senha">Mostrar</button></div></div></div><div class="auth-actions"><button id="login">Entrar</button><button id="signup" class="secondary">Criar conta</button><button id="reset" class="secondary">Recuperar senha</button></div></section>
 <section id="appPanel" class="hidden"><div class="panel topbar"><div><b id="userEmail"></b><div class="muted" id="status"></div></div><button id="logout" class="secondary">Sair</button></div>
 <section class="panel" aria-label="Cadastros anteriores"><h2>Meus cadastros e solicitações</h2><p class="muted">Consulte seus cadastros anteriores ou inicie um novo. Cadastros enviados ficam disponíveis para consulta; alterações dependem da situação informada pela Secretaria.</p><button id="newFamily" type="button">+ Novo cadastro</button><button id="reloadFamilies" type="button" class="secondary">Atualizar lista</button><div id="familyHistory" aria-live="polite"></div></section>
 <div id="familyPanel" class="panel"><div class="notice" id="accountNotice">Este cadastro pertence exclusivamente à conta indicada acima. Para cadastrar outra família, clique em Sair e entre com a conta do próprio responsável.</div><h2>Cadastro do membro e da família</h2><p class="muted">Preencha os dados abaixo. Somente os campos com * são obrigatórios. Os dados serão analisados pela Secretaria antes de qualquer inclusão no cadastro oficial.</p>
-<h3>Dados pessoais</h3><div class="grid">
+<div class="v2-progress-head"><strong id="v2-step-label">Etapa 1 de 5</strong><span id="v2-step-name" class="muted">Dados pessoais</span></div><div id="v2-progress" class="v2-progress" aria-label="Progresso do cadastro"></div><nav id="v2-steps-menu" class="v2-steps-menu" aria-label="Etapas do cadastro"></nav><div id="v2-step-0" class="v2-step active"><h3>Dados pessoais</h3><div class="grid">
 <div><label for="responsavel">Nome completo *</label><input id="responsavel" maxlength="120" required autocomplete="name"></div>
 <div><label for="nascimento">Data de nascimento *</label><input id="nascimento" type="date" required></div>
 <div><label for="estadoCivil">Estado civil *</label><select id="estadoCivil" required><option value="">Selecione</option><option>Solteiro(a)</option><option>Casado(a)</option><option>União estável</option><option>Divorciado(a)</option><option>Viúvo(a)</option><option>Separado(a)</option></select></div>
@@ -20,12 +76,12 @@
 <div><label for="escolaridade">Escolaridade</label><select id="escolaridade"><option value="">Não informado</option><option>Fundamental incompleto</option><option>Fundamental completo</option><option>Médio incompleto</option><option>Médio completo</option><option>Superior incompleto</option><option>Superior completo</option><option>Pós-graduação</option></select></div>
 <div><label for="nomePai">Nome do pai</label><input id="nomePai" maxlength="120"></div>
 <div><label for="nomeMae">Nome da mãe</label><input id="nomeMae" maxlength="120"></div>
-</div><h3>Endereço</h3><div class="grid">
+</div></div><div id="v2-step-1" class="v2-step"><h3>Endereço</h3><div class="grid">
 <div><label for="cep">CEP</label><input id="cep" maxlength="10" inputmode="numeric"></div><div><label for="endereco">Rua / avenida</label><input id="endereco" maxlength="200" autocomplete="street-address"></div>
 <div><label for="numero">Número</label><input id="numero" maxlength="15"></div><div><label for="complemento">Complemento</label><input id="complemento" maxlength="100"></div>
 <div><label for="bairro">Bairro</label><input id="bairro" maxlength="100"></div><div><label for="cidade">Cidade</label><input id="cidade" maxlength="100"></div>
 <div><label for="uf">Estado (UF)</label><input id="uf" maxlength="2" placeholder="MG"></div><div><label for="referencia">Ponto de referência</label><input id="referencia" maxlength="120"></div>
-</div><h3>Informações da igreja</h3><div class="grid">
+</div></div><div id="v2-step-2" class="v2-step"><h3>Informações da igreja</h3><p class="v2-help">Esses campos são opcionais, mas as informações são essenciais para manter o cadastro da igreja completo e atualizado. Preencha tudo o que souber.</p><div class="grid">
 <div><label for="situacao">Vínculo com a igreja</label><select id="situacao"><option value="">Não informado</option><option>Membro</option><option>Congregado</option><option>Cooperador</option><option>Obreiro</option><option>Visitante</option></select></div>
 <div><label for="cargo">Cargo ministerial</label><select id="cargo"><option value="">Não informado</option><option>Diácono</option><option>Presbítero</option><option>Evangelista</option><option>Pastor</option><option>Outro</option></select></div>
 <div><label for="departamento">Departamento / atuação</label><select id="departamento"><option value="">Não informado</option><option>EBD</option><option>Grupo de Louvor</option><option>Círculo de Oração</option><option>Jovens</option><option>Adolescentes</option><option>Crianças</option><option>Missões</option><option>Cozinha</option><option>Secretaria</option><option>Coral</option><option>Outros</option></select></div>
@@ -34,10 +90,10 @@
 <div><label for="dataIngresso">Data de ingresso na igreja</label><input id="dataIngresso" type="date"></div>
 <div><label for="igrejaOrigem">Igreja de origem</label><input id="igrejaOrigem" maxlength="120"></div>
 <div><label for="dizimista">Dizimista?</label><select id="dizimista"><option value="">Prefiro não informar</option><option>Sim</option><option>Não</option></select></div>
-</div><h3>Familiares</h3><p class="muted">Adicione cônjuge, filhos ou outros familiares que também desejem informar seus dados. Os campos desta seção são opcionais, mas, ao adicionar uma pessoa, informe pelo menos o nome e o parentesco.</p><div id="members"></div><button id="addMember" class="secondary" type="button">+ Adicionar familiar</button>
-<h3>Informações adicionais</h3><div class="grid"><div><label for="contatoEmergencia">Contato de emergência (nome)</label><input id="contatoEmergencia" maxlength="120"></div><div><label for="telefoneEmergencia">Telefone de emergência</label><input id="telefoneEmergencia" type="tel" maxlength="15" placeholder="(33) 99999-9999" inputmode="tel"></div></div>
+</div></div><div id="v2-step-3" class="v2-step"><h3>Familiares</h3><p class="muted">Adicione cônjuge, filhos ou outros familiares que também desejem informar seus dados. Os campos desta seção são opcionais, mas, ao adicionar uma pessoa, informe pelo menos o nome e o parentesco.</p><div id="members"></div><button id="addMember" class="secondary" type="button">+ Adicionar familiar</button>
+</div><div id="v2-step-4" class="v2-step"><h3>Revisão e envio</h3><p class="v2-help">Confira os dados preenchidos antes de enviar à Secretaria. Caso precise alterar alguma informação, volte à etapa correspondente.</p><div id="v2-review" class="v2-summary" aria-live="polite"></div><h3>Informações adicionais</h3><div class="grid"><div><label for="contatoEmergencia">Contato de emergência (nome)</label><input id="contatoEmergencia" maxlength="120"></div><div><label for="telefoneEmergencia">Telefone de emergência</label><input id="telefoneEmergencia" type="tel" maxlength="15" placeholder="(33) 99999-9999" inputmode="tel"></div></div>
 <label for="observacoes">Observações para a Secretaria</label><textarea id="observacoes" maxlength="1000" placeholder="Outras informações que desejar compartilhar"></textarea>
-<div class="actions"><button id="save" type="button" class="secondary">Salvar rascunho</button><button id="submit" type="button">Enviar cadastro para a Secretaria</button></div><p class="muted small">Ao enviar, seus dados serão armazenados para análise pela Secretaria. Nenhuma alteração é feita automaticamente no cadastro oficial.</p></div>
+<div class="actions" id="v2-final-actions"><button id="save" type="button" class="secondary">Salvar rascunho</button><button id="submit" type="button">Enviar cadastro para a Secretaria</button></div><p class="muted small">Ao enviar, seus dados serão armazenados para análise pela Secretaria. Nenhuma alteração é feita automaticamente no cadastro oficial.</p></div></div><div class="v2-nav"><button type="button" class="secondary" id="v2-back">← Voltar</button><button type="button" id="v2-next">Continuar →</button></div><div class="v2-bottom-save" id="v2-save-bar"><button type="button" class="secondary" id="v2-draft">Salvar rascunho</button></div>
 </section></main>
 <script type="module">
 const firebaseConfig = {apiKey:"AIzaSyBjcEDhS9nNcMo0DCr6Yzde70KLBe_VMfw",authDomain:"ad-moriah.firebaseapp.com",projectId:"ad-moriah",storageBucket:"ad-moriah.firebasestorage.app",messagingSenderId:"910875544773",appId:"1:910875544773:web:a23243e7b1c339cf2c74ac",measurementId:"G-C46FPTH2P4"};
@@ -74,4 +130,64 @@ async function loadHistory(prefer=null){if(!current)return;const uid=current.uid
 $('newFamily').onclick=newFamily;
 $('reloadFamilies').onclick=async()=>{try{await loadHistory();alertMsg('Lista de cadastros atualizada.')}catch(e){alertMsg(errText(e),true)}};
 onAuthStateChanged(auth,async u=>{const version=++authVersion;current=u;$('authPanel').classList.toggle('hidden',!!u);$('appPanel').classList.toggle('hidden',!u);$('msg').classList.add('hidden');if(!u){records=[];selectedId=null;populate({});$('familyHistory').replaceChildren();$('userEmail').textContent='';return;}$('userEmail').textContent=u.email||'';selectedId=null;populate({});try{await loadHistory();if(version!==authVersion)return;}catch(e){if(version===authVersion)alertMsg(errText(e),true)}});
-</script></body></html>
+</script>
+<script type="module" id="portal-v2-script">
+(function(){
+const $=id=>document.getElementById(id);
+const names=['Dados pessoais','Endereço','Informações da igreja','Familiares','Revisão e envio'];
+let step=0;
+const text=id=>($(id)?.value||'').trim();
+const safe=s=>String(s||'Não informado').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function review(){
+ const fam=$('members').children.length;
+ const groups=[
+  ['Responsável',text('responsavel')],['Nascimento',text('nascimento')],['Telefone',text('telefone')],
+  ['Endereço',[text('endereco'),text('numero'),text('bairro'),text('cidade'),text('uf')].filter(Boolean).join(', ')],
+  ['Vínculo',text('situacao')],['Departamento',text('departamento')],['Familiares adicionados',String(fam)]
+ ];
+ $('v2-review').innerHTML=groups.map(([k,v])=>'<div><b>'+safe(k)+'</b><span>'+safe(v)+'</span></div>').join('');
+}
+function show(n){
+ step=Math.max(0,Math.min(4,n));
+ for(let i=0;i<5;i++)$('v2-step-'+i).classList.toggle('active',i===step);
+ $('v2-step-label').textContent='Etapa '+(step+1)+' de 5';
+ $('v2-step-name').textContent=names[step];
+ $('v2-progress').innerHTML=names.map((_,i)=>'<span class="'+(i<=step?'active':'')+'"></span>').join('');
+ $('v2-steps-menu').querySelectorAll('button').forEach((b,i)=>{b.classList.toggle('current',i===step);b.setAttribute('aria-current',i===step?'step':'false')});
+ $('v2-back').disabled=step===0;
+ $('v2-next').classList.toggle('v2-hidden',step===4);
+ $('v2-final-actions').classList.toggle('v2-visible',step===4);
+ $('v2-save-bar').classList.toggle('v2-hidden',step===4);
+ if(step===4)review();
+ if(n!==undefined && $('familyPanel').getBoundingClientRect().top < -50) $('familyPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function validateStep(){
+ if(step!==0)return true;
+ const missing=[];
+ for(const [id,label] of [['responsavel','nome completo'],['nascimento','data de nascimento'],['estadoCivil','estado civil'],['telefone','telefone com DDD']])if(!text(id))missing.push(label);
+ if(text('estadoCivil')==='Casado(a)'&&!text('conjuge'))missing.push('nome do cônjuge');
+ if(missing.length){alert('Para continuar, preencha: '+missing.join(', ')+'.');return false}
+ if(text('telefone').replace(/\D/g,'').length<10){alert('Informe um telefone com DDD válido.');return false}
+ if(text('nascimento')>new Date().toISOString().slice(0,10)){alert('A data de nascimento não pode ser futura.');return false}
+ return true;
+}
+const nav=$('v2-steps-menu');
+names.forEach((name,i)=>{const b=document.createElement('button');b.type='button';b.textContent=(i+1)+'. '+name;b.onclick=()=>show(i);nav.append(b)});
+$('v2-next').onclick=()=>{if(validateStep())show(step+1)};
+$('v2-back').onclick=()=>show(step-1);
+$('v2-draft').onclick=()=>$('save').click();
+$('showPassword').onclick=()=>{const p=$('password');p.type=p.type==='password'?'text':'password';$('showPassword').textContent=p.type==='password'?'Mostrar':'Ocultar';$('showPassword').setAttribute('aria-label',p.type==='password'?'Mostrar senha':'Ocultar senha')};
+const submit=$('submit');submit.addEventListener('click',function(e){
+ if(!window.confirm('Confirma o envio do cadastro para análise da Secretaria? Após enviar, você só poderá editar se a Secretaria solicitar correções.')){e.stopImmediatePropagation();e.preventDefault()}
+},true);
+const oldNew=$('newFamily').onclick;
+$('newFamily').onclick=function(...args){oldNew?.apply(this,args);show(0)};
+const oldAdd=$('addMember').onclick;
+$('addMember').onclick=function(...args){oldAdd?.apply(this,args);const list=$('members');const last=list.lastElementChild;if(last){const index=list.children.length;const title=document.createElement('div');title.className='v2-fam-title';title.textContent='Familiar '+index;last.prepend(title);last.scrollIntoView({behavior:'smooth',block:'nearest'})}};
+const historyObserver=new MutationObserver(()=>{$('familyHistory').querySelectorAll('.history-card').forEach(card=>{const p=card.querySelector('p');const v=p?.textContent||'';card.dataset.status=v.includes('Aguardando análise')?'pendente':v.includes('Aprovado')?'aprovado':v.includes('Correções')?'correcao':v.includes('Rascunho')?'rascunho':''})});
+historyObserver.observe($('familyHistory'),{childList:true});
+const originalHistoryClick=$('familyHistory').addEventListener('click',e=>{if(e.target.closest('button'))setTimeout(()=>show(0),0)});
+show(0);
+})();
+</script>
+</body></html>
