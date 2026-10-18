@@ -965,7 +965,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 <div id="memberDocTransferFields" class="hidden"><label>Nome da igreja destinatária<input id="memberDocDestination" placeholder="Igreja que receberá o membro"></label><label>Cidade / UF de destino<input id="memberDocCity" placeholder="Cidade e estado"></label></div>
 <div id="memberDocRecommendationFields" class="hidden"><label>Destinatário (opcional)<input id="memberDocRecommendTo" placeholder="Igreja, instituição ou responsável"></label><label>Finalidade (opcional)<input id="memberDocRecommendPurpose" placeholder="Ex.: participação em evento, apresentação à igreja"></label></div>
 <label>Local de emissão<input id="memberDocLocation" value="MANHUAÇU/MG" readonly></label>
-<div id="memberCard16Fields" class="hidden"><div class="grid2"><label>Validade da carteira<input id="memberCard16Expiry" type="text" value="INDETERMINADA" readonly></label><label>Nome do responsável pela assinatura<input id="memberCard16Signer" type="text" value="Pastor Presidente Reinaldo Lino" readonly></label></div><p class="muted">Carteira em formato aproximado de cartão (85,6 × 54 mm), com frente e verso. Imprima em escala 100%, sem ajustar à página. Sem foto: o cadastro atual não possui campo de fotografia.</p></div>
+<div id="memberCard16Fields" class="hidden"><div class="grid2"><label>Validade da carteira<input id="memberCard16Expiry" type="text" value="INDETERMINADA" readonly></label><label>Nome do responsável pela assinatura<input id="memberCard16Signer" type="text" value="Pastor Presidente Reinaldo Lino Pinheiro" readonly></label></div><p class="muted">Carteira em formato aproximado de cartão (85,6 × 54 mm), com frente e verso. Imprima em escala 100%, sem ajustar à página. Sem foto: o cadastro atual não possui campo de fotografia.</p></div>
 <p style="font-size:13px;color:#64748b">Documentos são minutas para conferência e assinatura. A impressão não registra nem efetiva transferência ou alteração de situação no Firebase.</p>
 <div class="form-actions"><button type="button" class="secondary" data-close="memberDocDlg">Cancelar</button><button type="button" class="primary" id="memberDocPrint">Visualizar / Imprimir</button></div></div></dialog>
 
@@ -2116,7 +2116,7 @@ window.openWorkerDocument=id=>{
  $("memberDocType").value="carteira";
  $("memberDocDestination").value="";$("memberDocCity").value="";
  $("memberDocRecommendTo").value="";$("memberDocRecommendPurpose").value="";
- $("memberDocLocation").value="MANHUAÇU/MG";$("memberCard16Expiry").value="INDETERMINADA";$("memberCard16Signer").value="Pastor Presidente Reinaldo Lino";
+ $("memberDocLocation").value="MANHUAÇU/MG";$("memberCard16Expiry").value="INDETERMINADA";$("memberCard16Signer").value="Pastor Presidente Reinaldo Lino Pinheiro";
  $("memberDocTransferFields").classList.add("hidden");
  $("memberDocRecommendationFields").classList.add("hidden");$("memberCard16Fields").classList.remove("hidden");
  openDlg("memberDocDlg");
@@ -2128,7 +2128,7 @@ window.openMemberDocument=id=>{
  $("memberDocType").value="ficha";
  $("memberDocDestination").value="";$("memberDocCity").value="";
  $("memberDocRecommendTo").value="";$("memberDocRecommendPurpose").value="";
- $("memberDocLocation").value="MANHUAÇU/MG";$("memberCard16Expiry").value="INDETERMINADA";$("memberCard16Signer").value="Pastor Presidente Reinaldo Lino";
+ $("memberDocLocation").value="MANHUAÇU/MG";$("memberCard16Expiry").value="INDETERMINADA";$("memberCard16Signer").value="Pastor Presidente Reinaldo Lino Pinheiro";
  $("memberDocTransferFields").classList.add("hidden");
  $("memberDocRecommendationFields").classList.add("hidden");$("memberCard16Fields").classList.add("hidden");
  openDlg("memberDocDlg");
@@ -2171,7 +2171,7 @@ $("memberDocPrint").addEventListener("click",()=>{
  }
  if(type==="carteira"){
   const expiry="INDETERMINADA";
-  const signer="Pastor Presidente Reinaldo Lino";
+  const signer="Pastor Presidente Reinaldo Lino Pinheiro";
   const cardStatus=e(status);
   const isWorkerCard=!!workerDocSelectedId;
   const workerPhoto=isWorkerCard&&/^data:image\//.test(m.photoData||"")?m.photoData:"";
