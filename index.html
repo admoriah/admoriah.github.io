@@ -704,7 +704,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 <div class="sec14" id="pfAdminPanel" hidden style="border-color:#b9cde3;background:#f8fbff">
 <h3>👨‍👩‍👧‍👦 Portal da Família — solicitações recebidas</h3>
 <p class="muted">Confira os cadastros enviados pelas famílias. A aprovação registra a conferência da solicitação, mas <strong>não cria membros automaticamente</strong>. Verifique duplicidades antes de cadastrar cada pessoa no módulo Membros.</p>
-<div class="sec14-tools"><select id="pfStatusFilter" aria-label="Filtrar solicitações"><option value="">Todas as solicitações</option><option value="pendente">Pendentes</option><option value="correcao">Aguardando correção</option><option value="aprovado">Aprovadas</option><option value="rascunho">Rascunhos</option><option value="rejeitado">Rejeitadas</option></select><button type="button" class="secondary" id="pfRefresh">↻ Atualizar solicitações</button></div>
+<div class="sec14-tools"><select id="pfStatusFilter" aria-label="Filtrar solicitações"><option value="atendimento">Em atendimento (padrão)</option><option value="">Todas as solicitações</option><option value="pendente">Pendentes</option><option value="correcao">Aguardando correção</option><option value="aprovado">Aprovadas</option><option value="rascunho">Rascunhos</option><option value="rejeitado">Rejeitadas</option></select><button type="button" class="secondary" id="pfRefresh">↻ Atualizar solicitações</button></div>
 <p class="sec14-note" id="pfInfo">Aguardando carregamento...</p><div id="pfRequests"></div>
 </div>
 <div class="sec14-stats" id="sec14Stats"></div>
@@ -1304,10 +1304,10 @@ function pfRender(){
  const panel=$('pfAdminPanel');if(!panel)return;
  panel.hidden=!pfAllowed();if(!pfAllowed())return;
  const filter=$('pfStatusFilter').value;
- const rows=pfRecords.filter(r=>!filter||r.status===filter).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+ const rows=pfRecords.filter(r=>filter==='atendimento'?!['aprovado','rejeitado'].includes(r.status):(!filter||r.status===filter)).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
  $('pfInfo').textContent=`${rows.length} solicitação(ões) exibida(s) • ${pfRecords.filter(r=>r.status==='pendente').length} pendente(s).`;
  const area=$('pfRequests');area.replaceChildren();
- if(!rows.length){area.textContent='Nenhuma solicitação neste filtro.';return}
+ if(!rows.length){area.textContent=filter==='atendimento'?'Nenhuma solicitação em atendimento. Para consultar solicitações aprovadas ou rejeitadas, use o filtro acima.':'Nenhuma solicitação neste filtro.';return}
  for(const r of rows){
   const card=document.createElement('article');card.className='card';card.style.margin='10px 0';
   const people=Array.isArray(r.familiares)?r.familiares:[];
