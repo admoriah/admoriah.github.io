@@ -1,5 +1,5 @@
-const CACHE = 'moriah-portal-ui-v3-1';
-const FILES = ['./index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'moriah-portal-ui-v3-logo-2';
+const FILES = ['./index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './logo-ad-moriah.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
 });
