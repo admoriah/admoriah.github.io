@@ -1337,28 +1337,57 @@ function pfRender(){
 }
 function pfRegisterMember(r){
  if(!pfAllowed()||r.status!=='aprovado')return;
- const people=[{nome:r.responsavel||'',telefone:r.telefone||'',endereco:r.endereco||'',nascimento:r.nascimento||'',parentesco:'Responsável'},...(Array.isArray(r.familiares)?r.familiares:[])].filter(p=>p.nome&&p.nome.trim());
+ const people=[{...r,nome:r.responsavel||'',parentesco:'Responsável'},...(Array.isArray(r.familiares)?r.familiares:[])].filter(p=>String(p.nome||'').trim());
  if(!people.length){toast('Solicitação sem nomes para cadastrar.');return}
  let index=0;
  if(people.length>1){
-  const options=people.map((p,i)=>`${i+1} - ${p.nome} (${p.parentesco||'Familiar'})`).join('\\n');
-  const chosen=prompt('Qual integrante deseja cadastrar?\\n'+options+'\\n\\nInforme o número:', '1');
+  const options=people.map((p,i)=>`${i+1} - ${p.nome} (${p.parentesco||'Familiar'})`).join('\n');
+  const chosen=prompt('Qual integrante deseja cadastrar?\n'+options+'\n\nInforme o número:', '1');
   if(chosen===null)return;
   index=Number(chosen)-1;
   if(!Number.isInteger(index)||index<0||index>=people.length){toast('Selecione um número válido.');return}
  }
- const person=people[index];
+ const person=people[index], responsible=index===0;
  const found=[...state.membros,...state.obreiros].filter(m=>pfNorm(m.name)===pfNorm(person.nome));
- if(found.length&&!confirm('ATENÇÃO: '+person.nome+' já possui possível cadastro no App Moriah.\\nConfira antes de prosseguir para evitar duplicidade. Deseja abrir um novo cadastro mesmo assim?'))return;
+ if(found.length&&!confirm('ATENÇÃO: '+person.nome+' já possui possível cadastro no App Moriah.\nConfira antes de prosseguir para evitar duplicidade. Deseja abrir um novo cadastro mesmo assim?'))return;
  $('newMemberBtn').click();
- $('mname').value=person.nome||'';
- $('mphone').value=person.telefone||r.telefone||'';
- $('maddress').value=person.endereco||r.endereco||'';
- const birth=String(person.nascimento||person.dataNascimento||'');
- if(/^\\d{4}-\\d{2}-\\d{2}$/.test(birth))$('mbirth').value=birth;
- $('mnotes').value='Origem: Portal da Família. Solicitação: '+r.id+'. Responsável: '+(r.responsavel||'')+'. Vínculo: '+(person.parentesco||'responsável')+'. Conferir dados antes de salvar.';
+ const put=(id,value)=>{const el=$(id);if(el&&value!==undefined&&value!==null&&String(value).trim()!==''){el.value=String(value).trim();return el.value===String(value).trim()}return false};
+ const date=(id,value)=>{const v=String(value||'').trim();if(/^\d{4}-\d{2}-\d{2}$/.test(v))put(id,v)};
+ const sex=String(person.sexo||'').toLowerCase();
+ const status=String(person.situacao||'').toLowerCase();
+ const marital=String(person.estadoCivil||'').trim();
+ put('mname',person.nome);
+ put('mphone',person.telefone||r.telefone);
+ date('mbirth',person.nascimento||person.dataNascimento);
+ if(sex.startsWith('masc'))put('msex','M');else if(sex.startsWith('fem'))put('msex','F');
+ if(['membro','congregado','obreiro','cooperador'].includes(status))put('mstatus',status);
+ if(person.departamento)put('mdepartment',person.departamento);
+ if(person.cargo)put('mrole',person.cargo);
+ if(marital){const normalized={'União estável':'Casado(a)','Separado(a)':'Divorciado(a)'}[marital]||marital;put('mmarital',normalized)}
+ if(String(person.dizimista||'').toLowerCase()==='sim')put('mtither','sim');
+ else if(String(person.dizimista||'').toLowerCase()==='não'||String(person.dizimista||'').toLowerCase()==='nao')put('mtither','nao');
+ else put('mtither','nao'); // O formulário oficial exige uma opção; conferir antes de salvar.
+ date('mbaptism',person.dataBatismo);
+ date('mentry',person.dataIngresso);
+ const address=[r.endereco,r.numero,r.complemento,r.bairro,r.cidade&&[r.cidade,r.uf].filter(Boolean).join('/'),r.cep&&'CEP '+r.cep].filter(Boolean).join(', ');
+ put('maddress',address||r.endereco);
+ const extra=[];
+ const add=(label,value)=>{if(value!==undefined&&value!==null&&String(value).trim())extra.push(label+': '+String(value).trim())};
+ add('Origem','Portal da Família');add('Solicitação',r.id);add('Responsável',r.responsavel);add('Parentesco',person.parentesco||'Responsável');
+ add('E-mail do responsável',r.email);add('Telefone alternativo',person.telefoneAlternativo|| (responsible?r.telefoneAlternativo:''));
+ add('Nome social',person.nomeSocial);add('Naturalidade',person.naturalidade);add('Nacionalidade',person.nacionalidade);
+ add('Profissão',person.profissao);add('Escolaridade',person.escolaridade);add('Nome do pai',person.nomePai);add('Nome da mãe',person.nomeMae);
+ add('Cônjuge',responsible?r.conjuge:'');add('Estado civil declarado',person.estadoCivil);
+ add('Vínculo declarado',person.situacao);add('Cargo declarado',person.cargo);add('Departamento declarado',person.departamento);
+ add('Batizado em águas?',person.batizado);add('Igreja de origem',person.igrejaOrigem);
+ add('Dizimista declarado',person.dizimista);add('Contato de emergência',person.contatoEmergencia);add('Telefone de emergência',person.telefoneEmergencia);
+ add('Ponto de referência',r.referencia);add('Observações do Portal',person.observacoes);
+ if(responsible&&Array.isArray(r.familiares)&&r.familiares.length)add('Familiares declarados',r.familiares.map(f=>[f.nome,f.parentesco].filter(Boolean).join(' (' )+(f.parentesco?')':'')).join('; '));
+ if(!responsible)add('Endereço compartilhado','Informado pelo responsável; confirmar antes de salvar');
+ put('mnotes',extra.join('\n'));
+ toggleMemberRole();
  const notice=$('memberSaveNotice');
- if(notice)notice.textContent='Dados importados para conferência. Clique Salvar para criar o cadastro oficial.';
+ if(notice){notice.textContent='Dados do Portal importados. Confira todos os campos, especialmente dizimista e familiares, antes de salvar.';notice.style.color='#134b82'}
 }
 async function pfReview(r,status){
  if(!pfAllowed())return;
