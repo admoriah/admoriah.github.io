@@ -2688,14 +2688,14 @@ document.getElementById("e39Period").addEventListener("change",e39Render);
    if(status){status.textContent='Solicitação de salvamento recebida';status.style.color='#134b82';}
  },true);
 })();
-</script><script id="secretaria14script">
+</script><style id="sec14-member-link-style">#sec14Body .sec14-member-link{appearance:none;border:0;background:transparent;color:#0a467e;text-decoration:underline;text-underline-offset:2px;cursor:pointer;padding:3px 2px;font:inherit;text-align:left;max-width:100%;white-space:normal;overflow-wrap:anywhere}#sec14Body .sec14-member-link:hover{color:#092d50;background:#eaf3ff}#sec14Body .sec14-member-link:focus-visible{outline:2px solid #174f87;outline-offset:2px;border-radius:3px}</style><script id="secretaria14script">
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
 const root=$('secretaria14');if(!root)return;
 const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const label={membro:'Membro',congregado:'Congregado',obreiro:'Obreiro',cooperador:'Cooperador'};
-let snapshot=[];let rows=[];let headers=[];
+let snapshot=[];let rows=[];let headers=[];let rowIds=[];
 const dt=v=>{if(!v)return '—';try{const d=typeof v==='string'?new Date(v):v?.toDate?.()||new Date(v);return isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR')}catch{return '—'}};
 function currentMembers(){
  // Os cartões de membros são alimentados pelo Firestore. O painel utiliza os mesmos dados
@@ -2707,22 +2707,32 @@ function render(){
  snapshot=currentMembers();
  const q=$('sec14Search').value.toLocaleLowerCase('pt-BR').trim(),st=$('sec14Status').value,view=$('sec14View').value;
  const base=snapshot.filter(m=>(!q||`${m.name||''} ${m.memberNumber||''}`.toLocaleLowerCase('pt-BR').includes(q))&&(!st||m.status===st));
+ rowIds=[];
  const total=snapshot.length;const counts={membro:0,congregado:0,obreiro:0,cooperador:0};snapshot.forEach(m=>{if(counts[m.status]!==undefined)counts[m.status]++});
  $('sec14Stats').innerHTML=[['Total',total],['Membros',counts.membro],['Congregados',counts.congregado],['Obreiros',counts.obreiro],['Cooperadores',counts.cooperador],['A completar',snapshot.filter(m=>incomplete(m)>0).length]].map(([a,b])=>`<div class="sec14-stat"><b>${b}</b><span>${safe(a)}</span></div>`).join('');
  if(view==='movimentos'){
  headers=['Cadastro','Nome','Data','Movimentação','Situação anterior','Nova situação','Observações'];
+ rowIds=base.flatMap(m=>(Array.isArray(m.membershipHistory)?m.membershipHistory:[]).map(()=>m.id));
  rows=base.flatMap(m=>(Array.isArray(m.membershipHistory)?m.membershipHistory:[]).map(h=>[m.memberNumber||'—',m.name||'—',dt(h.date),String(h.type||'').replace(/_/g,' '),label[h.previousStatus]||h.previousStatus||'—',label[h.newStatus]||h.newStatus||'—',h.notes||'—']));
  }else if(view==='incompletos'){
  headers=['Cadastro','Nome','Situação','Campos a completar'];
- rows=base.map(m=>[m.memberNumber||'—',m.name||'—',label[m.status]||m.status||'—',[!m.name&&'Nome',!m.phone&&'Telefone',!m.birth&&'Nascimento',!m.sex&&'Sexo',!m.address&&'Endereço',!m.entryDate&&'Data de ingresso'].filter(Boolean).join(', ')]).filter(r=>r[3]);
+ const pending=base.map(m=>({id:m.id,values:[m.memberNumber||'—',m.name||'—',label[m.status]||m.status||'—',[!m.name&&'Nome',!m.phone&&'Telefone',!m.birth&&'Nascimento',!m.sex&&'Sexo',!m.address&&'Endereço',!m.entryDate&&'Data de ingresso'].filter(Boolean).join(', ')]})).filter(r=>r.values[3]);
+ rowIds=pending.map(r=>r.id);rows=pending.map(r=>r.values);
  }else{
  headers=['Cadastro','Nome','Situação','Cargo','Telefone','Ingresso'];
+ rowIds=base.map(m=>m.id);
  rows=base.map(m=>[m.memberNumber||'—',m.name||'—',label[m.status]||m.status||'—',m.ministerialRole||'—',m.phone||'—',dt(m.entryDate)]);
  }
  $('sec14Head').innerHTML='<tr>'+headers.map(h=>'<th>'+safe(h)+'</th>').join('')+'</tr>';
- $('sec14Body').innerHTML=rows.length?rows.map(r=>'<tr>'+r.map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+headers.length+'">Nenhum registro encontrado para os filtros selecionados.</td></tr>';
+ $('sec14Body').innerHTML=rows.length?rows.map((r,i)=>'<tr>'+r.map((v,j)=>'<td>'+(j<2&&rowIds[i]?'<button type="button" class="sec14-member-link" data-member-id="'+safe(rowIds[i])+'" title="Abrir cadastro do membro">'+safe(v)+'</button>':safe(v))+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+headers.length+'">Nenhum registro encontrado para os filtros selecionados.</td></tr>';
  $('sec14Count').textContent=rows.length+' registro(s) no relatório. '+total+' cadastro(s) carregado(s).';
 }
+$('sec14Body').addEventListener('click',e=>{
+ const btn=e.target.closest('button.sec14-member-link');if(!btn)return;
+ const id=btn.dataset.memberId;
+ if(typeof window.editMember==='function')window.editMember(id);
+ else alert('O cadastro ainda não está disponível. Atualize o aplicativo e tente novamente.');
+});
 function csvCell(v){const t=String(v??'');return '"'+( /^[=+@\-\t\r]/.test(t)?"'":'')+t.replace(/"/g,'""')+'"'}
 $('sec14Csv').addEventListener('click',()=>{
  const data='\uFEFF'+[headers,...rows].map(r=>r.map(csvCell).join(';')).join('\r\n');
@@ -2731,7 +2741,7 @@ $('sec14Csv').addEventListener('click',()=>{
 $('sec14Print').addEventListener('click',()=>{
  const w=window.open('','_blank');if(!w){alert('Permita pop-ups para imprimir o relatório.');return;}
  const title=$('sec14View').selectedOptions[0].textContent;
- w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Secretaria - '+safe(title)+'</title><style>body{font:12px Arial;padding:24px}h1{font-size:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:6px;text-align:left}th{background:#eee}</style></head><body><h1>Assembleia de Deus Moriah — Secretaria</h1><h2>'+safe(title)+'</h2><p>Emitido em '+new Date().toLocaleString('pt-BR')+' • '+rows.length+' registros</p><table><thead>'+ $('sec14Head').innerHTML+'</thead><tbody>'+ $('sec14Body').innerHTML+'</tbody></table><p>Documento de conferência interna.</p></body></html>');w.document.close();w.focus();w.print();
+ w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Secretaria - '+safe(title)+'</title><style>body{font:12px Arial;padding:24px}h1{font-size:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:6px;text-align:left}th{background:#eee}</style></head><body><h1>Assembleia de Deus Moriah — Secretaria</h1><h2>'+safe(title)+'</h2><p>Emitido em '+new Date().toLocaleString('pt-BR')+' • '+rows.length+' registros</p><table><thead>'+ $('sec14Head').innerHTML+'</thead><tbody>'+ rows.map(r=>'<tr>'+r.map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table><p>Documento de conferência interna.</p></body></html>');w.document.close();w.focus();w.print();
 });
 ['sec14Search','sec14Status','sec14View'].forEach(id=>$(id).addEventListener(id==='sec14Search'?'input':'change',render));
 window.addEventListener('sec14-members-updated',render);
