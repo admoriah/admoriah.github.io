@@ -1318,41 +1318,37 @@ function pfRender(){
   const names=[r.responsavel,...people.map(x=>x.nome)].filter(Boolean);
   const duplicates=names.filter(n=>state.membros.some(m=>pfNorm(m.name)===pfNorm(n))||state.obreiros.some(m=>pfNorm(m.name)===pfNorm(n)));
   if(duplicates.length){const warning=document.createElement('p');warning.style.color='#a44b10';warning.textContent='⚠ Possíveis nomes já cadastrados: '+[...new Set(duplicates)].join(', ')+'. Confira antes de incluir.';card.append(warning)}
-  const list=document.createElement('ul');for(const person of people){const li=document.createElement('li');li.textContent=[person.nome,person.parentesco,person.nascimento].filter(Boolean).join(' • ');list.append(li)}
-  if(people.length)card.append(list);else{const p=document.createElement('p');p.textContent='Nenhum familiar adicional informado.';card.append(p)}
+  const list=document.createElement('div');list.style.display='grid';list.style.gap='8px';
+  const allPeople=[{...r,nome:r.responsavel||'',parentesco:'Responsável'},...people].filter(p=>String(p.nome||'').trim());
+  for(let i=0;i<allPeople.length;i++){
+   const person=allPeople[i],entry=document.createElement('div');entry.style.cssText='display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid #dbe4ed;border-radius:8px';
+   const label=document.createElement('span');label.textContent=[person.nome,person.parentesco,person.nascimento||person.dataNascimento].filter(Boolean).join(' • ');entry.append(label);
+   if(r.status==='aprovado'){
+    const btn=document.createElement('button');btn.type='button';btn.className='secondary';btn.textContent='＋ Cadastrar como membro';
+    btn.addEventListener('click',()=>pfRegisterMember(r,i));entry.append(btn);
+   }
+   list.append(entry);
+  }
+  if(allPeople.length)card.append(list);else{const p=document.createElement('p');p.textContent='Nenhum integrante informado.';card.append(p)}
   const actions=document.createElement('div');actions.className='actions';
   for(const [status,label] of [['aprovado','✓ Aprovar solicitação'],['correcao','✎ Solicitar correção'],['rejeitado','✕ Rejeitar']]){
    if(r.status===status)continue;
    const btn=document.createElement('button');btn.type='button';btn.className=status==='rejeitado'?'danger':'secondary';btn.textContent=label;
    btn.onclick=()=>pfReview(r,status);actions.append(btn);
   }
-  if(r.status==='aprovado'){
-   const register=document.createElement('button');register.type='button';register.className='primary';
-   register.textContent='＋ Cadastrar no App Moriah';
-   register.onclick=()=>pfRegisterMember(r);
-   actions.prepend(register);
-  }
   card.append(actions);area.append(card);
  }
 }
-function pfRegisterMember(r){
+function pfRegisterMember(r,index=0){
  if(!pfAllowed()||r.status!=='aprovado')return;
  const people=[{...r,nome:r.responsavel||'',parentesco:'Responsável'},...(Array.isArray(r.familiares)?r.familiares:[])].filter(p=>String(p.nome||'').trim());
- if(!people.length){toast('Solicitação sem nomes para cadastrar.');return}
- let index=0;
- if(people.length>1){
-  const options=people.map((p,i)=>`${i+1} - ${p.nome} (${p.parentesco||'Familiar'})`).join('\n');
-  const chosen=prompt('Qual integrante deseja cadastrar?\n'+options+'\n\nInforme o número:', '1');
-  if(chosen===null)return;
-  index=Number(chosen)-1;
-  if(!Number.isInteger(index)||index<0||index>=people.length){toast('Selecione um número válido.');return}
- }
+ if(!people.length||!Number.isInteger(index)||index<0||index>=people.length){toast('Integrante não encontrado.');return}
  const person=people[index], responsible=index===0;
  const found=[...state.membros,...state.obreiros].filter(m=>pfNorm(m.name)===pfNorm(person.nome));
  if(found.length&&!confirm('ATENÇÃO: '+person.nome+' já possui possível cadastro no App Moriah.\nConfira antes de prosseguir para evitar duplicidade. Deseja abrir um novo cadastro mesmo assim?'))return;
  $('newMemberBtn').click();
  const put=(id,value)=>{const el=$(id);if(el&&value!==undefined&&value!==null&&String(value).trim()!==''){el.value=String(value).trim();return el.value===String(value).trim()}return false};
- const date=(id,value)=>{const v=String(value||'').trim();if(/^\d{4}-\d{2}-\d{2}$/.test(v))put(id,v)};
+ const date=(id,value)=>{let v=String(value||'').trim();if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){const [d,m,y]=v.split('/');v=`${y}-${m}-${d}`}if(/^\d{4}-\d{2}-\d{2}$/.test(v))put(id,v)};
  const sex=String(person.sexo||'').toLowerCase();
  const status=String(person.situacao||'').toLowerCase();
  const marital=String(person.estadoCivil||'').trim();
