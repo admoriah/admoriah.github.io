@@ -701,6 +701,12 @@ button:disabled{opacity:.55;cursor:not-allowed}
 <section id="membros" class="page"><div class="page-head"><div><h2>Membros</h2><p>Cadastro, dizimistas e importação por planilha.</p></div>
 <div class="actions edit-own"><button id="downloadMemberTemplate" class="secondary">⬇ Modelo Excel</button><button id="importMembersBtn" class="secondary">⬆ Importar Excel</button><button id="exportMembersBtn" class="secondary">📊 Exportar</button><button id="newMemberBtn" class="primary">+ Novo</button></div></div><div class="filters"><input id="memberSearch" placeholder="Pesquisar..."><select id="memberTither"><option value="">Todos</option><option value="sim">Dizimistas</option><option value="nao">Não dizimistas</option></select></div><div class="sec14" id="secretaria14" aria-label="Painel da secretaria">
 <h3>Secretaria — Etapa 14</h3><p class="muted">Painel de acompanhamento dos membros e movimentações registradas. Os dados são consultados diretamente dos cadastros existentes.</p>
+<div class="sec14" id="pfAdminPanel" hidden style="border-color:#b9cde3;background:#f8fbff">
+<h3>👨‍👩‍👧‍👦 Portal da Família — solicitações recebidas</h3>
+<p class="muted">Confira os cadastros enviados pelas famílias. A aprovação registra a conferência da solicitação, mas <strong>não cria membros automaticamente</strong>. Verifique duplicidades antes de cadastrar cada pessoa no módulo Membros.</p>
+<div class="sec14-tools"><select id="pfStatusFilter" aria-label="Filtrar solicitações"><option value="">Todas as solicitações</option><option value="pendente">Pendentes</option><option value="correcao">Aguardando correção</option><option value="aprovado">Aprovadas</option><option value="rascunho">Rascunhos</option><option value="rejeitado">Rejeitadas</option></select><button type="button" class="secondary" id="pfRefresh">↻ Atualizar solicitações</button></div>
+<p class="sec14-note" id="pfInfo">Aguardando carregamento...</p><div id="pfRequests"></div>
+</div>
 <div class="sec14-stats" id="sec14Stats"></div>
 <div class="sec14-tools"><input id="sec14Search" placeholder="Pesquisar nome ou número" aria-label="Pesquisar na secretaria"><select id="sec14Status" aria-label="Filtrar situação"><option value="">Todas as situações</option><option value="membro">Membro</option><option value="congregado">Congregado</option><option value="obreiro">Obreiro</option><option value="cooperador">Cooperador</option></select><select id="sec14View" aria-label="Tipo de relatório"><option value="cadastros">Relação de membros</option><option value="movimentos">Histórico de movimentações</option><option value="incompletos">Cadastros a completar</option></select></div>
 <div class="sec14-actions"><button type="button" class="secondary" id="sec14Csv">⬇ Exportar CSV</button><button type="button" class="secondary" id="sec14Print">🖨 Imprimir relatório</button></div>
@@ -1264,7 +1270,7 @@ $("forgotBtn").onclick=async()=>{const v=$("loginUser").value.trim();if(!v)retur
 $("logoutBtn").onclick=()=>signOut(auth);$("bootstrapLogout").onclick=()=>signOut(auth);
 
 onAuthStateChanged(auth,async user=>{
-  clearUnsubs();e34Stop();
+  clearUnsubs();e34Stop();if(pfUnsub){pfUnsub();pfUnsub=null}pfRecords=[];
   if(!user){state.authUser=null;state.profile=null;$("loginScreen").classList.remove("hidden");$("bootstrapScreen").classList.add("hidden");$("app").classList.add("hidden");return}
   state.authUser=user;
   const ps=await getDoc(doc(db,"usuarios",user.uid));
@@ -1289,7 +1295,54 @@ function sub(name,target,filter=true){
  const u=onSnapshot(q,s=>{state[target]=s.docs.map(d=>({id:d.id,...d.data()}));$("syncState").textContent="● online";renderAll()},e=>{console.error(e);$("syncState").textContent="● erro"});
  state.unsubs.push(u)
 }
-function startRealtime(){$("e29Menu").style.display=isGeneralAdmin()?"":"none";if(permissionFor("financeiro"))startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);if(permissionFor("obreiros"))sub("obreiros","obreiros",true);if(permissionFor("membros"))sub("membros","membros",true);if(permissionFor("festividades"))sub("festividades","festividades",true);if(permissionFor("visitantes"))sub("visitantes","visitantes",true);if(permissionFor("resultadosCulto"))sub("resultadosCulto","resultadosCulto",true);if(permissionFor("agenda"))sub("agendaRegional","agenda",false);if(permissionFor("ministerios22"))subMin22();if(permissionFor("patrimonio23"))subPat23();if(permissionFor("escalas24"))subEsc24();if(permissionFor("eventos25"))subEv25();if(permissionFor("acompanhamento30"))e30Subscribe();if(permissionFor("pastoral35"))e35Subscribe();if(permissionFor("tarefas33"))e33Subscribe();if(canManageUsers())sub("usuarios","usuarios",false);applyPermissionNavigation()}
+// Portal da Família — integração administrativa isolada (Etapa 40).
+let pfRecords=[],pfUnsub=null;
+function pfAllowed(){return state.profile?.active===true&&['admin','secretario'].includes(state.profile?.role)}
+function pfEscape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function pfNorm(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'').trim()}
+function pfRender(){
+ const panel=$('pfAdminPanel');if(!panel)return;
+ panel.hidden=!pfAllowed();if(!pfAllowed())return;
+ const filter=$('pfStatusFilter').value;
+ const rows=pfRecords.filter(r=>!filter||r.status===filter).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+ $('pfInfo').textContent=`${rows.length} solicitação(ões) exibida(s) • ${pfRecords.filter(r=>r.status==='pendente').length} pendente(s).`;
+ const area=$('pfRequests');area.replaceChildren();
+ if(!rows.length){area.textContent='Nenhuma solicitação neste filtro.';return}
+ for(const r of rows){
+  const card=document.createElement('article');card.className='card';card.style.margin='10px 0';
+  const people=Array.isArray(r.familiares)?r.familiares:[];
+  const title=document.createElement('h4');title.textContent=(r.responsavel||'Responsável não informado')+' — '+(r.status||'sem situação');card.append(title);
+  const detail=document.createElement('p');detail.textContent=[r.email,r.telefone,r.endereco].filter(Boolean).join(' • ');card.append(detail);
+  if(r.observacoes){const p=document.createElement('p');p.textContent='Observações: '+r.observacoes;card.append(p)}
+  if(r.retorno){const p=document.createElement('p');p.textContent='Resposta da secretaria: '+r.retorno;card.append(p)}
+  const names=[r.responsavel,...people.map(x=>x.nome)].filter(Boolean);
+  const duplicates=names.filter(n=>state.membros.some(m=>pfNorm(m.name)===pfNorm(n))||state.obreiros.some(m=>pfNorm(m.name)===pfNorm(n)));
+  if(duplicates.length){const warning=document.createElement('p');warning.style.color='#a44b10';warning.textContent='⚠ Possíveis nomes já cadastrados: '+[...new Set(duplicates)].join(', ')+'. Confira antes de incluir.';card.append(warning)}
+  const list=document.createElement('ul');for(const person of people){const li=document.createElement('li');li.textContent=[person.nome,person.parentesco,person.nascimento].filter(Boolean).join(' • ');list.append(li)}
+  if(people.length)card.append(list);else{const p=document.createElement('p');p.textContent='Nenhum familiar adicional informado.';card.append(p)}
+  const actions=document.createElement('div');actions.className='actions';
+  for(const [status,label] of [['aprovado','✓ Aprovar solicitação'],['correcao','✎ Solicitar correção'],['rejeitado','✕ Rejeitar']]){
+   if(r.status===status)continue;
+   const btn=document.createElement('button');btn.type='button';btn.className=status==='rejeitado'?'danger':'secondary';btn.textContent=label;
+   btn.onclick=()=>pfReview(r,status);actions.append(btn);
+  }
+  card.append(actions);area.append(card);
+ }
+}
+async function pfReview(r,status){
+ if(!pfAllowed())return;
+ const message=status==='correcao'?'Descreva as correções necessárias:':status==='rejeitado'?'Informe o motivo da rejeição:':'Observação para a família (opcional):';
+ const retorno=prompt(message,r.retorno||'');if(retorno===null)return;
+ if(status!=='aprovado'&&!retorno.trim()){toast('Informe uma justificativa.');return}
+ if(status==='aprovado'&&!confirm('Aprovar esta solicitação? Isso NÃO inclui integrantes automaticamente no cadastro de membros.'))return;
+ try{await rawUpdateDoc(doc(db,'portalFamilias',r.id),{status,retorno:retorno.trim(),updatedAt:serverTimestamp()});toast('Solicitação atualizada.')}catch(e){console.error(e);toast('Erro ao atualizar: '+(e.code||e.message))}
+}
+function pfStart(){if(pfUnsub){pfUnsub();pfUnsub=null}pfRecords=[];pfRender();if(!pfAllowed())return;
+ pfUnsub=onSnapshot(collection(db,'portalFamilias'),snap=>{pfRecords=snap.docs.map(d=>({id:d.id,...d.data()}));pfRender()},err=>{$('pfInfo').textContent='Erro ao consultar o Portal da Família: '+(err.code||err.message);console.error(err)});
+}
+$('pfStatusFilter').addEventListener('change',pfRender);
+$('pfRefresh').addEventListener('click',pfStart);
+function startRealtime(){pfStart();$("e29Menu").style.display=isGeneralAdmin()?"":"none";if(permissionFor("financeiro"))startFinanceRealtime();$("welcomeName").textContent=state.profile.name||state.profile.login;$("welcomeProfile").textContent=isAdmin()?"Administrador • Todas as congregações":`${profileLabel(state.profile.role)} • própria congregação`;document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()));document.querySelectorAll(".edit-own").forEach(x=>x.classList.toggle("hidden",!canEdit()));sub("congregacoes","congregacoes",true);if(permissionFor("obreiros"))sub("obreiros","obreiros",true);if(permissionFor("membros"))sub("membros","membros",true);if(permissionFor("festividades"))sub("festividades","festividades",true);if(permissionFor("visitantes"))sub("visitantes","visitantes",true);if(permissionFor("resultadosCulto"))sub("resultadosCulto","resultadosCulto",true);if(permissionFor("agenda"))sub("agendaRegional","agenda",false);if(permissionFor("ministerios22"))subMin22();if(permissionFor("patrimonio23"))subPat23();if(permissionFor("escalas24"))subEsc24();if(permissionFor("eventos25"))subEv25();if(permissionFor("acompanhamento30"))e30Subscribe();if(permissionFor("pastoral35"))e35Subscribe();if(permissionFor("tarefas33"))e33Subscribe();if(canManageUsers())sub("usuarios","usuarios",false);applyPermissionNavigation()}
 function renderAll(){fillCongSelect($("wcong"));fillCongSelect($("fcong"));fillCongSelect($("vcong"));fillCongSelect($("crcong"));$("ucong").value="moriah";fillCongSelect($("indCongFilter"),true);fillCongSelect($("userCongFilter"),true);renderStats();renderCong();renderWorkers();renderMembers();renderVisitors();renderCultResults();renderFests();renderAgenda();renderBirthdays();renderScalesNext();renderScale();renderUsers();renderMin22();renderPat23();renderEsc24();renderEv25();e30Render();e35Render();e33Render();e28Render();e34Render();if(document.getElementById("aniversarios39")?.classList.contains("active"))e39Render();if(document.getElementById("indicadores")?.classList.contains("active"))renderIndicators()}
 
 // Apenas membros na situação Obreiro entram na contagem ministerial.
