@@ -704,7 +704,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 <div class="sec14" id="pfAdminPanel" hidden style="border-color:#b9cde3;background:#f8fbff">
 <h3>👨‍👩‍👧‍👦 Portal da Família — solicitações recebidas</h3>
 <p class="muted">Confira os cadastros enviados pelas famílias. A aprovação registra a conferência da solicitação, mas <strong>não cria membros automaticamente</strong>. Verifique duplicidades antes de cadastrar cada pessoa no módulo Membros.</p>
-<div class="sec14-tools"><input id="pfSearch" type="search" placeholder="Pesquisar responsável, e-mail ou telefone" aria-label="Pesquisar cadastros do portal" style="min-width:220px;flex:1"><select id="pfStatusFilter" aria-label="Filtrar solicitações"><option value="atendimento">Em atendimento (padrão)</option><option value="">Todas as solicitações</option><option value="pendente">Pendentes</option><option value="correcao">Aguardando correção</option><option value="aprovado">Aprovadas</option><option value="rascunho">Rascunhos</option><option value="rejeitado">Rejeitadas</option></select><button type="button" class="secondary" id="pfRefresh">↻ Atualizar solicitações</button></div>
+<div class="sec14-tools"><input id="pfSearch" type="search" placeholder="Pesquisar responsável, e-mail ou telefone" aria-label="Pesquisar cadastros do portal" style="min-width:220px;flex:1"><select id="pfStatusFilter" aria-label="Filtrar solicitações"><option value="">Todas as solicitações (padrão)</option><option value="atendimento">Em atendimento</option><option value="pendente">Pendentes</option><option value="correcao">Aguardando correção</option><option value="aprovado">Aprovadas</option><option value="rascunho">Rascunhos</option><option value="rejeitado">Rejeitadas</option></select><button type="button" class="secondary" id="pfRefresh">↻ Atualizar solicitações</button></div>
 <p class="sec14-note" id="pfInfo">Aguardando carregamento...</p><div id="pfRequests"></div>
 </div>
 <div class="sec14-stats" id="sec14Stats"></div>
@@ -1325,7 +1325,7 @@ function pfRender(){
    const person=allPeople[i],entry=document.createElement('div');entry.style.cssText='display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid #dbe4ed;border-radius:8px';
    const label=document.createElement('span');label.textContent=[person.nome,person.parentesco,person.nascimento||person.dataNascimento].filter(Boolean).join(' • ');entry.append(label);
    if(r.status==='aprovado'){
-    const btn=document.createElement('button');btn.type='button';btn.className='secondary';btn.textContent='＋ Cadastrar como membro';
+    const btn=document.createElement('button');btn.type='button';btn.className='secondary';btn.textContent='＋ Adicionar ao rol de membros';btn.title='Abrir o cadastro oficial de membros com os dados deste integrante para conferência e salvamento';
     btn.addEventListener('click',()=>pfRegisterMember(r,i));entry.append(btn);
    }
    list.append(entry);
