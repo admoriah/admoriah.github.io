@@ -1297,6 +1297,7 @@ function sub(name,target,filter=true){
 }
 // Portal da Família — integração administrativa isolada (Etapa 40).
 let pfRecords=[],pfUnsub=null;
+let pfPendingImport=null; // Solicitação e integrante aguardando confirmação do salvamento oficial
 function pfAllowed(){return state.profile?.active===true&&['admin','secretario'].includes(state.profile?.role)}
 function pfEscape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function pfNorm(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'').trim()}
@@ -1305,7 +1306,7 @@ function pfRender(){
  panel.hidden=!pfAllowed();if(!pfAllowed())return;
  const filter=$('pfStatusFilter').value;
  const search=pfNorm($('pfSearch').value);
- const rows=pfRecords.filter(r=>(filter==='atendimento'?!['aprovado','rejeitado'].includes(r.status):(!filter||r.status===filter))&&(!search||pfNorm([r.responsavel,r.email,r.telefone,...(Array.isArray(r.familiares)?r.familiares.map(f=>f.nome):[])].join(' ')).includes(search))).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+ const rows=pfRecords.filter(r=>(r.status!=='concluido'&&r.status!=='excluido')&&(filter==='atendimento'?!['aprovado','rejeitado'].includes(r.status):(!filter||r.status===filter))&&(!search||pfNorm([r.responsavel,r.email,r.telefone,...(Array.isArray(r.familiares)?r.familiares.map(f=>f.nome):[])].join(' ')).includes(search))).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
  $('pfInfo').textContent=`${rows.length} solicitação(ões) exibida(s) • ${pfRecords.filter(r=>r.status==='pendente').length} pendente(s).`;
  const area=$('pfRequests');area.replaceChildren();
  if(!rows.length){area.textContent=filter==='atendimento'?'Nenhuma solicitação em atendimento. Para consultar solicitações aprovadas ou rejeitadas, use o filtro acima.':'Nenhuma solicitação neste filtro.';return}
@@ -1322,6 +1323,7 @@ function pfRender(){
   const list=document.createElement('div');list.style.display='grid';list.style.gap='8px';
   const allPeople=[{...r,nome:r.responsavel||'',parentesco:'Responsável'},...people].filter(p=>String(p.nome||'').trim());
   for(let i=0;i<allPeople.length;i++){
+   if(Array.isArray(r.integrantesIncluidos)&&r.integrantesIncluidos.includes(i))continue;
    const person=allPeople[i],entry=document.createElement('div');entry.style.cssText='display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid #dbe4ed;border-radius:8px';
    const label=document.createElement('span');label.textContent=[person.nome,person.parentesco,person.nascimento||person.dataNascimento].filter(Boolean).join(' • ');entry.append(label);
    if(r.status==='aprovado'){
@@ -1367,6 +1369,7 @@ function pfRegisterMember(r,index=0){
  const found=[...state.membros,...state.obreiros].filter(m=>pfNorm(m.name)===pfNorm(person.nome));
  if(found.length&&!confirm('ATENÇÃO: '+person.nome+' já possui possível cadastro no App Moriah.\nConfira antes de prosseguir para evitar duplicidade. Deseja abrir um novo cadastro mesmo assim?'))return;
  $('newMemberBtn').click();
+ pfPendingImport={requestId:r.id,index,personName:person.nome};
  const put=(id,value)=>{const el=$(id);if(el&&value!==undefined&&value!==null&&String(value).trim()!==''){el.value=String(value).trim();return el.value===String(value).trim()}return false};
  const date=(id,value)=>{let v=String(value||'').trim();if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){const [d,m,y]=v.split('/');v=`${y}-${m}-${d}`}if(/^\d{4}-\d{2}-\d{2}$/.test(v))put(id,v)};
  const sex=String(person.sexo||'').toLowerCase();
@@ -1644,7 +1647,7 @@ function toggleMemberRole(){const isWorker=$("mstatus").value==="obreiro";$("mro
    $("mmovement").value="mudanca_situacao";
    $("mmovementNotes").placeholder="Descreva a mudança, se desejar";
  }
-}); $("newMemberBtn").onclick=()=>{$("memberForm").reset();$("mid").value="";$("mnumber").value=proximoNumeroCadastroMembro();$("mnumber").readOnly=true;$("mdepartment").value="";$("memberHistoryView").textContent="O histórico começará no primeiro registro de movimentação.";toggleMemberRole();openDlg("memberDlg")};
+}); $("newMemberBtn").onclick=()=>{pfPendingImport=null;$("memberForm").reset();$("mid").value="";$("mnumber").value=proximoNumeroCadastroMembro();$("mnumber").readOnly=true;$("mdepartment").value="";$("memberHistoryView").textContent="O histórico começará no primeiro registro de movimentação.";toggleMemberRole();openDlg("memberDlg")};
 // Diagnóstico de gravação: apresenta erros reais sem esconder detalhes do Firebase.
 function mostrarDiagnosticoMoriah(etapa,err){
  const codigo=err?.code||"sem código";
@@ -1705,6 +1708,30 @@ $("memberForm").onsubmit=async e=>{
    else $("mnumber").value=result.numero;
    if(!id)data.memberNumber=result.numero;
    atualizarEtapa("Cadastro confirmado. Finalizando...");
+   // A solicitação só sai da tela quando o último integrante for efetivamente salvo.
+   // Não excluímos o registro da família: guardamos o histórico como concluído.
+   if(pfPendingImport&&!id){
+     const pending=pfPendingImport;pfPendingImport=null;
+     try{
+       const request=pfRecords.find(x=>x.id===pending.requestId);
+       if(request){
+         const count=[{nome:request.responsavel},...(Array.isArray(request.familiares)?request.familiares:[])].filter(x=>String(x.nome||'').trim()).length;
+         const included=[...new Set([...(Array.isArray(request.integrantesIncluidos)?request.integrantesIncluidos:[]),pending.index])].sort((a,b)=>a-b);
+         const finished=included.length>=count;
+         await rawUpdateDoc(doc(db,'portalFamilias',pending.requestId),{
+           integrantesIncluidos:included,
+           ...(finished?{status:'concluido',concluidoEm:serverTimestamp()}:{}) ,
+           updatedAt:serverTimestamp()
+         });
+         // Atualização local imediata; o listener também confirma a alteração.
+         pfRecords=pfRecords.map(x=>x.id===pending.requestId?{...x,integrantesIncluidos:included,...(finished?{status:'concluido'}:{})}:x);
+         pfRender();
+       }
+     }catch(portalErr){
+       console.error('Membro salvo; não foi possível finalizar solicitação no Portal:',portalErr);
+       alert('O membro foi salvo, mas não foi possível atualizar a solicitação do Portal da Família. Confira as permissões do Firebase antes de tentar novamente. Não crie o mesmo membro duas vezes.');
+     }
+   }
    const estadoSalvo=formulariosEstado.get("memberDlg");
    if(estadoSalvo)estadoSalvo.inicial="";
    closeDlg("memberDlg");
