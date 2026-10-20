@@ -1339,6 +1339,14 @@ function pfRender(){
    const btn=document.createElement('button');btn.type='button';btn.className=status==='rejeitado'?'danger':'secondary';btn.textContent=label;
    btn.onclick=()=>pfReview(r,status);actions.append(btn);
   }
+  // Permite encerrar um pedido aprovado mesmo quando os integrantes já estavam
+  // cadastrados anteriormente ou foram incluídos por outro fluxo do aplicativo.
+  if(r.status==='aprovado'){
+   const done=document.createElement('button');done.type='button';done.className='secondary';
+   done.textContent='✓ Concluir atendimento e retirar da lista';
+   done.title='Arquiva a solicitação no Portal da Família sem excluir membros nem familiares';
+   done.addEventListener('click',()=>pfFinishRequest(r));actions.append(done);
+  }
   if(isGeneralAdmin()){
    const del=document.createElement('button');del.type='button';del.className='danger';del.textContent='🗑 Excluir cadastro';
    del.title='Exclui apenas esta solicitação do Portal da Família, não os membros cadastrados';
@@ -1346,6 +1354,19 @@ function pfRender(){
   }
   card.append(actions);area.append(card);
  }
+}
+async function pfFinishRequest(r){
+ if(!pfAllowed()||r.status!=='aprovado')return;
+ if(!confirm('Concluir o atendimento de '+(r.responsavel||'esta família')+' e retirar a solicitação da lista?\n\nOs membros já cadastrados serão preservados.'))return;
+ try{
+  // O status persistido impede que a solicitação volte após atualizar a página.
+  await rawUpdateDoc(doc(db,'portalFamilias',r.id),{
+   status:'concluido',concluidoEm:serverTimestamp(),updatedAt:serverTimestamp()
+  });
+  pfRecords=pfRecords.map(x=>x.id===r.id?{...x,status:'concluido'}:x);
+  pfRender();
+  toast('Atendimento concluído. Solicitação retirada da lista.');
+ }catch(e){console.error('Erro ao concluir solicitação do Portal:',e);toast('Não foi possível concluir: '+(e.code||e.message));}
 }
 async function pfDeleteRequest(r){
  if(!isGeneralAdmin()){toast('Somente o administrador geral pode excluir solicitações do portal.');return}
