@@ -5,7 +5,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#061a35">
-<title>AD Moriah — Aplicativo</title>
+<title>TESTES | AD Moriah — Aplicativo</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -1013,8 +1013,30 @@ button:disabled{opacity:.55;cursor:not-allowed}
 <dialog id="userDlg"><form id="userForm" class="form"><input type="hidden" id="uid"><div class="form-head"><h3 id="userDlgTitle">Novo usuário</h3><button type="button" data-close="userDlg">×</button></div><label>Nome<input id="uname" required></label><div class="grid2"><label>Usuário<input id="ulogin" required></label><label>Perfil<select id="urole"><option value="congregacao">Pastor / Congregação</option><option value="secretario">Secretário</option><option value="consulta">Consulta</option><option value="admin">Administrador</option></select></label></div><input type="hidden" id="ucong" value="moriah"><div class="grid2"><label>Senha<input id="upass" type="password" placeholder="Mínimo 6 caracteres"></label><label>Confirmar<input id="upass2" type="password"></label></div><label><input id="uactive" type="checkbox" checked style="width:auto"> Usuário ativo</label><div id="permissionEditor" style="margin-top:14px;border:1px solid #d9e2ed;border-radius:12px;padding:12px"><h4 style="margin:0 0 6px">Permissões individuais por módulo</h4><p style="font-size:12px;color:#526477;margin:0 0 10px">Somente o Administrador Geral pode alterar estas permissões. Marque Visualizar para habilitar um módulo.</p><div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr><th style="text-align:left">Módulo</th><th>Visualizar</th><th>Cadastrar</th><th>Editar</th><th>Excluir</th></tr></thead><tbody id="permissionRows"></tbody></table></div><p id="permissionInfo" style="font-size:12px;color:#526477"></p></div><small>O sistema converte internamente para usuario@admoriah.app.</small><div class="form-actions"><button type="button" class="secondary" data-close="userDlg">Cancelar</button><button class="primary">Salvar usuário</button></div></form></dialog>
 
 <dialog id="e27SearchDlg" aria-label="Busca geral"><div class="e27-dialog-body"><div class="e27-dialog-head"><h2>🔎 Busca geral</h2><button type="button" class="e27-shortcut" id="e27CloseSearch" aria-label="Fechar busca">✕ Fechar</button></div><input id="e27Query" type="search" autocomplete="off" placeholder="Digite nome, número ou módulo..." aria-label="Pesquisar"><div id="e27Results" aria-live="polite"></div><p class="e27-help">Busca nos dados já carregados para seu usuário. Selecione um resultado para abrir o módulo correspondente. Nenhum dado é enviado a serviços externos.</p></div></dialog>
+<style id="moriahStagingStyle">#moriahStagingBanner{position:fixed;z-index:2147483647;top:0;left:0;right:0;background:#b45309;color:#fff;text-align:center;padding:7px 10px;font:700 13px Arial,sans-serif;box-shadow:0 2px 6px #0003;pointer-events:none}body{padding-top:31px!important}</style>
+<div id="moriahStagingBanner">🧪 AMBIENTE DE TESTES — DADOS SEPARADOS DO SISTEMA OFICIAL</div>
 <script type="module">
-const firebaseConfig = {apiKey:"AIzaSyBjcEDhS9nNcMo0DCr6Yzde70KLBe_VMfw",authDomain:"ad-moriah.firebaseapp.com",projectId:"ad-moriah",storageBucket:"ad-moriah.firebasestorage.app",messagingSenderId:"910875544773",appId:"1:910875544773:web:a23243e7b1c339cf2c74ac",measurementId:"G-C46FPTH2P4"};
+// AMBIENTE DE HOMOLOGAÇÃO: preencher SOMENTE com a configuração de OUTRO projeto Firebase.
+// NUNCA colocar aqui a configuração do Firebase oficial ad-moriah.
+const firebaseConfig = {
+ apiKey:"PREENCHA_API_KEY_DO_FIREBASE_TESTE",
+ authDomain:"PREENCHA_AUTH_DOMAIN_DO_FIREBASE_TESTE",
+ projectId:"PREENCHA_PROJECT_ID_DO_FIREBASE_TESTE",
+ storageBucket:"PREENCHA_STORAGE_BUCKET_DO_FIREBASE_TESTE",
+ messagingSenderId:"PREENCHA_MESSAGING_SENDER_ID_DO_FIREBASE_TESTE",
+ appId:"PREENCHA_APP_ID_DO_FIREBASE_TESTE"
+};
+// Bloqueio intencional para impedir conexão acidental ao banco da igreja.
+if (!firebaseConfig.projectId || firebaseConfig.projectId.includes("PREENCHA") ||
+    firebaseConfig.projectId === "ad-moriah" ||
+    firebaseConfig.authDomain === "ad-moriah.firebaseapp.com" ||
+    firebaseConfig.storageBucket === "ad-moriah.firebasestorage.app" ||
+    !firebaseConfig.apiKey || firebaseConfig.apiKey.includes("PREENCHA") ||
+    !firebaseConfig.appId || firebaseConfig.appId.includes("PREENCHA")) {
+ document.body.innerHTML = `<main style="font:16px Arial,sans-serif;max-width:750px;margin:8vh auto;padding:28px;border:2px solid #b91c1c;border-radius:14px;background:#fff7ed;color:#111827"><h1>🧪 Ambiente de testes — configuração necessária</h1><p>Este arquivo foi bloqueado para proteger os dados oficiais da AD Moriah.</p><p>Crie um <strong>projeto Firebase separado</strong> e preencha a variável <code>firebaseConfig</code> deste HTML com os dados do projeto de testes. <strong>Não utilize o projeto ad-moriah.</strong></p><p>O aplicativo oficial continua sem alterações.</p></main>`;
+ throw new Error("AMBIENTE DE TESTES BLOQUEADO: configure um Firebase separado do projeto oficial.");
+}
+
 const LOGIN_DOMAIN="admoriah.app";
 const V="12.16.0";
 
