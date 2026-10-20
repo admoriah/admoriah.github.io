@@ -1568,6 +1568,7 @@ function renderCong(){$("congList").innerHTML=state.congregacoes.length?state.co
 function renderWorkers(){const painel=$("workerNumberingPanel");if(painel)painel.style.display=isAdmin()?"block":"none";
  const q=$("workerSearch").value.toLowerCase(),r=$("workerRole").value;
  const l=obreirosContabilizaveis().filter(w=>(!q||(w.name||"").toLowerCase().includes(q))&&(!r||w.role===r));
+ l.sort((a,b)=>String(a.name??"").localeCompare(String(b.name??""),"pt-BR",{sensitivity:"base"}));
  $("workerList").innerHTML=l.length?l.map(w=>`<article class="card"><div class="person-with-photo"><img class="photo-mini" src="${w.photoData||'icons/icon-192.png'}" alt=""><div><h3>${w.name}</h3><p>${w.role} • ${cname(w.congregationId)}</p><p>📞 ${w.phone||"—"} • 🎂 ${fmt(w.birth)||"—"}</p></div></div><div class="actions"><button class="secondary" onclick="openWorkerDocument('${w.id}')">📄 Documentos / Carteira</button>${canEdit()?`<button class="secondary" onclick="editWorker('${w.id}')">Editar</button><button class="danger" onclick="deleteItem('obreiros','${w.id}','${w.name}')">Excluir</button>`:""}</div></article>`).join(""):'<div class="card">Nenhum obreiro.</div>';
 }
 $("workerSearch").oninput=renderWorkers;$("workerRole").onchange=renderWorkers;
@@ -1579,6 +1580,7 @@ function renderMembers(){
    const text=`${m.memberNumber||""} ${m.name||""} ${m.department||""}`.toLowerCase();
    return (!q||text.includes(q))&&(!f||m.tither===f);
  });
+ l.sort((a,b)=>String(a.name??"").localeCompare(String(b.name??""),"pt-BR",{sensitivity:"base"}));
  $("memberList").innerHTML=l.length?l.map(m=>`<article class="card">
    <div class="person-head"><h3>${m.name}</h3><span class="badge ${m.tither==="sim"?"ok":"pending"}">${m.tither==="sim"?"Dizimista":"Não dizimista"}</span></div>
    <p><b>Nº Cadastro:</b> ${m.memberNumber||"—"} • Departamento: ${m.department||"Não informado"}</p>
