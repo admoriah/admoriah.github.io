@@ -731,7 +731,13 @@ button:disabled{opacity:.55;cursor:not-allowed}
 
 <section id="escala" class="page"><div class="page-head"><div><h2>Escala Trabalhos Oficiais</h2><p>Terças-feiras do mês.</p></div></div><div class="month-nav"><button id="prevMonth">‹</button><strong id="scaleMonth"></strong><button id="nextMonth">›</button></div><div id="scaleList" class="cards"></div></section>
 
-<section id="usuarios" class="page"><div class="page-head"><div><h2>Gerenciar Usuários</h2><p>Somente administrador.</p></div><button id="newUserBtn" class="primary">+ Novo Usuário</button></div><div class="user-kpis" id="userKpis" aria-live="polite"></div><div class="filters user-modern-filters"><input id="userSearch" placeholder="Pesquisar nome ou usuário..." aria-label="Pesquisar usuários"><select id="userRoleFilter" aria-label="Filtrar por perfil"><option value="">Todos os perfis</option><option value="admin">Administrador</option><option value="secretario">Secretário</option><option value="congregacao">Pastor / Congregação</option><option value="consulta">Consulta</option></select><select id="userStatusFilter" aria-label="Filtrar por situação"><option value="">Ativos e inativos</option><option value="active">Somente ativos</option><option value="inactive">Somente inativos</option></select><select id="userCongFilter"><option value="">Todas as congregações</option></select><button type="button" class="secondary" id="userClearFilters">Limpar filtros</button></div><div id="userList" class="cards user-modern-list"></div></section>
+<section id="usuarios" class="page"><div class="page-head"><div><h2>Gerenciar Usuários</h2><p>Somente administrador.</p></div><button id="newUserBtn" class="primary">+ Novo Usuário</button></div><div class="user-kpis" id="userKpis" aria-live="polite"></div><div class="filters user-modern-filters"><input id="userSearch" placeholder="Pesquisar nome ou usuário..." aria-label="Pesquisar usuários"><select id="userRoleFilter" aria-label="Filtrar por perfil"><option value="">Todos os perfis</option><option value="admin">Administrador</option><option value="secretario">Secretário</option><option value="congregacao">Pastor / Congregação</option><option value="consulta">Consulta</option></select><select id="userStatusFilter" aria-label="Filtrar por situação"><option value="">Ativos e inativos</option><option value="active">Somente ativos</option><option value="inactive">Somente inativos</option></select><select id="userCongFilter"><option value="">Todas as congregações</option></select><button type="button" class="secondary" id="userClearFilters">Limpar filtros</button></div><div id="userList" class="cards user-modern-list"></div><div id="moriahBackupPanel" hidden style="margin-top:22px;padding:18px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc">
+<h3 style="margin:0 0 8px">🔐 Backup e recuperação dos dados</h3>
+<p style="margin:0 0 12px">Exclusivo do Administrador Geral. O backup é um arquivo JSON com dados confidenciais: guarde-o em local seguro. Não inclui senhas do Firebase Authentication, arquivos do Storage nem subcoleções.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" id="moriahBackupExport" class="primary">⬇ Fazer backup agora</button><label style="display:inline-flex;align-items:center;gap:8px">Selecionar backup para recuperação <input type="file" id="moriahBackupFile" accept=".json,application/json" style="max-width:240px"></label><button type="button" id="moriahBackupRestore" class="secondary" disabled>♻ Recuperar registros ausentes</button></div>
+<p style="font-size:12px;margin:10px 0 0">A recuperação apenas recria documentos que não existem, sem substituir nem excluir os atuais. Confirme as regras do Firestore antes de usar. Faça um backup atual antes de recuperar.</p>
+<p id="moriahBackupStatus" role="status" style="white-space:pre-wrap;margin-top:10px"></p>
+</div></section>
 
 
 <section id="indicadores" class="page">
@@ -1029,11 +1035,94 @@ const {
 
 const {
   getFirestore,doc,getDoc,setDoc:rawSetDoc,addDoc:rawAddDoc,updateDoc:rawUpdateDoc,deleteDoc:rawDeleteDoc,
-  collection,query,where,onSnapshot,writeBatch,runTransaction,serverTimestamp
+  collection,query,where,onSnapshot,getDocs,writeBatch,runTransaction,serverTimestamp,Timestamp,GeoPoint
 }=fsMod;
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const $=id=>document.getElementById(id);
+
+// Backup AD Moriah: leitura completa das coleções principais, sem alterar dados.
+const MORIAH_BACKUP_COLLECTIONS=["membros","obreiros","visitantes","resultadosCulto","festividades","agendaRegional","financeiro","ministerios","patrimonio","escalasCulto","eventosEspeciais","acompanhamentos","pastoral35","tarefas33","congregacoes","usuarios","portalFamilias","auditoria","comunicados34"];
+function moriahBackupEncode(v){
+ if(v instanceof Timestamp)return {__moriahType:"timestamp",seconds:v.seconds,nanoseconds:v.nanoseconds};
+ if(v instanceof GeoPoint)return {__moriahType:"geopoint",latitude:v.latitude,longitude:v.longitude};
+ if(v instanceof Date)return {__moriahType:"date",iso:v.toISOString()};
+ if(Array.isArray(v))return v.map(moriahBackupEncode);
+ if(v&&typeof v==="object")return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,moriahBackupEncode(x)]));
+ return v;
+}
+function moriahBackupDecode(v){
+ if(Array.isArray(v))return v.map(moriahBackupDecode);
+ if(v&&typeof v==="object"){
+  if(v.__moriahType==="timestamp"&&Number.isInteger(v.seconds)&&Number.isInteger(v.nanoseconds))return new Timestamp(v.seconds,v.nanoseconds);
+  if(v.__moriahType==="geopoint"&&Number.isFinite(v.latitude)&&Number.isFinite(v.longitude))return new GeoPoint(v.latitude,v.longitude);
+  if(v.__moriahType==="date"&&typeof v.iso==="string")return new Date(v.iso);
+  return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,moriahBackupDecode(x)]));
+ }
+ return v;
+}
+function moriahBackupUi(){const el=$("moriahBackupPanel");if(el)el.hidden=!isGeneralAdmin()}
+function moriahBackupMessage(message){const el=$("moriahBackupStatus");if(el)el.textContent=message}
+async function moriahBackupExport(){
+ if(!isGeneralAdmin())return;
+ const btn=$("moriahBackupExport");btn.disabled=true;
+ try{
+  const collections={};let total=0;
+  for(const name of MORIAH_BACKUP_COLLECTIONS){
+   moriahBackupMessage("Lendo "+name+"...");
+   const snap=await getDocs(collection(db,name));
+   collections[name]=snap.docs.map(d=>({id:d.id,data:moriahBackupEncode(d.data())}));total+=snap.size;
+  }
+  const payload={format:"AD-MORIAH-FIRESTORE-BACKUP",version:1,projectId:firebaseConfig.projectId,createdAt:new Date().toISOString(),collections};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AD_Moriah_Backup_"+new Date().toISOString().replace(/[:.]/g,"-")+".json";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+  moriahBackupMessage("Backup gerado: "+total+" documentos em "+MORIAH_BACKUP_COLLECTIONS.length+" coleções. Confira se o arquivo foi baixado e guarde-o com segurança.");
+ }catch(err){console.error(err);moriahBackupMessage("Backup NÃO concluído. Nenhum arquivo completo foi gerado. Erro: "+(err.code||err.message));}
+ finally{btn.disabled=false}
+}
+let moriahBackupSelected=null;
+async function moriahBackupSelect(ev){
+ moriahBackupSelected=null;$("moriahBackupRestore").disabled=true;
+ const file=ev.target.files?.[0];if(!file)return;
+ try{
+  if(file.size>100*1024*1024)throw Error("Arquivo excede 100 MB; use recuperação assistida.");
+  const obj=JSON.parse(await file.text());
+  if(obj.format!=="AD-MORIAH-FIRESTORE-BACKUP"||obj.version!==1||obj.projectId!==firebaseConfig.projectId||!obj.collections||typeof obj.collections!=="object")throw Error("Arquivo de backup inválido ou de outro projeto.");
+  for(const [name,rows] of Object.entries(obj.collections)){
+   if(!MORIAH_BACKUP_COLLECTIONS.includes(name)||!Array.isArray(rows)||rows.some(r=>!r||typeof r.id!=="string"||!r.id||r.id.includes("/")||!r.data||typeof r.data!=="object"||Array.isArray(r.data)))throw Error("Estrutura inválida na coleção "+name);
+  }
+  moriahBackupSelected=obj;$("moriahBackupRestore").disabled=false;
+  moriahBackupMessage("Backup selecionado: "+obj.createdAt+". Recuperação adicionará apenas registros ausentes, preservando os existentes.");
+ }catch(err){moriahBackupMessage("Não foi possível abrir o backup: "+err.message)}
+}
+async function moriahBackupRestore(){
+ if(!isGeneralAdmin()||!moriahBackupSelected)return;
+ const backup=moriahBackupSelected;
+ const count=Object.values(backup.collections).reduce((n,rows)=>n+rows.length,0);
+ if(!confirm("RECUPERAÇÃO DE DADOS\n\nArquivo: "+backup.createdAt+"\nDocumentos: "+count+"\n\nSomente documentos ausentes serão recriados. Nenhum registro atual será substituído. Continuar?"))return;
+ const confirmation=prompt('Digite RECUPERAR para confirmar:');if(confirmation!=="RECUPERAR")return;
+ const btn=$("moriahBackupRestore");btn.disabled=true;let created=0,existing=0,failed=0;
+ try{
+  for(const [name,rows] of Object.entries(backup.collections)){
+   for(const row of rows){
+    moriahBackupMessage("Recuperando "+name+": "+created+" criados, "+existing+" já existentes, "+failed+" falhas.");
+    try{
+     const ref=doc(db,name,row.id);
+     // Transação impede substituir documento criado simultaneamente por outro usuário.
+     const added=await runTransaction(db,async tx=>{const current=await tx.get(ref);if(current.exists())return false;tx.set(ref,moriahBackupDecode(row.data));return true});
+     if(added)created++;else existing++;
+    }catch(err){failed++;console.error("Falha ao recuperar",name,row.id,err)}
+   }
+  }
+  moriahBackupMessage("Recuperação finalizada. Criados: "+created+". Já existentes (preservados): "+existing+". Falhas: "+failed+"."+(failed?" Confira permissões do Firestore e console para detalhes.":""));
+ }finally{btn.disabled=false}
+}
+$("moriahBackupExport").addEventListener("click",moriahBackupExport);
+$("moriahBackupFile").addEventListener("change",moriahBackupSelect);
+$("moriahBackupRestore").addEventListener("click",moriahBackupRestore);
+// Atualiza a visibilidade também quando a sessão muda.
+new MutationObserver(moriahBackupUi).observe($("usuarios"),{attributes:true,attributeFilter:["class","style","hidden"]});
+
 // Auditoria informativa: grava após sucesso, sem interromper o salvamento original.
 // Somente operações diretas (não transações, lotes ou scripts externos).
 const E29_COLLECTIONS=new Set(["membros","obreiros","visitantes","resultadosCulto","festividades","agendaRegional","financeiro","ministerios","patrimonio","escalasCulto","eventosEspeciais","acompanhamentos","pastoral35","tarefas33","congregacoes","usuarios"]);
@@ -1339,14 +1428,6 @@ function pfRender(){
    const btn=document.createElement('button');btn.type='button';btn.className=status==='rejeitado'?'danger':'secondary';btn.textContent=label;
    btn.onclick=()=>pfReview(r,status);actions.append(btn);
   }
-  // Permite encerrar um pedido aprovado mesmo quando os integrantes já estavam
-  // cadastrados anteriormente ou foram incluídos por outro fluxo do aplicativo.
-  if(r.status==='aprovado'){
-   const done=document.createElement('button');done.type='button';done.className='secondary';
-   done.textContent='✓ Concluir atendimento e retirar da lista';
-   done.title='Arquiva a solicitação no Portal da Família sem excluir membros nem familiares';
-   done.addEventListener('click',()=>pfFinishRequest(r));actions.append(done);
-  }
   if(isGeneralAdmin()){
    const del=document.createElement('button');del.type='button';del.className='danger';del.textContent='🗑 Excluir cadastro';
    del.title='Exclui apenas esta solicitação do Portal da Família, não os membros cadastrados';
@@ -1354,19 +1435,6 @@ function pfRender(){
   }
   card.append(actions);area.append(card);
  }
-}
-async function pfFinishRequest(r){
- if(!pfAllowed()||r.status!=='aprovado')return;
- if(!confirm('Concluir o atendimento de '+(r.responsavel||'esta família')+' e retirar a solicitação da lista?\n\nOs membros já cadastrados serão preservados.'))return;
- try{
-  // O status persistido impede que a solicitação volte após atualizar a página.
-  await rawUpdateDoc(doc(db,'portalFamilias',r.id),{
-   status:'concluido',updatedAt:serverTimestamp()
-  });
-  pfRecords=pfRecords.map(x=>x.id===r.id?{...x,status:'concluido'}:x);
-  pfRender();
-  toast('Atendimento concluído. Solicitação retirada da lista.');
- }catch(e){console.error('Erro ao concluir solicitação do Portal:',e);toast('Não foi possível concluir: '+(e.code||e.message));}
 }
 async function pfDeleteRequest(r){
  if(!isGeneralAdmin()){toast('Somente o administrador geral pode excluir solicitações do portal.');return}
@@ -1500,7 +1568,6 @@ function renderCong(){$("congList").innerHTML=state.congregacoes.length?state.co
 function renderWorkers(){const painel=$("workerNumberingPanel");if(painel)painel.style.display=isAdmin()?"block":"none";
  const q=$("workerSearch").value.toLowerCase(),r=$("workerRole").value;
  const l=obreirosContabilizaveis().filter(w=>(!q||(w.name||"").toLowerCase().includes(q))&&(!r||w.role===r));
- l.sort((a,b)=>String(a.name??"").localeCompare(String(b.name??""),"pt-BR",{sensitivity:"base"}));
  $("workerList").innerHTML=l.length?l.map(w=>`<article class="card"><div class="person-with-photo"><img class="photo-mini" src="${w.photoData||'icons/icon-192.png'}" alt=""><div><h3>${w.name}</h3><p>${w.role} • ${cname(w.congregationId)}</p><p>📞 ${w.phone||"—"} • 🎂 ${fmt(w.birth)||"—"}</p></div></div><div class="actions"><button class="secondary" onclick="openWorkerDocument('${w.id}')">📄 Documentos / Carteira</button>${canEdit()?`<button class="secondary" onclick="editWorker('${w.id}')">Editar</button><button class="danger" onclick="deleteItem('obreiros','${w.id}','${w.name}')">Excluir</button>`:""}</div></article>`).join(""):'<div class="card">Nenhum obreiro.</div>';
 }
 $("workerSearch").oninput=renderWorkers;$("workerRole").onchange=renderWorkers;
@@ -1512,7 +1579,6 @@ function renderMembers(){
    const text=`${m.memberNumber||""} ${m.name||""} ${m.department||""}`.toLowerCase();
    return (!q||text.includes(q))&&(!f||m.tither===f);
  });
- l.sort((a,b)=>String(a.name??"").localeCompare(String(b.name??""),"pt-BR",{sensitivity:"base"}));
  $("memberList").innerHTML=l.length?l.map(m=>`<article class="card">
    <div class="person-head"><h3>${m.name}</h3><span class="badge ${m.tither==="sim"?"ok":"pending"}">${m.tither==="sim"?"Dizimista":"Não dizimista"}</span></div>
    <p><b>Nº Cadastro:</b> ${m.memberNumber||"—"} • Departamento: ${m.department||"Não informado"}</p>
