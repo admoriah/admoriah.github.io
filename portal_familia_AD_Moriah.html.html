@@ -234,6 +234,82 @@ $('v3-install-btn').onclick=async()=>{if(!v3.installEvent)return;v3.installEvent
 if('serviceWorker' in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 // Informações nunca são guardadas em cache offline: apenas a interface.
 
+
+// V4 Etapa 3: recuperação local opcional, por conta, com prazo máximo de 7 dias.
+// Não substitui a gravação no Firestore. Evite habilitar em dispositivos compartilhados.
+const recoveryKey=uid=>'admoriah:familia:recovery:v4:'+uid;
+const recoveryMaxAge=7*24*60*60*1000;
+let recoveryTimer=null,recoveryEnabled=false,recoveryRestoring=false;
+const recoveryWrap=document.createElement('div');
+recoveryWrap.style.cssText='margin:12px 0;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc';
+recoveryWrap.innerHTML='<label style="display:flex;gap:9px;align-items:flex-start"><input id="v4-recovery-optin" type="checkbox" style="margin-top:3px"><span><strong>Recuperação neste dispositivo</strong> (opcional). Guardar temporariamente o rascunho neste navegador para recuperar após fechar a página. <small>Não ative em computador compartilhado. Os dados locais não são criptografados e são excluídos após 7 dias.</small></span></label><div id="v4-recovery-message" role="status" style="margin-top:6px;font-size:13px"></div><button type="button" id="v4-recovery-clear" style="margin-top:7px">Apagar cópia deste dispositivo</button>';
+const recoveryAnchor=$('v3-save-state');
+recoveryAnchor.parentNode.insertBefore(recoveryWrap,recoveryAnchor.nextSibling);
+const recoveryOpt=$('v4-recovery-optin'),recoveryMessage=$('v4-recovery-message');
+function recoveryCollect(){
+ const d={};for(const k of FIELDS)d[k]=$(k).value;
+ d.familiares=[...$('members').children].map(m=>{const o={};for(const [k,el] of Object.entries(m._fields||{}))o[k]=el.value;return o});
+ return d;
+}
+function recoveryClear(uid=current?.uid){
+ clearTimeout(recoveryTimer);
+ if(uid)try{localStorage.removeItem(recoveryKey(uid))}catch(_){}
+ recoveryMessage.textContent='Cópia local apagada.';
+}
+function recoveryStore(){
+ if(!recoveryEnabled||!current||recoveryRestoring||!v3Editable())return;
+ try{
+  localStorage.setItem(recoveryKey(current.uid),JSON.stringify({savedAt:Date.now(),id:selectedId||null,data:recoveryCollect()}));
+  recoveryMessage.textContent='Cópia de recuperação atualizada neste dispositivo.';
+ }catch(e){recoveryMessage.textContent='Armazenamento local indisponível. O salvamento na conta continua ativo.'}
+}
+function recoverySchedule(){if(!recoveryEnabled||!current||!v3Editable())return;clearTimeout(recoveryTimer);recoveryTimer=setTimeout(recoveryStore,700)}
+function recoveryOffer(uid){
+ let saved;
+ try{saved=JSON.parse(localStorage.getItem(recoveryKey(uid))||'null')}catch(_){recoveryClear(uid);return}
+ if(!saved)return;
+ if(!saved.savedAt||Date.now()-saved.savedAt>recoveryMaxAge){recoveryClear(uid);return}
+ if(!saved.data||typeof saved.data!=='object')return;
+ // Never overwrite an existing submitted or approved request.
+ if(['pendente','aprovado','concluido'].includes(record?.status))return;
+ if(!confirm('Existe um rascunho de recuperação neste dispositivo. Deseja restaurá-lo? Isso substituirá o formulário atualmente aberto, mas não altera os dados no Firebase até salvar.'))return;
+ recoveryRestoring=true;
+ try{
+  const match=records.find(r=>r.id===saved.id);
+  if(saved.id&&!match){recoveryMessage.textContent='O cadastro associado à cópia não foi encontrado. A recuperação foi cancelada.';return}
+  if(match&&['pendente','aprovado','concluido'].includes(match.status)){recoveryMessage.textContent='A solicitação já foi enviada. A cópia local não será restaurada.';recoveryClear(uid);return}
+  if(match){selectedId=match.id;populate(match)}
+  else{selectedId=null;populate({})}
+  for(const k of FIELDS)if(typeof saved.data[k]==='string')$(k).value=saved.data[k];
+  toggleConjuge();$('members').replaceChildren();
+  for(const f of (Array.isArray(saved.data.familiares)?saved.data.familiares:[]).slice(0,20))addMember(f);
+  v3FamilyCards();v3Completeness();v3.dirty=true;v3Dirty();
+  recoveryMessage.textContent='Rascunho recuperado. Confirme os dados e salve.';
+ }finally{recoveryRestoring=false}
+}
+recoveryOpt.addEventListener('change',()=>{
+ recoveryEnabled=recoveryOpt.checked;
+ if(recoveryEnabled){recoveryMessage.textContent='Recuperação ativada neste dispositivo.';if(current)recoveryOffer(current.uid);recoverySchedule()}
+ else{recoveryClear();recoveryMessage.textContent='Recuperação desativada e cópia local apagada.'}
+});
+$('v4-recovery-clear').onclick=()=>recoveryClear();
+$('familyPanel').addEventListener('input',recoverySchedule);
+$('familyPanel').addEventListener('change',recoverySchedule);
+$('addMember').addEventListener('click',()=>setTimeout(recoverySchedule,0));
+$('members').addEventListener('click',()=>setTimeout(recoverySchedule,0));
+window.addEventListener('moriah:saved',e=>{
+ if(e.detail.status==='pendente'){recoveryClear();return}
+ if(recoveryEnabled&&e.detail.status==='rascunho')recoverySchedule();
+});
+const recoveryAuthObserver=onAuthStateChanged(auth,async user=>{
+ if(!user){clearTimeout(recoveryTimer);recoveryEnabled=false;recoveryOpt.checked=false;recoveryMessage.textContent='';return}
+ // Wait for the portal history to load before offering restoration.
+ await new Promise(resolve=>setTimeout(resolve,1200));
+ if(auth.currentUser?.uid!==user.uid)return;
+ if(recoveryEnabled)recoveryOffer(user.uid);
+ else recoveryMessage.textContent='O salvamento automático na sua conta continua ativo. A recuperação local é opcional.';
+});
+
 </script>
 <script type="module" id="portal-v2-script">
 (function(){
