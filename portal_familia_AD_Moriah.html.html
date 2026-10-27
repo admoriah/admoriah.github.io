@@ -158,7 +158,7 @@ header .moriah-portal-subtitle{font-size:.75rem!important;margin-top:2px!importa
 <script type="module">
 const firebaseConfig = {apiKey:"AIzaSyBjcEDhS9nNcMo0DCr6Yzde70KLBe_VMfw",authDomain:"ad-moriah.firebaseapp.com",projectId:"ad-moriah",storageBucket:"ad-moriah.firebasestorage.app",messagingSenderId:"910875544773",appId:"1:910875544773:web:a23243e7b1c339cf2c74ac",measurementId:"G-C46FPTH2P4"};
 const V='12.16.0';
-const [{initializeApp},{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut},{getFirestore,doc,getDoc,setDoc,collection,query,where,getDocs,serverTimestamp}]=await Promise.all([import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`),import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`),import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`)]);
+const [{initializeApp},{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut},{getFirestore,doc,getDoc,setDoc,updateDoc,collection,query,where,getDocs,serverTimestamp}]=await Promise.all([import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`),import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`),import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`)]);
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),$=id=>document.getElementById(id);
 let current=null,record=null,authVersion=0,selectedId=null,records=[]; let savingPromise=null;
 function alertMsg(text,err=false){$('msg').textContent=text;$('msg').className='notice '+(err?'error':'success');window.scrollTo({top:0,behavior:'smooth'})}
@@ -187,12 +187,26 @@ return d}
 function populate(d={}){for(let k of FIELDS)$(k).value=d[k]||'';['telefone','telefoneAlternativo','telefoneEmergencia'].forEach(id=>$(id).value=formatPhone($(id).value));toggleConjuge();$('members').replaceChildren();(d.familiares||[]).forEach(addMember);record=d;let locked=['pendente','aprovado'].includes(d.status);for(let id of [...FIELDS,'addMember','save','submit'])$(id).disabled=locked;for(let el of $('members').querySelectorAll('input,select,button'))el.disabled=locked;$('accountNotice').textContent=locked?'Este cadastro foi enviado e está disponível para consulta. Para um cadastro diferente, use + Novo cadastro. Para corrigir este envio, aguarde solicitação da Secretaria.':'Preencha os dados e envie à Secretaria. Para consultar solicitações anteriores, use a lista acima.';$('status').textContent='Situação: '+({rascunho:'Rascunho',pendente:'Aguardando análise',aprovado:'Aprovado pela secretaria',correcao:'Correções solicitadas',rejeitado:'Não aprovado'}[d.status]||'Cadastro não enviado')+(d.retorno?' · Recado: '+d.retorno:'')}
 async function save(status){if(!current)return; if(savingPromise)await savingPromise; if(!current)return; if(status==='rascunho'&&['pendente','aprovado'].includes(record?.status))return; if(status==='pendente'&&['pendente','aprovado'].includes(record?.status)){alertMsg('Este cadastro já foi enviado. Consulte o acompanhamento antes de tentar novamente.',true);return;} const account=current.uid; const recordId=selectedId||current.uid+'__'+crypto.randomUUID().replaceAll('-',''); selectedId=recordId; const work=async()=>{try{let d=readForm(status);let id=recordId;
 let ref=doc(db,'portalFamilias',id);
-if(status==='rascunho'&&record?.createdAt){
- const latest=await getDoc(ref);
- if(latest.exists()&&!['rascunho','correcao','rejeitado'].includes(latest.data().status))throw Error('Esta solicitação já foi enviada e não pode receber um rascunho. Atualize o histórico.');
+const latest=await getDoc(ref);
+if(latest.exists()){
+ const previous=latest.data();
+ if(previous.ownerUid!==current.uid)throw Error('Solicitação não pertence à conta atual.');
+ if(!['rascunho','correcao','rejeitado'].includes(previous.status))throw Error('Esta solicitação já foi enviada ou concluída. Atualize a lista antes de prosseguir.');
+ // Atualiza apenas os campos do formulário e a situação, preservando createdAt,
+ // retorno, integrantesIncluidos e outros dados administrativos do Firestore.
+ const changes={};
+ for(const [key,value] of Object.entries(d)){
+  if(JSON.stringify(previous[key]??null)!==JSON.stringify(value))changes[key]=value;
+ }
+ changes.status=status;
+ changes.updatedAt=serverTimestamp();
+ await updateDoc(ref,changes);
+}else{
+ // Cadastro novo: regras exigem createdAt e updatedAt com horário do servidor.
+ await setDoc(ref,{...d,ownerUid:current.uid,email:current.email,status,
+  createdAt:serverTimestamp(),updatedAt:serverTimestamp(),retorno:''});
 }
-await setDoc(ref,{...d,ownerUid:current.uid,email:current.email,status,createdAt:record?.createdAt||serverTimestamp(),updatedAt:serverTimestamp(),retorno:record?.retorno||''});
-if(!current||current.uid!==account)return;selectedId=id;let snap=await getDoc(ref);if(!window.__moriahAutosaving)populate(snap.data());else record={...d,status,createdAt:snap.data()?.createdAt||record?.createdAt||null};await loadHistory(id);window.dispatchEvent(new CustomEvent('moriah:saved',{detail:{status,id,name:d.responsavel,auto:!!window.__moriahAutosaving}}));if(!window.__moriahAutosaving)alertMsg(status==='pendente'?'Cadastro enviado à Secretaria com sucesso.':'Rascunho salvo.')}catch(e){window.dispatchEvent(new CustomEvent('moriah:saveerror',{detail:{message:errText(e)}}));if(!window.__moriahAutosaving)alertMsg(errText(e),true);throw e}};savingPromise=work();try{await savingPromise;return true}catch(e){return false}finally{savingPromise=null}}
+if(!current||current.uid!==account)return;selectedId=id;let snap=null;try{snap=await getDoc(ref)}catch(refreshErr){console.warn('Gravação confirmada; leitura de confirmação falhou:',refreshErr)}if(snap?.exists()){if(!window.__moriahAutosaving)populate(snap.data());else record={...d,status,createdAt:snap.data()?.createdAt||record?.createdAt||null}}else{record={...record,...d,status};if(status==='pendente')populate(record)}try{await loadHistory(id)}catch(refreshErr){console.warn('Gravação confirmada; atualização do histórico falhou:',refreshErr)}window.dispatchEvent(new CustomEvent('moriah:saved',{detail:{status,id,name:d.responsavel,auto:!!window.__moriahAutosaving}}));if(!window.__moriahAutosaving)alertMsg(status==='pendente'?'Cadastro enviado à Secretaria com sucesso.':'Rascunho salvo.')}catch(e){window.dispatchEvent(new CustomEvent('moriah:saveerror',{detail:{message:errText(e)}}));if(!window.__moriahAutosaving)alertMsg(errText(e),true);throw e}};savingPromise=work();try{await savingPromise;return true}catch(e){return false}finally{savingPromise=null}}
 $('login').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(e){alertMsg(errText(e),true)}};
 $('signup').onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(e){alertMsg(errText(e),true)}};
 $('reset').onclick=async()=>{try{if(!$('email').value.trim())throw Error('Informe seu e-mail.');await sendPasswordResetEmail(auth,$('email').value.trim());alertMsg('Se o e-mail estiver cadastrado, você receberá instruções de recuperação.')}catch(e){alertMsg(errText(e),true)}};
