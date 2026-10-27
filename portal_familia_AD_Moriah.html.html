@@ -187,8 +187,12 @@ return d}
 function populate(d={}){for(let k of FIELDS)$(k).value=d[k]||'';['telefone','telefoneAlternativo','telefoneEmergencia'].forEach(id=>$(id).value=formatPhone($(id).value));toggleConjuge();$('members').replaceChildren();(d.familiares||[]).forEach(addMember);record=d;let locked=['pendente','aprovado'].includes(d.status);for(let id of [...FIELDS,'addMember','save','submit'])$(id).disabled=locked;for(let el of $('members').querySelectorAll('input,select,button'))el.disabled=locked;$('accountNotice').textContent=locked?'Este cadastro foi enviado e está disponível para consulta. Para um cadastro diferente, use + Novo cadastro. Para corrigir este envio, aguarde solicitação da Secretaria.':'Preencha os dados e envie à Secretaria. Para consultar solicitações anteriores, use a lista acima.';$('status').textContent='Situação: '+({rascunho:'Rascunho',pendente:'Aguardando análise',aprovado:'Aprovado pela secretaria',correcao:'Correções solicitadas',rejeitado:'Não aprovado'}[d.status]||'Cadastro não enviado')+(d.retorno?' · Recado: '+d.retorno:'')}
 async function save(status){if(!current)return; if(savingPromise)await savingPromise; if(!current)return; if(status==='rascunho'&&['pendente','aprovado'].includes(record?.status))return; if(status==='pendente'&&['pendente','aprovado'].includes(record?.status)){alertMsg('Este cadastro já foi enviado. Consulte o acompanhamento antes de tentar novamente.',true);return;} const account=current.uid; const recordId=selectedId||current.uid+'__'+crypto.randomUUID().replaceAll('-',''); selectedId=recordId; const work=async()=>{try{let d=readForm(status);let id=recordId;
 let ref=doc(db,'portalFamilias',id);
+if(status==='rascunho'&&record?.createdAt){
+ const latest=await getDoc(ref);
+ if(latest.exists()&&!['rascunho','correcao','rejeitado'].includes(latest.data().status))throw Error('Esta solicitação já foi enviada e não pode receber um rascunho. Atualize o histórico.');
+}
 await setDoc(ref,{...d,ownerUid:current.uid,email:current.email,status,createdAt:record?.createdAt||serverTimestamp(),updatedAt:serverTimestamp(),retorno:record?.retorno||''});
-if(!current||current.uid!==account)return;selectedId=id;let snap=await getDoc(ref);if(!window.__moriahAutosaving)populate(snap.data());else record={...d,status,createdAt:snap.data()?.createdAt||record?.createdAt||null};await loadHistory(id);window.dispatchEvent(new CustomEvent('moriah:saved',{detail:{status,id,name:d.responsavel,auto:!!window.__moriahAutosaving}}));if(!window.__moriahAutosaving)alertMsg(status==='pendente'?'Cadastro enviado à Secretaria com sucesso.':'Rascunho salvo.')}catch(e){window.dispatchEvent(new CustomEvent('moriah:saveerror',{detail:{message:errText(e)}}));if(!window.__moriahAutosaving)alertMsg(errText(e),true)}};savingPromise=work();try{await savingPromise}finally{savingPromise=null}}
+if(!current||current.uid!==account)return;selectedId=id;let snap=await getDoc(ref);if(!window.__moriahAutosaving)populate(snap.data());else record={...d,status,createdAt:snap.data()?.createdAt||record?.createdAt||null};await loadHistory(id);window.dispatchEvent(new CustomEvent('moriah:saved',{detail:{status,id,name:d.responsavel,auto:!!window.__moriahAutosaving}}));if(!window.__moriahAutosaving)alertMsg(status==='pendente'?'Cadastro enviado à Secretaria com sucesso.':'Rascunho salvo.')}catch(e){window.dispatchEvent(new CustomEvent('moriah:saveerror',{detail:{message:errText(e)}}));if(!window.__moriahAutosaving)alertMsg(errText(e),true);throw e}};savingPromise=work();try{await savingPromise;return true}catch(e){return false}finally{savingPromise=null}}
 $('login').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(e){alertMsg(errText(e),true)}};
 $('signup').onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(e){alertMsg(errText(e),true)}};
 $('reset').onclick=async()=>{try{if(!$('email').value.trim())throw Error('Informe seu e-mail.');await sendPasswordResetEmail(auth,$('email').value.trim());alertMsg('Se o e-mail estiver cadastrado, você receberá instruções de recuperação.')}catch(e){alertMsg(errText(e),true)}};
@@ -207,7 +211,7 @@ const v3 = {timer:null, dirty:false, saving:false, cepController:null, installEv
 const v3State=(message,state='')=>{const e=$('v3-save-state');e.textContent=message;e.dataset.state=state};
 function v3Editable(){return !!current&&!['pendente','aprovado'].includes(record?.status)&&!$('save').disabled}
 function v3Dirty(){if(!v3Editable())return;v3.dirty=true;v3.lastEdit=Date.now();v3State('Alterações ainda não salvas. Salvamento automático em instantes.');clearTimeout(v3.timer);const generation=v3.generation;v3.timer=setTimeout(()=>v3Autosave(generation),4500)}
-async function v3Autosave(generation){if(generation!==v3.generation||!v3.dirty||!v3Editable()||v3.saving)return;const hasData=FIELDS.some(k=>$(k).value.trim())||$('members').children.length>0;if(!hasData)return;v3.dirty=false;v3.saving=true;v3State('Salvando rascunho…');window.__moriahAutosaving=true;try{await save('rascunho')}finally{window.__moriahAutosaving=false;v3.saving=false;if(v3.dirty&&generation===v3.generation)v3Dirty()}}
+async function v3Autosave(generation){if(generation!==v3.generation||!v3.dirty||!v3Editable()||v3.saving)return;const hasData=FIELDS.some(k=>$(k).value.trim())||$('members').children.length>0;if(!hasData)return;v3.dirty=false;v3.saving=true;v3State('Salvando rascunho…');window.__moriahAutosaving=true;try{const ok=await save('rascunho');if(!ok){v3.dirty=true;v3State('Falha no salvamento automático. Suas alterações ainda não foram confirmadas no Firebase.','error')}}finally{window.__moriahAutosaving=false;v3.saving=false;if(v3.dirty&&generation===v3.generation){clearTimeout(v3.timer);v3.timer=setTimeout(()=>v3Autosave(generation),12000)}}}
 window.addEventListener('moriah:saved',e=>{if(e.detail.status==='rascunho'){v3State('Rascunho salvo na sua conta.','ok')}else{v3State('Cadastro enviado para análise da Secretaria.','ok');v3.dirty=false;clearTimeout(v3.timer);const n=e.detail.name||'Responsável';$('v3-success-text').textContent='Solicitação de '+n+' recebida para análise.';$('v3-success').classList.remove('hidden');$('v3-success-close').focus()}});
 window.addEventListener('moriah:saveerror',e=>{v3State('Não foi possível salvar: '+e.detail.message+'. Use “Salvar rascunho” e tente novamente.','error')});
 $('familyPanel').addEventListener('input',e=>{if(e.target.matches('input,select,textarea'))v3Dirty()});
@@ -235,6 +239,21 @@ if('serviceWorker' in navigator&&location.protocol==='https:')window.addEventLis
 // Informações nunca são guardadas em cache offline: apenas a interface.
 
 
+// Etapa 4: estado da conexão e aviso de persistência.
+const networkNote=document.createElement('div');
+networkNote.setAttribute('role','status');networkNote.setAttribute('aria-live','polite');
+networkNote.style.cssText='margin:8px 0;font-size:13px;font-weight:600';
+$('v3-save-state').parentNode.insertBefore(networkNote,$('v3-save-state'));
+function updateNetwork(){
+ const offline=!navigator.onLine;
+ networkNote.textContent=offline?'Sem conexão: alterações ainda não confirmadas no Firebase. Mantenha a página aberta ou use a recuperação local opcional.':'Conexão disponível. Confira o indicador de salvamento antes de sair.';
+ networkNote.style.color=offline?'#b42318':'#067647';
+ if(!offline&&v3.dirty&&v3Editable()){clearTimeout(v3.timer);v3.timer=setTimeout(()=>v3Autosave(v3.generation),1200)}
+}
+window.addEventListener('online',updateNetwork);
+window.addEventListener('offline',updateNetwork);
+updateNetwork();
+window.addEventListener('beforeunload',e=>{if(v3.dirty&&v3Editable()){e.preventDefault();e.returnValue=''}});
 // V4 Etapa 3: recuperação local opcional, por conta, com prazo máximo de 7 dias.
 // Não substitui a gravação no Firestore. Evite habilitar em dispositivos compartilhados.
 const recoveryKey=uid=>'admoriah:familia:recovery:v4:'+uid;
