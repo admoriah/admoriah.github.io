@@ -421,6 +421,54 @@ const oldAdd=$('addMember').onclick;
 $('addMember').onclick=function(...args){oldAdd?.apply(this,args);const list=$('members');const last=list.lastElementChild;if(last){const index=list.children.length;const title=document.createElement('div');title.className='v2-fam-title';title.textContent='Familiar '+index;last.prepend(title);last.scrollIntoView({behavior:'smooth',block:'nearest'})}};
 const historyObserver=new MutationObserver(()=>{$('familyHistory').querySelectorAll('.history-card').forEach(card=>{const p=card.querySelector('p');const v=p?.textContent||'';card.dataset.status=v.includes('Aguardando análise')?'pendente':v.includes('Aprovado')?'aprovado':v.includes('Correções')?'correcao':v.includes('Rascunho')?'rascunho':''})});
 historyObserver.observe($('familyHistory'),{childList:true});
+
+// Etapa 7: filtro local das solicitações já carregadas; nenhuma consulta extra ao Firebase.
+const familyHistory=$('familyHistory');
+const filterPanel=document.createElement('div');
+filterPanel.setAttribute('aria-label','Filtros de solicitações');
+filterPanel.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;align-items:center';
+const searchFamily=document.createElement('input');
+searchFamily.type='search';
+searchFamily.placeholder='Buscar pelo nome do responsável';
+searchFamily.setAttribute('aria-label','Buscar solicções pelo nome do responsável');
+searchFamily.style.cssText='flex:1 1 210px;min-width:180px;padding:10px;border:1px solid #cbd5e1;border-radius:8px';
+const statusFamily=document.createElement('select');
+statusFamily.setAttribute('aria-label','Filtrar por situação');
+statusFamily.style.cssText='flex:1 1 170px;padding:10px;border:1px solid #cbd5e1;border-radius:8px';
+for(const [value,label] of [['','Todas as situações'],['rascunho','Rascunho'],['pendente','Aguardando análise'],['aprovado','Aprovado'],['correcao','Correções solicitadas'],['rejeitado','Não aprovado'],['concluido','Concluído']]){
+ const option=document.createElement('option');option.value=value;option.textContent=label;statusFamily.append(option);
+}
+const filterCount=document.createElement('span');
+filterCount.style.cssText='font-size:12px;color:#475569;flex:1 1 100%';
+filterCount.setAttribute('role','status');
+filterPanel.append(searchFamily,statusFamily,filterCount);
+familyHistory.parentNode.insertBefore(filterPanel,familyHistory);
+function normalizeFamilySearch(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim()}
+function filterHistoryCards(){
+ const q=normalizeFamilySearch(searchFamily.value),st=statusFamily.value;
+ const cards=[...familyHistory.querySelectorAll('.history-card')];
+ let shown=0;
+ for(const card of cards){
+  const title=card.querySelector('strong')?.textContent||'';
+  const statusText=card.querySelector('p')?.textContent||'';
+  const status=normalizeFamilySearch(statusText);
+  const matchesStatus=!st||({
+   rascunho:'rascunho',pendente:'aguardando analise',aprovado:'aprovado',
+   correcao:'correcoes solicitadas',rejeitado:'nao aprovado',concluido:'concluido'
+  }[st]&&status.includes({rascunho:'rascunho',pendente:'aguardando analise',aprovado:'aprovado',correcao:'correcoes solicitadas',rejeitado:'nao aprovado',concluido:'concluido'}[st]));
+  const visible=normalizeFamilySearch(title).includes(q)&&matchesStatus;
+  card.hidden=!visible;
+  card.style.display=visible?'':'none';
+  if(visible)shown++;
+ }
+ filterCount.textContent=cards.length?`${shown} de ${cards.length} solicitação(ões) exibida(s).`:'Nenhuma solicitação carregada.';
+}
+searchFamily.addEventListener('input',filterHistoryCards);
+statusFamily.addEventListener('change',filterHistoryCards);
+const filterObserver=new MutationObserver(filterHistoryCards);
+filterObserver.observe(familyHistory,{childList:true});
+filterHistoryCards();
+
 const originalHistoryClick=$('familyHistory').addEventListener('click',e=>{if(e.target.closest('button'))setTimeout(()=>show(0),0)});
 show(0);
 })();
