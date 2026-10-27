@@ -1360,8 +1360,14 @@ async function pfFinishRequest(r){
  if(!confirm('Concluir o atendimento de '+(r.responsavel||'esta família')+' e retirar a solicitação da lista?\n\nOs membros já cadastrados serão preservados.'))return;
  try{
   // O status persistido impede que a solicitação volte após atualizar a página.
+  const total=1+(Array.isArray(r.familiares)?r.familiares.length:0);
+  const incluidos=Array.isArray(r.integrantesIncluidos)?[...new Set(r.integrantesIncluidos)]:[];
+  if(incluidos.length!==total||incluidos.some(i=>!Number.isInteger(i)||i<0||i>=total)){
+   alert('Não é possível concluir automaticamente: há integrantes sem confirmação de inclusão. Confira cada cadastro antes de encerrar a solicitação.');
+   return;
+  }
   await rawUpdateDoc(doc(db,'portalFamilias',r.id),{
-   status:'concluido',updatedAt:serverTimestamp()
+   status:'concluido',integrantesIncluidos:incluidos,concluidoEm:serverTimestamp(),updatedAt:serverTimestamp()
   });
   pfRecords=pfRecords.map(x=>x.id===r.id?{...x,status:'concluido'}:x);
   pfRender();
@@ -1382,12 +1388,26 @@ async function pfDeleteRequest(r){
   toast('Solicitação de '+nome+' excluída com sucesso.');
  }catch(e){console.error('Falha ao excluir solicitação do portal:',e);toast('Não foi possível excluir: '+(e.code==='permission-denied'?'permissão negada pelas regras do Firebase. Autorize a exclusão para o administrador geral.':(e.code||e.message)))}
 }
-function pfRegisterMember(r,index=0){
+async function pfRegisterMember(r,index=0){
  if(!pfAllowed()||r.status!=='aprovado')return;
+ try{
+  const latest=await getDoc(doc(db,'portalFamilias',r.id));
+  if(!latest.exists()||latest.data().status!=='aprovado'||(latest.data().integrantesIncluidos||[]).includes(index)){
+   toast('Esta solicitação ou integrante já foi atualizado. Atualize a lista antes de prosseguir.');return;
+  }
+  r={id:r.id,...latest.data()};
+ }catch(err){console.error('Falha ao conferir solicitação:',err);toast('Não foi possível conferir a solicitação. Tente novamente.');return;}
  const people=[{...r,nome:r.responsavel||'',parentesco:'Responsável'},...(Array.isArray(r.familiares)?r.familiares:[])].filter(p=>String(p.nome||'').trim());
  if(!people.length||!Number.isInteger(index)||index<0||index>=people.length){toast('Integrante não encontrado.');return}
  const person=people[index], responsible=index===0;
  const found=[...state.membros,...state.obreiros].filter(m=>pfNorm(m.name)===pfNorm(person.nome));
+ const birth=String(person.nascimento||person.dataNascimento||'').trim();
+ const isoBirth=/^\d{2}\/\d{2}\/\d{4}$/.test(birth)?birth.split('/').reverse().join('-'):birth;
+ const exact=found.filter(m=>isoBirth&&String(m.birth||'')===isoBirth);
+ if(exact.length){
+  alert('Cadastro potencialmente duplicado: já existe membro ou obreiro com o mesmo nome e data de nascimento. Confira o registro existente; nenhum novo cadastro foi aberto.');
+  return;
+ }
  if(found.length&&!confirm('ATENÇÃO: '+person.nome+' já possui possível cadastro no App Moriah.\nConfira antes de prosseguir para evitar duplicidade. Deseja abrir um novo cadastro mesmo assim?'))return;
  $('newMemberBtn').click();
  pfPendingImport={requestId:r.id,index,personName:person.nome};
@@ -1721,7 +1741,19 @@ $("memberForm").onsubmit=async e=>{
    if(effectiveMovementType==="outro"&&!movementNotes){atualizarEtapa("Informe os detalhes da movimentação");return toast("Descreva a movimentação no campo de detalhes.");}
    history.push({type:effectiveMovementType,date:new Date().toISOString(),notes:movementNotes,previousStatus:previous?.status||"",newStatus:statusNew});
  }
+ if(!id&&pfPendingImport){
+  const candidateName=pfNorm($('mname').value);
+  const candidateBirth=$('mbirth').value;
+  if(candidateBirth&&state.membros.some(m=>pfNorm(m.name)===candidateName&&m.birth===candidateBirth)){
+   atualizarEtapa('Cadastro não realizado: possível duplicidade');
+   alert('Já existe um membro com o mesmo nome e data de nascimento. Confira o cadastro existente antes de prosseguir.');return;
+  }
+ }
  const data={entryDate,membershipHistory:history,memberNumber,name:$("mname").value.trim(),congregationId,department:$("mdepartment").value,tither:$("mtither").value,phone:$("mphone").value.trim(),birth:$("mbirth").value,sex:$("msex").value,status:$("mstatus").value,ministerialRole:$("mstatus").value==="cooperador"?"Cooperador":($("mstatus").value==="obreiro"?$("mrole").value:""),baptism:$("mbaptism").value,marital:$("mmarital").value,address:$("maddress").value.trim(),notes:$("mnotes").value.trim(),updatedAt:serverTimestamp()};
+ if(!id&&pfPendingImport){
+   data.portalFamiliaId=pfPendingImport.requestId;
+   data.portalIntegranteIndex=pfPendingImport.index;
+ }
  try{
    etapaGravacao=id?"atualização de membro no Firestore":"transação do contador e criação de membro";
    atualizarEtapa(id?"Conectando ao Firestore (atualização)...":"Criando cadastro no Firestore...");
@@ -1738,7 +1770,7 @@ $("memberForm").onsubmit=async e=>{
      try{
        const request=pfRecords.find(x=>x.id===pending.requestId);
        if(request){
-         const count=[{nome:request.responsavel},...(Array.isArray(request.familiares)?request.familiares:[])].filter(x=>String(x.nome||'').trim()).length;
+         const count=1+(Array.isArray(request.familiares)?request.familiares.length:0);
          const included=[...new Set([...(Array.isArray(request.integrantesIncluidos)?request.integrantesIncluidos:[]),pending.index])].sort((a,b)=>a-b);
          const finished=included.length>=count;
          await rawUpdateDoc(doc(db,'portalFamilias',pending.requestId),{
@@ -1752,7 +1784,7 @@ $("memberForm").onsubmit=async e=>{
        }
      }catch(portalErr){
        console.error('Membro salvo; não foi possível finalizar solicitação no Portal:',portalErr);
-       alert('O membro foi salvo, mas não foi possível atualizar a solicitação do Portal da Família. Confira as permissões do Firebase antes de tentar novamente. Não crie o mesmo membro duas vezes.');
+       alert('O membro foi salvo, mas a solicitação não foi atualizada ('+(portalErr?.code||portalErr?.message||'erro desconhecido')+'). NÃO cadastre novamente. Localize o membro já salvo e solicite a reconciliação à Secretaria.');
      }
    }
    const estadoSalvo=formulariosEstado.get("memberDlg");
