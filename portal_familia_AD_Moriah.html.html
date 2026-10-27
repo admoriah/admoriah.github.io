@@ -469,6 +469,70 @@ const filterObserver=new MutationObserver(filterHistoryCards);
 filterObserver.observe(familyHistory,{childList:true});
 filterHistoryCards();
 
+// Etapa 8: comprovante de consulta/impressão, sem gravação adicional no Firebase.
+// A impressão só ocorre após ação explícita do titular da conta.
+const printStyles=document.createElement('style');
+printStyles.textContent=`
+#pf-print-sheet{display:none}
+@media print{
+ body>*:not(#pf-print-sheet){display:none!important}
+ #pf-print-sheet{display:block!important;position:static!important;color:#111!important;background:white!important;font:12pt Arial,sans-serif!important;padding:15mm!important}
+ #pf-print-sheet h1{font-size:19pt;margin-bottom:8mm}
+ #pf-print-sheet h2{font-size:13pt;margin-top:7mm}
+ #pf-print-sheet p{margin:3mm 0}
+ #pf-print-sheet table{border-collapse:collapse;width:100%;margin-top:4mm}
+ #pf-print-sheet td,#pf-print-sheet th{border:1px solid #888;padding:6px;text-align:left}
+ #pf-print-sheet .print-note{font-size:9pt;margin-top:12mm}
+}`;
+document.head.append(printStyles);
+const printSheet=document.createElement('section');
+printSheet.id='pf-print-sheet';
+printSheet.setAttribute('aria-label','Comprovante para impressão');
+document.body.append(printSheet);
+function printLine(parent,label,value){
+ const el=document.createElement('p');
+ const strong=document.createElement('strong');strong.textContent=label+': ';
+ el.append(strong,document.createTextNode(String(value||'Não informado')));parent.append(el);
+}
+function printPortalReceipt(r){
+ if(!current||!r||!records.some(item=>item.id===r.id))return;
+ printSheet.replaceChildren();
+ const heading=document.createElement('h1');heading.textContent='AD Moriah — Comprovante de consulta da solicitação';printSheet.append(heading);
+ const intro=document.createElement('p');intro.textContent='Documento para conferência do responsável. Não substitui a análise ou aprovação da Secretaria.';printSheet.append(intro);
+ printLine(printSheet,'Responsável',r.responsavel);
+ printLine(printSheet,'Situação',labels[r.status]||r.status||'Não enviado');
+ printLine(printSheet,'Telefone',r.telefone);
+ printLine(printSheet,'Nascimento',r.nascimento);
+ printLine(printSheet,'E-mail da conta',current.email);
+ printLine(printSheet,'Quantidade de familiares adicionais',Array.isArray(r.familiares)?r.familiares.length:0);
+ if(r.retorno)printLine(printSheet,'Resposta da Secretaria',r.retorno);
+ const title=document.createElement('h2');title.textContent='Familiares informados';printSheet.append(title);
+ const list=Array.isArray(r.familiares)?r.familiares:[];
+ if(list.length){
+  const table=document.createElement('table');
+  const tr=document.createElement('tr');for(const h of ['Nome','Parentesco','Nascimento']){const th=document.createElement('th');th.textContent=h;tr.append(th)}table.append(tr);
+  for(const f of list){const row=document.createElement('tr');for(const k of ['nome','parentesco','nascimento']){const cell=document.createElement('td');cell.textContent=String(f[k]||'—');row.append(cell)}table.append(row)}
+  printSheet.append(table);
+ }else{const empty=document.createElement('p');empty.textContent='Nenhum familiar adicional informado.';printSheet.append(empty)}
+ const foot=document.createElement('p');foot.className='print-note';foot.textContent='Consulta gerada em '+new Date().toLocaleString('pt-BR')+'. Os dados são apresentados conforme o cadastro disponível no Portal da Família.';printSheet.append(foot);
+ window.print();
+}
+function attachPrintActions(){
+ const cards=[...familyHistory.querySelectorAll('.history-card')];
+ for(let i=0;i<cards.length;i++){
+  const card=cards[i];if(card.querySelector('[data-pf-print]'))continue;
+  const btn=document.createElement('button');btn.type='button';btn.className='secondary';btn.dataset.pfPrint='1';
+  btn.textContent='Imprimir comprovante';btn.style.marginLeft='8px';
+  btn.addEventListener('click',()=>{
+   const currentIndex=[...familyHistory.querySelectorAll('.history-card')].indexOf(card);
+   const r=records[currentIndex];if(r)printPortalReceipt(r);
+  });card.append(btn);
+ }
+}
+const printObserver=new MutationObserver(attachPrintActions);
+printObserver.observe(familyHistory,{childList:true});
+attachPrintActions();
+
 const originalHistoryClick=$('familyHistory').addEventListener('click',e=>{if(e.target.closest('button'))setTimeout(()=>show(0),0)});
 show(0);
 })();
