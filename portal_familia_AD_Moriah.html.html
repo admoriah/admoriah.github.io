@@ -196,7 +196,27 @@ if(!current||current.uid!==account)return;selectedId=id;let snap=await getDoc(re
 $('login').onclick=async()=>{try{await signInWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(e){alertMsg(errText(e),true)}};
 $('signup').onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(e){alertMsg(errText(e),true)}};
 $('reset').onclick=async()=>{try{if(!$('email').value.trim())throw Error('Informe seu e-mail.');await sendPasswordResetEmail(auth,$('email').value.trim());alertMsg('Se o e-mail estiver cadastrado, você receberá instruções de recuperação.')}catch(e){alertMsg(errText(e),true)}};
-$('logout').onclick=async()=>{try{await signOut(auth)}catch(e){alertMsg(errText(e),true)}};$('addMember').onclick=()=>addMember();$('save').onclick=()=>save('rascunho');$('submit').onclick=()=>save('pendente');
+$('logout').onclick=async()=>{try{await signOut(auth)}catch(e){alertMsg(errText(e),true)}};$('addMember').onclick=()=>addMember();$('save').onclick=()=>save('rascunho');$('submit').onclick=()=>{
+ // Etapa 5: revisão antes do envio, sem alterar a persistência ou permissões.
+ let d;
+ try{d=readForm('pendente')}catch(e){alertMsg(e.message||String(e),true);return}
+ const familia=Array.isArray(d.familiares)?d.familiares:[];
+ const resumo=[
+  'Confira os dados antes de enviar à Secretaria:',
+  '',
+  'Responsável: '+d.responsavel,
+  'Nascimento: '+d.nascimento,
+  'Telefone: '+d.telefone,
+  'Estado civil: '+d.estadoCivil,
+  'Cidade/UF: '+[d.cidade,d.uf].filter(Boolean).join('/'),
+  'Familiares adicionais: '+familia.length,
+  ...familia.map((f,i)=>(i+1)+'. '+(f.nome||'Sem nome')+' — '+(f.parentesco||'Parentesco não informado')),
+  '',
+  'Após o envio, o cadastro ficará aguardando análise e não poderá ser alterado sem liberação da Secretaria.',
+  'Deseja confirmar o envio?'
+ ];
+ if(window.confirm(resumo.join('\n')))save('pendente');
+};
 const labels={rascunho:'Rascunho',pendente:'Aguardando análise',aprovado:'Aprovado pela Secretaria',correcao:'Correções solicitadas',rejeitado:'Não aprovado'};
 function newFamily(){selectedId=null;populate({});$('familyPanel').scrollIntoView({behavior:'smooth',block:'start'});renderHistory()}
 function renderHistory(){const area=$('familyHistory');area.replaceChildren();if(!records.length){const p=document.createElement('p');p.className='muted';p.textContent='Nenhum cadastro encontrado nesta conta.';area.append(p);return}
