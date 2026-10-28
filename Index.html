@@ -1339,6 +1339,14 @@ function pfRender(){
    const btn=document.createElement('button');btn.type='button';btn.className=status==='rejeitado'?'danger':'secondary';btn.textContent=label;
    btn.onclick=()=>pfReview(r,status);actions.append(btn);
   }
+  // Reabre o e-mail sem alterar novamente a solicitação já registrada.
+  if(r.status==='correcao'&&String(r.retorno||'').trim()){
+   const emailBtn=document.createElement('button');emailBtn.type='button';emailBtn.className='secondary';
+   emailBtn.textContent='✉ Abrir e-mail de correção';
+   emailBtn.title='Preparar e-mail no aplicativo pessoal, sem enviar automaticamente';
+   emailBtn.onclick=()=>pfOpenCorrectionEmail(r,r.retorno);
+   actions.append(emailBtn);
+  }
   // Permite encerrar um pedido aprovado mesmo quando os integrantes já estavam
   // cadastrados anteriormente ou foram incluídos por outro fluxo do aplicativo.
   if(r.status==='aprovado'){
@@ -1449,6 +1457,32 @@ async function pfRegisterMember(r,index=0){
  const notice=$('memberSaveNotice');
  if(notice){notice.textContent='Dados do Portal importados. Confira todos os campos, especialmente dizimista e familiares, antes de salvar.';notice.style.color='#134b82'}
 }
+function pfOpenCorrectionEmail(r,retorno){
+ const email=String(r.email||'').trim();
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+  toast('E-mail do responsável ausente ou inválido. Confira o cadastro.');
+  return;
+ }
+ const nome=String(r.responsavel||'responsável').trim();
+ const assunto='AD Moriah - Solicitação de correção cadastral';
+ const corpo=[
+  'Prezado(a) '+nome+',',
+  '',
+  'A Secretaria da Assembleia de Deus Moriah analisou seu cadastro familiar e identificou informações que precisam ser corrigidas.',
+  '',
+  'Correções solicitadas:',
+  String(retorno||'').trim(),
+  '',
+  'Por favor, acesse o Portal da Família AD Moriah, realize as correções e envie novamente o cadastro para análise.',
+  '',
+  'Atenciosamente,',
+  'Secretaria - Assembleia de Deus Moriah'
+ ].join('\r\n');
+ const url='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
+ // O navegador abre o aplicativo de e-mail padrão; o envio depende do usuário.
+ window.location.href=url;
+ toast('E-mail preparado. Confira e clique em Enviar no seu aplicativo de e-mail.');
+}
 async function pfReview(r,status){
  if(!pfAllowed())return;
  const message=status==='correcao'?'Descreva as correções necessárias:':status==='rejeitado'?'Informe o motivo da rejeição:':'Observação para a família (opcional):';
@@ -1457,7 +1491,8 @@ async function pfReview(r,status){
  if(status==='aprovado'&&!confirm('Aprovar esta solicitação? Isso NÃO inclui integrantes automaticamente no cadastro de membros.'))return;
  try{
   await rawUpdateDoc(doc(db,'portalFamilias',r.id),{status,retorno:retorno.trim(),updatedAt:serverTimestamp()});
-  toast(status==='correcao'?'Correção registrada. O e-mail será processado automaticamente pelo serviço de notificações, se configurado.':'Solicitação atualizada.');
+  toast('Solicitação atualizada.');
+  if(status==='correcao')pfOpenCorrectionEmail(r,retorno.trim());
  }catch(e){console.error(e);toast('Erro ao atualizar: '+(e.code||e.message))}
 }
 function pfStart(){if(pfUnsub){pfUnsub();pfUnsub=null}pfRecords=[];pfRender();if(!pfAllowed())return;
