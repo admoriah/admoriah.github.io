@@ -1489,17 +1489,46 @@ function pfOpenCorrectionEmail(r,retorno){
  panel.addEventListener('click',e=>{if(e.target===panel)panel.remove()});
 }
 async function pfReview(r,status){
- if(!pfAllowed())return;
- const message=status==='correcao'?'Descreva as correções necessárias:':status==='rejeitado'?'Informe o motivo da rejeição:':'Observação para a família (opcional):';
- const retorno=prompt(message,r.retorno||'');if(retorno===null)return;
- if(status!=='aprovado'&&!retorno.trim()){toast('Informe uma justificativa.');return}
- if(status==='aprovado'&&!confirm('Aprovar esta solicitação? Isso NÃO inclui integrantes automaticamente no cadastro de membros.'))return;
- try{
-  await rawUpdateDoc(doc(db,'portalFamilias',r.id),{status,retorno:retorno.trim(),updatedAt:serverTimestamp()});
-  toast('Solicitação atualizada.');
-  if(status==='correcao')pfOpenCorrectionEmail(r,retorno.trim());
- }catch(e){console.error(e);toast('Erro ao atualizar: '+(e.code||e.message))}
+ if(!pfAllowed()){toast('Sem permissão para analisar solicitações.');return}
+ // Modal HTML próprio: não depende de prompt() ou de janelas bloqueadas pelo navegador.
+ document.getElementById('pfReviewDialog')?.remove();
+ const overlay=document.createElement('div');overlay.id='pfReviewDialog';
+ overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:110000;display:flex;align-items:center;justify-content:center;padding:15px';
+ const box=document.createElement('section');box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','Analisar solicitação');
+ box.style.cssText='background:#fff;color:#172033;border-radius:14px;padding:22px;max-width:560px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 12px 40px #0006';
+ const h=document.createElement('h3');h.textContent=status==='correcao'?'Solicitar correção cadastral':status==='rejeitado'?'Rejeitar solicitação':'Aprovar solicitação';box.append(h);
+ const label=document.createElement('label');label.textContent=status==='correcao'?'Descreva as correções necessárias:':status==='rejeitado'?'Motivo da rejeição:':'Observação para a família (opcional):';label.style.cssText='display:block;margin:12px 0 6px';box.append(label);
+ const note=document.createElement('textarea');note.value=String(r.retorno||'');note.rows=5;note.style.cssText='width:100%;padding:10px;border:1px solid #98a2b3;border-radius:8px;resize:vertical';label.append(note);
+ const emailLabel=document.createElement('label');emailLabel.textContent='E-mail do responsável (confira antes de abrir o Gmail):';emailLabel.style.cssText='display:block;margin:12px 0 6px';
+ const emailInput=document.createElement('input');emailInput.type='email';emailInput.value=String(r.email||'').trim();emailInput.style.cssText='display:block;width:100%;padding:10px;border:1px solid #98a2b3;border-radius:8px;margin-top:6px';emailLabel.append(emailInput);
+ if(status==='correcao')box.append(emailLabel);
+ const info=document.createElement('p');info.style.cssText='font-size:13px;color:#475467';info.textContent=status==='correcao'?'A correção será registrada no Firebase. Depois, você poderá abrir o Gmail e enviar manualmente a mensagem.':'A alteração será registrada no Firebase.';box.append(info);
+ const error=document.createElement('p');error.setAttribute('role','alert');error.style.cssText='color:#b42318;font-weight:bold';box.append(error);
+ const buttons=document.createElement('div');buttons.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:12px';
+ const save=document.createElement('button');save.type='button';save.className='primary';save.textContent=status==='correcao'?'Registrar correção e preparar e-mail':'Confirmar alteração';
+ const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary';cancel.textContent='Cancelar';cancel.onclick=()=>overlay.remove();buttons.append(save,cancel);box.append(buttons);
+ overlay.append(box);document.body.append(overlay);note.focus();
+ save.onclick=async()=>{
+  const retorno=note.value.trim();
+  if(status!=='aprovado'&&!retorno){error.textContent='Informe a justificativa antes de continuar.';note.focus();return}
+  if(status==='aprovado'&&!confirm('Aprovar esta solicitação? Isso NÃO inclui integrantes automaticamente no cadastro de membros.'))return;
+  save.disabled=true;save.textContent='Salvando no Firebase...';error.textContent='';
+  try{
+   await rawUpdateDoc(doc(db,'portalFamilias',r.id),{status,retorno,updatedAt:serverTimestamp()});
+   toast('Solicitação atualizada.');
+   if(status!=='correcao'){overlay.remove();return}
+   const email=emailInput.value.trim();
+   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    error.textContent='Correção registrada. Informe um e-mail válido para preparar a mensagem.';
+    save.disabled=false;save.textContent='Abrir opções de e-mail';
+    save.onclick=()=>{if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim())){error.textContent='Informe um e-mail válido.';return}overlay.remove();pfOpenCorrectionEmail({...r,email:emailInput.value.trim()},retorno)};
+    return;
+   }
+   overlay.remove();pfOpenCorrectionEmail({...r,email},retorno);
+  }catch(e){console.error('Falha ao registrar correção:',e);error.textContent='Não foi possível salvar a correção: '+(e.code||e.message||'erro desconhecido');save.disabled=false;save.textContent='Tentar novamente'}
+ };
 }
+
 function pfStart(){if(pfUnsub){pfUnsub();pfUnsub=null}pfRecords=[];pfRender();if(!pfAllowed())return;
  pfUnsub=onSnapshot(collection(db,'portalFamilias'),snap=>{pfRecords=snap.docs.map(d=>({id:d.id,...d.data()}));pfRender()},err=>{$('pfInfo').textContent='Erro ao consultar o Portal da Família: '+(err.code||err.message);console.error(err)});
 }
