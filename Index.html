@@ -1460,28 +1460,33 @@ async function pfRegisterMember(r,index=0){
 function pfOpenCorrectionEmail(r,retorno){
  const email=String(r.email||'').trim();
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-  toast('E-mail do responsável ausente ou inválido. Confira o cadastro.');
-  return;
+  toast('E-mail do responsável ausente ou inválido. Confira o cadastro.');return;
  }
  const nome=String(r.responsavel||'responsável').trim();
  const assunto='AD Moriah - Solicitação de correção cadastral';
  const corpo=[
-  'Prezado(a) '+nome+',',
-  '',
-  'A Secretaria da Assembleia de Deus Moriah analisou seu cadastro familiar e identificou informações que precisam ser corrigidas.',
-  '',
-  'Correções solicitadas:',
-  String(retorno||'').trim(),
-  '',
-  'Por favor, acesse o Portal da Família AD Moriah, realize as correções e envie novamente o cadastro para análise.',
-  '',
-  'Atenciosamente,',
-  'Secretaria - Assembleia de Deus Moriah'
+  'Prezado(a) '+nome+',','',
+  'A Secretaria da Assembleia de Deus Moriah analisou seu cadastro familiar e identificou informações que precisam ser corrigidas.','',
+  'Correções solicitadas:',String(retorno||'').trim(),'',
+  'Por favor, acesse o Portal da Família AD Moriah, realize as correções e envie novamente o cadastro para análise.','',
+  'Atenciosamente,','Secretaria - Assembleia de Deus Moriah'
  ].join('\r\n');
- const url='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
- // O navegador abre o aplicativo de e-mail padrão; o envio depende do usuário.
- window.location.href=url;
- toast('E-mail preparado. Confira e clique em Enviar no seu aplicativo de e-mail.');
+ // O Gmail é aberto somente a partir de um clique explícito, evitando bloqueio de pop-up após await.
+ const gmailUrl='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(email)+'&su='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
+ const mailtoUrl='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
+ const existing=document.getElementById('pfEmailComposePanel');if(existing)existing.remove();
+ const panel=document.createElement('div');panel.id='pfEmailComposePanel';
+ panel.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px';
+ const dialog=document.createElement('div');dialog.style.cssText='background:#fff;color:#172033;border-radius:14px;padding:22px;max-width:520px;width:100%;box-shadow:0 10px 35px #0005';
+ const heading=document.createElement('h3');heading.textContent='Enviar correção por e-mail';heading.style.margin='0 0 12px';dialog.append(heading);
+ const desc=document.createElement('p');desc.textContent='Correção registrada no Firebase. Escolha como abrir a mensagem para '+email+'. O envio deve ser confirmado por você.';dialog.append(desc);
+ const actions=document.createElement('div');actions.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:16px';
+ function link(text,url){const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=text;a.style.cssText='display:inline-block;padding:11px 14px;border-radius:9px;background:#0b2f5a;color:white;text-decoration:none;font-weight:bold';return a}
+ actions.append(link('Abrir Gmail',gmailUrl));
+ actions.append(link('Abrir outro aplicativo de e-mail',mailtoUrl));
+ const close=document.createElement('button');close.type='button';close.textContent='Fechar';close.onclick=()=>panel.remove();actions.append(close);
+ dialog.append(actions);panel.append(dialog);document.body.append(panel);
+ panel.addEventListener('click',e=>{if(e.target===panel)panel.remove()});
 }
 async function pfReview(r,status){
  if(!pfAllowed())return;
