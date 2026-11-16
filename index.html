@@ -626,6 +626,41 @@ button:disabled{opacity:.55;cursor:not-allowed}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important}}
 </style>
+<style id="etapa37-visual-claro">
+
+/* ETAPA 37 — modernização visual clara, sem alterações em dados ou permissões */
+:root{--navy:#15583f;--navy2:#23805a;--gold:#cba653;--bg:#f4f8f6;--text:#1d2d28;--muted:#65776e;--ok:#137a50}
+html,body{background:#f4f8f6;color:#1d2d28}
+#app .topbar{background:#fff!important;color:#194d38!important;border-bottom:1px solid #e1ebe5;box-shadow:0 3px 18px #133f2710!important}
+#app .topbar .brand{align-items:center!important}
+#app .topbar .brand img{filter:none!important}
+#app .topbar button{border-radius:11px}
+#app main{max-width:1320px;padding:22px clamp(12px,3vw,34px)}
+#app .card,#app .panel{border-radius:18px;box-shadow:0 5px 22px #184b3010;border:1px solid #e4eee8}
+#app .card{padding:18px}
+#app .stat{border-top:3px solid #25865d}
+#app .stat strong{color:#175b40}
+#app .welcome{background:linear-gradient(115deg,#155e43,#268760);border-radius:20px;box-shadow:0 8px 24px #0c583528}
+#app input,#app select,#app textarea{border-radius:10px;max-width:100%}
+#app button{transition:background-color .16s ease,box-shadow .16s ease,transform .16s ease}
+#app button:focus-visible,#app a:focus-visible,#app input:focus-visible,#app select:focus-visible{outline:3px solid #7bc5a2;outline-offset:2px}
+#app button:hover{filter:brightness(.98)}
+#app table{border-collapse:separate;border-spacing:0}
+#app th{background:#edf6f0;color:#23563f}
+#app td,#app th{border-bottom-color:#e6eee9}
+#app .page-head{margin-bottom:18px}
+#app .bottom-nav{background:#fff;border-top:1px solid #dfe9e2;box-shadow:0 -3px 18px #133f2710}
+#app .bottom-nav button{color:#215b43}
+#app dialog{border-radius:18px;box-shadow:0 24px 80px #102c2340}
+@media(max-width:700px){
+ #app main{padding:12px 10px 86px}
+ #app .card{padding:14px}
+ #app .topbar{padding:9px 12px!important}
+ #app .welcome{padding:16px}
+}
+@media(prefers-reduced-motion:reduce){#app button{transition:none}}
+
+</style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
