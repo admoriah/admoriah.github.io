@@ -671,6 +671,37 @@ html,body{background:#f4f8f6;color:#1d2d28}
 #home .stats{margin-top:13px!important}
 @media(max-width:600px){#home .welcome{padding:10px 12px!important;min-height:60px!important}#home .welcome h2{font-size:16px!important}#home .welcome .avatar{width:32px!important;height:32px!important;min-width:32px!important}}
 </style>
+<style id="etapa37-menu-inferior-fixo">
+/* Etapa 37 v3: barra de navegação ancorada ao rodapé do viewport móvel. */
+@media screen and (max-width: 760px) {
+  #app .bottom-nav {
+    position: fixed !important;
+    inset: auto 0 0 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    border-radius: 0 !important;
+    box-sizing: border-box !important;
+    z-index: 150 !important;
+    display: grid !important;
+    grid-template-columns: repeat(5,minmax(0,1fr)) !important;
+    padding: 7px max(6px,env(safe-area-inset-right,0px)) calc(7px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px)) !important;
+    background: #fff !important;
+    border-top: 1px solid #dfe9e2 !important;
+    box-shadow: 0 -3px 14px #133f2718 !important;
+    overflow: visible !important;
+  }
+  #app .bottom-nav button { min-width: 0 !important; }
+  #app { padding-bottom: calc(86px + env(safe-area-inset-bottom,0px)) !important; }
+  #app main { padding-bottom: calc(90px + env(safe-area-inset-bottom,0px)) !important; }
+}
+@media print { #app .bottom-nav { display:none !important; } }
+</style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
