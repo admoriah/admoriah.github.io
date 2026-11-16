@@ -876,7 +876,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
     <div class="panel moriah-menu-group"><h3>📊 Gestão e relatórios</h3><div class="moriah-links">
       <button class="menu-link" data-page="indicadores">📈 Indicadores e gráficos</button>
       <button class="menu-link" data-page="relatorios">📊 Relatórios</button>
-      <button class="menu-link admin-only" data-page="financeiro">💰 Gestão Financeira</button>
+      <button class="menu-link" data-page="financeiro">💰 Gestão Financeira</button>
       <button class="menu-link admin-only" data-page="usuarios">👤 Gerenciar Usuários</button>
       <button class="menu-link" id="e29Menu" data-page="auditoria29" style="display:none">🛡️ Histórico de Alterações</button>
     </div></div>
@@ -1113,6 +1113,7 @@ function isGeneralAdmin(){return state.authUser?.uid===GENERAL_ADMIN_UID && stat
 function isAdmin(){return state.profile?.role==="admin" && state.profile?.active===true}
 function canManageUsers(){return isAdmin()}
 function permissionFor(mod,action="view"){
+ if(mod==="financeiro")return financeAllowed(action);
  if(isGeneralAdmin()||isAdmin())return true;
  const custom=state.profile?.permissions;
  if(custom && typeof custom==="object")return custom[mod]?.[action]===true;
@@ -1120,6 +1121,14 @@ function permissionFor(mod,action="view"){
  if(mod==="pastoral35"||mod==="tarefas33")return false;
  if(action==="view")return mod!=="financeiro";
  return ["secretario","congregacao"].includes(state.profile?.role) && !["financeiro","agenda","congregacoes"].includes(mod);
+}
+// Financeiro: autorização explícita por ação, inclusive para perfil Consulta.
+// O Administrador Geral conserva o acesso de recuperação e gestão.
+function financeAllowed(action="view"){
+ if(isGeneralAdmin())return true;
+ if(state.profile?.active!==true)return false;
+ const p=state.profile?.permissions?.financeiro;
+ return !!(p && typeof p==="object" && p[action]===true && (action==="view" || p.view===true));
 }
 function permissionDefault(role){const p={};for(const [key] of PERMISSION_MODULES){const allow=role!=="consulta" && key!=="financeiro" && key!=="congregacoes" && key!=="pastoral35" && key!=="tarefas33";p[key]={view:key!=="financeiro" && key!=="pastoral35" && key!=="tarefas33",create:allow,edit:allow,delete:allow && !["ministerios22","patrimonio23","escalas24","eventos25"].includes(key)};}return p;}
 function renderPermissionEditor(existing){
@@ -2348,27 +2357,30 @@ const finLabels={dizimo:"Dízimos",oferta:"Ofertas",doacao:"Doações",evento:"E
 const finSafe=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function finMessage(msg,error=false){const e=$("finMessage");if(e){e.textContent=msg;e.style.color=error?"#a4262c":"#163d62";}}
 function startFinanceRealtime(){
- if(!isAdmin()){financeRows=[];renderFinance();return;}
+ if(!financeAllowed("view")){financeRows=[];renderFinance();return;}
  const u=onSnapshot(collection(db,"financeiro"),snap=>{financeRows=snap.docs.map(d=>({id:d.id,...d.data()}));finMessage("Lançamentos sincronizados com o Firebase.");renderFinance();},err=>{console.error("Financeiro:",err);finMessage("Não foi possível consultar o financeiro ("+(err.code||"erro")+"). Verifique as regras do Firestore.",true);});
  state.unsubs.push(u);
 }
 function renderFinance(){
  if(!$("finList"))return;
- if(!isAdmin()){finMessage("Acesso restrito ao administrador.",true);$("finList").replaceChildren();$("finStats").replaceChildren();return;}
+ if(!financeAllowed("view")){financeRows=[];finMessage("Acesso financeiro não autorizado.",true);$("finList").replaceChildren();$("finStats").replaceChildren();return;}
+ $("finNew").hidden=!financeAllowed("create");
+ $("finExport").hidden=!financeAllowed("view");
+ ["finReportCsv","finReportPrint","finFullCsv","finFullPrint"].forEach(id=>$(id).hidden=!financeAllowed("view"));
  const month=$("finMonth").value,filter=$("finFilter").value;
  const rows=financeRows.filter(x=>!month||String(x.date||"").startsWith(month)).filter(x=>!filter||x.type===filter).sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
  const active=financeRows.filter(x=>!x.cancelled&&(!month||String(x.date||"").startsWith(month)));
  const sum=t=>active.filter(x=>x.type===t).reduce((v,x)=>v+Number(x.amount||0),0);
  const entradas=sum("entrada"),saidas=sum("saida");
  $("finStats").innerHTML=[["Entradas",entradas],["Saídas",saidas],["Saldo do período",entradas-saidas]].map(([label,value])=>`<div class="stat"><small>${label}</small><strong>${money(value)}</strong></div>`).join("");
- $("finList").innerHTML=rows.length?rows.map(x=>`<article class="card" style="opacity:${x.cancelled?'.6':'1'}"><div class="person-head"><h3>${x.type==="entrada"?"⬆ Entrada":"⬇ Saída"} · ${finSafe(finLabels[x.category]||x.category)}</h3><strong>${money(x.amount)}</strong></div><p><b>${finSafe(fmt(x.date))}</b> · ${finSafe(x.description)}</p>${x.type==="entrada"?`<p>Contribuinte: <b>${finSafe(x.contributorName||"Não identificado")}</b></p>`:""}<p>Forma: ${finSafe(x.method||"—")} · Comprovante: ${finSafe(x.receipt||"—")}</p>${x.notes?`<p>${finSafe(x.notes)}</p>`:""}${x.cancelled?'<span class="badge">Cancelado</span>':`<button type="button" class="secondary" data-fin-cancel="${finSafe(x.id)}">Cancelar lançamento</button>`}</article>`).join(""):'<div class="card">Nenhum lançamento para o filtro selecionado.</div>';
+ $("finList").innerHTML=rows.length?rows.map(x=>`<article class="card" style="opacity:${x.cancelled?'.6':'1'}"><div class="person-head"><h3>${x.type==="entrada"?"⬆ Entrada":"⬇ Saída"} · ${finSafe(finLabels[x.category]||x.category)}</h3><strong>${money(x.amount)}</strong></div><p><b>${finSafe(fmt(x.date))}</b> · ${finSafe(x.description)}</p>${x.type==="entrada"?`<p>Contribuinte: <b>${finSafe(x.contributorName||"Não identificado")}</b></p>`:""}<p>Forma: ${finSafe(x.method||"—")} · Comprovante: ${finSafe(x.receipt||"—")}</p>${x.notes?`<p>${finSafe(x.notes)}</p>`:""}${x.cancelled?'<span class="badge">Cancelado</span>':financeAllowed("edit")?`<button type="button" class="secondary" data-fin-cancel="${finSafe(x.id)}">Cancelar lançamento</button>`:""}</article>`).join(""):'<div class="card">Nenhum lançamento para o filtro selecionado.</div>';
  renderFinReport();renderFinFull();
 }
 $("finMonth").value=new Date().toISOString().slice(0,7);
 $("finMonth").addEventListener("change",renderFinance);$("finFilter").addEventListener("change",renderFinance);
-$("finNew").addEventListener("click",()=>{if(!isAdmin())return;$("finForm").reset();$("finDate").value=new Date().toLocaleDateString("en-CA");$("finFormStatus").textContent="";$("finContributorSearch").value="";updateFinContributor();$("finCostArea").style.display="none";$("finContributorArea").style.display="";openDlg("finDlg")});
+$("finNew").addEventListener("click",()=>{if(!financeAllowed("create"))return toast("Sem permissão para cadastrar lançamentos.");$("finForm").reset();$("finDate").value=new Date().toLocaleDateString("en-CA");$("finFormStatus").textContent="";$("finContributorSearch").value="";updateFinContributor();$("finCostArea").style.display="none";$("finContributorArea").style.display="";openDlg("finDlg")});
 $("finForm").addEventListener("submit",async e=>{
- e.preventDefault();if(!isAdmin())return finMessage("Acesso não autorizado.",true);
+ e.preventDefault();if(!financeAllowed("create"))return finMessage("Acesso não autorizado.",true);
  const btn=$("finSubmit"),amount=Math.round(Number($("finAmount").value)*100)/100;
  if(!Number.isFinite(amount)||amount<=0)return $("finFormStatus").textContent="Informe um valor válido.";
  const contributorType=$("finType").value==="entrada"?$("finContributorType").value:"anonimo";
@@ -2383,8 +2395,8 @@ $("finForm").addEventListener("submit",async e=>{
  btn.disabled=true;$("finFormStatus").textContent="Gravando no Firebase...";
  try{await addDoc(collection(db,"financeiro"),data);closeDlg("finDlg");finMessage("Lançamento registrado com sucesso.");toast("Lançamento registrado.");}catch(err){console.error(err);$("finFormStatus").textContent="Falha na gravação: "+(err.code||err.message||"erro")+". Confira as regras do Firebase.";}finally{btn.disabled=false;}
 });
-$("finList").addEventListener("click",async e=>{const b=e.target.closest("[data-fin-cancel]");if(!b||!isAdmin())return;const id=b.dataset.finCancel;if(!confirm("Cancelar este lançamento? Ele continuará no histórico e não entrará nos totais."))return;b.disabled=true;try{await updateDoc(doc(db,"financeiro",id),{cancelled:true,cancelledBy:state.authUser.uid,cancelledAt:serverTimestamp(),updatedAt:serverTimestamp()});toast("Lançamento cancelado.");}catch(err){console.error(err);finMessage("Falha ao cancelar: "+(err.code||err.message),true);b.disabled=false;}});
-$("finExport").addEventListener("click",()=>{if(!isAdmin())return;const month=$("finMonth").value,filter=$("finFilter").value;const rows=financeRows.filter(x=>(!month||String(x.date||"").startsWith(month))&&(!filter||x.type===filter));const csv=["Data;Tipo;Categoria;Valor;Contribuinte;Origem;Descrição;Forma;Comprovante;Observações;Situação",...rows.map(x=>[x.date,x.type,finLabels[x.category]||x.category,Number(x.amount||0).toFixed(2).replace(".",","),x.contributorName||"Não identificado",x.contributorType||"anonimo",x.description,x.method,x.receipt,x.notes,x.cancelled?"Cancelado":"Ativo"].map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";"))].join("\r\n");const blob=new Blob(["\ufeff",csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AD_Moriah_financeiro_"+(month||"geral")+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+$("finList").addEventListener("click",async e=>{const b=e.target.closest("[data-fin-cancel]");if(!b||!financeAllowed("edit"))return;const id=b.dataset.finCancel;if(!confirm("Cancelar este lançamento? Ele continuará no histórico e não entrará nos totais."))return;b.disabled=true;try{await updateDoc(doc(db,"financeiro",id),{cancelled:true,cancelledBy:state.authUser.uid,cancelledAt:serverTimestamp(),updatedAt:serverTimestamp()});toast("Lançamento cancelado.");}catch(err){console.error(err);finMessage("Falha ao cancelar: "+(err.code||err.message),true);b.disabled=false;}});
+$("finExport").addEventListener("click",()=>{if(!financeAllowed("view"))return;const month=$("finMonth").value,filter=$("finFilter").value;const rows=financeRows.filter(x=>(!month||String(x.date||"").startsWith(month))&&(!filter||x.type===filter));const csv=["Data;Tipo;Categoria;Valor;Contribuinte;Origem;Descrição;Forma;Comprovante;Observações;Situação",...rows.map(x=>[x.date,x.type,finLabels[x.category]||x.category,Number(x.amount||0).toFixed(2).replace(".",","),x.contributorName||"Não identificado",x.contributorType||"anonimo",x.description,x.method,x.receipt,x.notes,x.cancelled?"Cancelado":"Ativo"].map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";"))].join("\r\n");const blob=new Blob(["\ufeff",csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AD_Moriah_financeiro_"+(month||"geral")+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
 
 // Identificação de contribuintes vinculada aos documentos de membros e visitantes.
 function finPeopleByType(type){
@@ -2428,11 +2440,11 @@ function renderFinReport(){
  $("finReportResult").innerHTML=rows.length?`<table style="width:100%;border-collapse:collapse"><thead><tr><th>Contribuinte</th><th>Dízimos</th><th>Ofertas</th><th>Doações</th><th>Total</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${finSafe(x.name)}</td><td>${money(x.dizimo)}</td><td>${money(x.oferta)}</td><td>${money(x.doacao)}</td><td><b>${money(x.dizimo+x.oferta+x.doacao)}</b></td></tr>`).join("")}</tbody></table>`:"Nenhuma contribuição encontrada no período selecionado.";
 }
 ["finReportFrom","finReportTo","finReportPerson","finReportCategory"].forEach(id=>$(id).addEventListener("change",renderFinReport));
-$("finReportCsv").addEventListener("click",()=>{
+$("finReportCsv").addEventListener("click",()=>{if(!financeAllowed("view"))return;
  const rows=finReportRows(),csv=["Data;Contribuinte;Origem;Categoria;Valor;Descrição",...rows.map(x=>[x.date,x.contributorName||"Não identificado",x.contributorType||"anonimo",finLabels[x.category],Number(x.amount||0).toFixed(2).replace(".",","),x.description].map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";"))].join("\r\n");
  const url=URL.createObjectURL(new Blob(["\ufeff",csv],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download="AD_Moriah_contribuicoes.csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
-$("finReportPrint").addEventListener("click",()=>{const win=window.open("","_blank");if(!win)return toast("Permita pop-ups para imprimir.");win.document.write('<html><head><title>Relatório de contribuições - AD Moriah</title><style>body{font-family:Arial;padding:24px}td,th{border:1px solid #bbb;padding:8px;text-align:left}table{border-collapse:collapse;width:100%}</style></head><body><h2>Assembleia de Deus Moriah — Relatório de contribuições</h2><p>Período: '+finSafe($("finReportFrom").value||"Início")+' a '+finSafe($("finReportTo").value||"Atual")+'</p>'+$("finReportResult").innerHTML+'</body></html>');win.document.close();moriahAssinarDocumento(win);win.print()});
+$("finReportPrint").addEventListener("click",()=>{if(!financeAllowed("view"))return;const win=window.open("","_blank");if(!win)return toast("Permita pop-ups para imprimir.");win.document.write('<html><head><title>Relatório de contribuições - AD Moriah</title><style>body{font-family:Arial;padding:24px}td,th{border:1px solid #bbb;padding:8px;text-align:left}table{border-collapse:collapse;width:100%}</style></head><body><h2>Assembleia de Deus Moriah — Relatório de contribuições</h2><p>Período: '+finSafe($("finReportFrom").value||"Início")+' a '+finSafe($("finReportTo").value||"Atual")+'</p>'+$("finReportResult").innerHTML+'</body></html>');win.document.close();moriahAssinarDocumento(win);win.print()});
 
 // Relatórios gerenciais de entradas, saídas e consolidação — leitura local dos registros já sincronizados.
 const finCostNames={administracao:"Administração",infraestrutura:"Infraestrutura",manutencao:"Manutenção",ministerios:"Ministérios e eventos",acao_social:"Ação social",outros:"Outros / não classificado"};
@@ -2479,8 +2491,8 @@ function renderFinFull(){
  $("finFullResult").innerHTML=`<p><b>${rows.length} lançamento(s)</b> · Entradas: <b>${money(entradas)}</b> · Saídas: <b>${money(saidas)}</b> · Saldo: <b>${money(entradas-saidas)}</b></p>`+(grouped.length?`<table style="width:100%;border-collapse:collapse"><thead><tr><th>${th}</th><th>Quantidade</th><th>Entradas</th><th>Saídas</th><th>Saldo</th></tr></thead><tbody>${grouped.map(r=>`<tr><td>${finSafe(r.name)}</td><td>${r.quantidade}</td><td>${money(r.entradas)}</td><td>${money(r.saidas)}</td><td><b>${money(r.entradas-r.saidas)}</b></td></tr>`).join("")}</tbody></table>`:"Nenhum lançamento encontrado para os filtros selecionados.");
 }
 ["finFullMode","finFullGroup","finFullFrom","finFullTo","finFullOrigin","finFullCost","finFullCategory","finFullSearch"].forEach(id=>$(id).addEventListener(id==="finFullSearch"?"input":"change",renderFinFull));
-$("finFullCsv").addEventListener("click",()=>{const url=URL.createObjectURL(new Blob(["\ufeff",finFullCsvText()],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download="AD_Moriah_relatorio_"+$("finFullMode").value+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
-$("finFullPrint").addEventListener("click",()=>{const w=window.open("","_blank");if(!w)return toast("Permita pop-ups para imprimir.");w.document.write('<html><head><meta charset="utf-8"><title>Relatório financeiro - AD Moriah</title><style>body{font:14px Arial;padding:28px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #aaa;padding:8px;text-align:left}th{background:#eee}</style></head><body><h2>Assembleia de Deus Moriah — Relatório financeiro</h2><p>Tipo: '+finSafe($("finFullMode").selectedOptions[0].textContent)+' · Período: '+finSafe($("finFullFrom").value||"Início")+' a '+finSafe($("finFullTo").value||"Atual")+'</p>'+$("finFullResult").innerHTML+'</body></html>');w.document.close();moriahAssinarDocumento(w);w.print();});
+$("finFullCsv").addEventListener("click",()=>{if(!financeAllowed("view"))return;const url=URL.createObjectURL(new Blob(["\ufeff",finFullCsvText()],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download="AD_Moriah_relatorio_"+$("finFullMode").value+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+$("finFullPrint").addEventListener("click",()=>{if(!financeAllowed("view"))return;const w=window.open("","_blank");if(!w)return toast("Permita pop-ups para imprimir.");w.document.write('<html><head><meta charset="utf-8"><title>Relatório financeiro - AD Moriah</title><style>body{font:14px Arial;padding:28px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #aaa;padding:8px;text-align:left}th{background:#eee}</style></head><body><h2>Assembleia de Deus Moriah — Relatório financeiro</h2><p>Tipo: '+finSafe($("finFullMode").selectedOptions[0].textContent)+' · Período: '+finSafe($("finFullFrom").value||"Início")+' a '+finSafe($("finFullTo").value||"Atual")+'</p>'+$("finFullResult").innerHTML+'</body></html>');w.document.close();moriahAssinarDocumento(w);w.print();});
 renderFinFull();
 
 // ETAPA 22 — Coleção independente; não modifica membros, obreiros ou financeiro.
