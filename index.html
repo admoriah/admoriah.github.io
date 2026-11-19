@@ -780,7 +780,7 @@ html,body{background:#f4f8f6;color:#1d2d28}
 <div class="sec14" id="pfAdminPanel" hidden style="border-color:#b9cde3;background:#f8fbff">
 <h3>👨‍👩‍👧‍👦 Portal da Família — solicitações recebidas</h3>
 <p class="muted">Confira os cadastros enviados pelas famílias. A aprovação registra a conferência da solicitação, mas <strong>não cria membros automaticamente</strong>. Verifique duplicidades antes de cadastrar cada pessoa no módulo Membros.</p>
-<div class="sec14-tools"><input id="pfSearch" type="search" placeholder="Pesquisar responsável, e-mail ou telefone" aria-label="Pesquisar cadastros do portal" style="min-width:220px;flex:1"><select id="pfStatusFilter" aria-label="Filtrar solicitações"><option value="">Todas as solicitações (padrão)</option><option value="atendimento">Em atendimento</option><option value="pendente">Pendentes</option><option value="correcao">Aguardando correção</option><option value="aprovado">Aprovadas</option><option value="rascunho">Rascunhos</option><option value="rejeitado">Rejeitadas</option></select><button type="button" class="secondary" id="pfRefresh">↻ Atualizar solicitações</button></div>
+<div class="sec14-tools"><input id="pfSearch" type="search" placeholder="Pesquisar responsável, e-mail ou telefone" aria-label="Pesquisar cadastros do portal" style="min-width:220px;flex:1"><select id="pfStatusFilter" aria-label="Filtrar solicitações"><option value="">Todas as solicitações (padrão)</option><option value="atendimento">Em atendimento</option><option value="pendente">Pendentes</option><option value="correcao">Aguardando correção</option><option value="aprovado">Aprovadas</option><option value="rascunho">Rascunhos</option><option value="rejeitado">Rejeitadas</option><option value="concluido">Concluídas</option></select><button type="button" class="secondary" id="pfRefresh">↻ Atualizar solicitações</button></div>
 <p class="sec14-note" id="pfInfo">Aguardando carregamento...</p><div id="pfRequests"></div>
 </div>
 <div class="sec14-stats" id="sec14Stats"></div>
@@ -1391,7 +1391,7 @@ function pfRender(){
  panel.hidden=!pfAllowed();if(!pfAllowed())return;
  const filter=$('pfStatusFilter').value;
  const search=pfNorm($('pfSearch').value);
- const rows=pfRecords.filter(r=>(r.status!=='concluido'&&r.status!=='excluido')&&(filter==='atendimento'?!['aprovado','rejeitado'].includes(r.status):(!filter||r.status===filter))&&(!search||pfNorm([r.responsavel,r.email,r.telefone,...(Array.isArray(r.familiares)?r.familiares.map(f=>f.nome):[])].join(' ')).includes(search))).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+ const rows=pfRecords.filter(r=>(r.status!=='excluido')&&(filter==='atendimento'?!['aprovado','rejeitado','concluido'].includes(r.status):(!filter||r.status===filter))&&(!search||pfNorm([r.responsavel,r.email,r.telefone,...(Array.isArray(r.familiares)?r.familiares.map(f=>f.nome):[])].join(' ')).includes(search))).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
  $('pfInfo').textContent=`${rows.length} solicitação(ões) exibida(s) • ${pfRecords.filter(r=>r.status==='pendente').length} pendente(s).`;
  const area=$('pfRequests');area.replaceChildren();
  if(!rows.length){area.textContent=filter==='atendimento'?'Nenhuma solicitação em atendimento. Para consultar solicitações aprovadas ou rejeitadas, use o filtro acima.':'Nenhuma solicitação neste filtro.';return}
@@ -1408,7 +1408,7 @@ function pfRender(){
   const list=document.createElement('div');list.style.display='grid';list.style.gap='8px';
   const allPeople=[{...r,nome:r.responsavel||'',parentesco:'Responsável'},...people].filter(p=>String(p.nome||'').trim());
   for(let i=0;i<allPeople.length;i++){
-   if(Array.isArray(r.integrantesIncluidos)&&r.integrantesIncluidos.includes(i))continue;
+   if(Array.isArray(r.integrantesIncluidos)&&r.integrantesIncluidos.includes(i)&&r.status!=='concluido')continue;
    const person=allPeople[i],entry=document.createElement('div');entry.style.cssText='display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid #dbe4ed;border-radius:8px';
    const label=document.createElement('span');label.textContent=[person.nome,person.parentesco,person.nascimento||person.dataNascimento].filter(Boolean).join(' • ');entry.append(label);
    if(r.status==='aprovado'){
@@ -1420,7 +1420,7 @@ function pfRender(){
   if(allPeople.length)card.append(list);else{const p=document.createElement('p');p.textContent='Nenhum integrante informado.';card.append(p)}
   const actions=document.createElement('div');actions.className='actions';
   for(const [status,label] of [['aprovado','✓ Aprovar solicitação'],['correcao','✎ Solicitar correção'],['rejeitado','✕ Rejeitar']]){
-   if(r.status===status)continue;
+   if(r.status===status||r.status==='concluido')continue;
    const btn=document.createElement('button');btn.type='button';btn.className=status==='rejeitado'?'danger':'secondary';btn.textContent=label;
    btn.onclick=()=>pfReview(r,status);actions.append(btn);
   }
@@ -1432,7 +1432,7 @@ function pfRender(){
    done.title='Arquiva a solicitação no Portal da Família sem excluir membros nem familiares';
    done.addEventListener('click',()=>pfFinishRequest(r));actions.append(done);
   }
-  if(isGeneralAdmin()){
+  if(isGeneralAdmin()&&r.status!=='concluido'){
    const del=document.createElement('button');del.type='button';del.className='danger';del.textContent='🗑 Excluir cadastro';
    del.title='Exclui apenas esta solicitação do Portal da Família, não os membros cadastrados';
    del.addEventListener('click',()=>pfDeleteRequest(r));actions.append(del);
