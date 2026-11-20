@@ -1472,6 +1472,10 @@ function pfRegisterMember(r,index=0){
  const people=[{...r,nome:r.responsavel||'',parentesco:'Responsável'},...(Array.isArray(r.familiares)?r.familiares:[])].filter(p=>String(p.nome||'').trim());
  if(!people.length||!Number.isInteger(index)||index<0||index>=people.length){toast('Integrante não encontrado.');return}
  const person=people[index], responsible=index===0;
+ const nascimento=String(person.nascimento||person.dataNascimento||'').trim();
+ const isoNascimento=/^\d{2}\/\d{2}\/\d{4}$/.test(nascimento)?nascimento.split('/').reverse().join('-'):nascimento;
+ const dataNascimentoValida=/^\d{4}-\d{2}-\d{2}$/.test(isoNascimento)&&!Number.isNaN(new Date(isoNascimento+'T12:00:00').getTime())&&new Date(isoNascimento+'T12:00:00').toISOString().slice(0,10)===isoNascimento&&isoNascimento<=new Date().toISOString().slice(0,10);
+ if(!dataNascimentoValida){toast('Não é possível importar '+person.nome+': informe uma data de nascimento válida no Portal da Família antes de prosseguir.');return;}
  const found=[...state.membros,...state.obreiros].filter(m=>pfNorm(m.name)===pfNorm(person.nome));
  if(found.length&&!confirm('ATENÇÃO: '+person.nome+' já possui possível cadastro no App Moriah.\nConfira antes de prosseguir para evitar duplicidade. Deseja abrir um novo cadastro mesmo assim?'))return;
  $('newMemberBtn').click();
