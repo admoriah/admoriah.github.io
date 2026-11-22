@@ -710,6 +710,26 @@ html,body{background:#f4f8f6;color:#1d2d28}
 @media(max-width:650px){#agenda .moriah-year-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media print{#agenda .moriah-year-overview{display:none!important}}
 </style>
+<style id="moriah-agenda-print-2027">
+#agendaAnnualPrint{display:none}
+@media print{
+ body.moriah-agenda-printing > *:not(#agendaAnnualPrint){display:none!important}
+ body.moriah-agenda-printing #agendaAnnualPrint{display:block!important;position:static!important;width:100%!important;background:#fff!important;color:#172a42!important;font-family:Arial,sans-serif!important}
+ @page{size:A4 landscape;margin:9mm}
+ #agendaAnnualPrint .ap-head{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #17395c;padding-bottom:8px;margin-bottom:10px}
+ #agendaAnnualPrint h1{font-size:22px;margin:0;color:#123557}
+ #agendaAnnualPrint .ap-sub{font-size:10px;color:#536579}
+ #agendaAnnualPrint .ap-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ #agendaAnnualPrint .ap-month{border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;break-inside:avoid;min-height:113px}
+ #agendaAnnualPrint .ap-month h2{margin:0;padding:5px 8px;font-size:12px;color:#fff;background:var(--ap-color,#17446a)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #agendaAnnualPrint .ap-month .ap-content{padding:6px 8px;font-size:9px;line-height:1.35}
+ #agendaAnnualPrint .ap-item{padding:2px 0;border-bottom:1px solid #e5eaf0;overflow-wrap:anywhere}
+ #agendaAnnualPrint .ap-item:last-child{border-bottom:0}
+ #agendaAnnualPrint .ap-date{font-weight:700;color:#17446a}
+ #agendaAnnualPrint .ap-empty{color:#7a8796;font-style:italic}
+ #agendaAnnualPrint .ap-foot{font-size:9px;color:#64748b;margin-top:8px;text-align:right}
+}
+</style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
@@ -811,7 +831,7 @@ html,body{background:#f4f8f6;color:#1d2d28}
 
 <section id="festividades" class="page"><div class="page-head"><div><h2>Festividades</h2><p>Convidados, valores e aprovação.</p></div><button id="newFestBtn" class="primary edit-own">+ Nova</button></div><div id="festList" class="cards"></div></section>
 
-<section id="agenda" class="page"><div class="page-head"><div><h2>Agenda da Igreja</h2><p>Compromissos e eventos da Assembleia de Deus Moriah.</p></div><button id="newAgendaBtn" class="primary admin-only">+ Evento</button></div><div class="moriah-agenda-tools"><label>Pesquisar evento<input id="agendaSearch" type="search" placeholder="Nome ou local do evento"></label><label>Ano<select id="agendaYear"><option value="2027" selected>2027 — Planejamento</option><option value="all">Todos os anos</option></select></label><label>Mês<select id="agendaMonth"><option value="all">Todos os meses</option></select></label><label>Período<select id="agendaPeriod"><option value="upcoming">Próximos eventos</option><option value="all">Todos</option><option value="past">Eventos anteriores</option></select></label><button type="button" id="agendaClear" class="secondary">Limpar filtros</button></div><div id="agendaYearOverview" class="moriah-year-overview" aria-label="Resumo dos meses de 2027"></div><div id="agendaSummary" class="moriah-event-summary" aria-live="polite"></div><div id="agendaList" class="cards moriah-agenda-cards"></div></section>
+<section id="agenda" class="page"><div class="page-head"><div><h2>Agenda da Igreja</h2><p>Compromissos e eventos da Assembleia de Deus Moriah.</p></div><button id="newAgendaBtn" class="primary admin-only">+ Evento</button></div><div class="moriah-agenda-tools"><label>Pesquisar evento<input id="agendaSearch" type="search" placeholder="Nome ou local do evento"></label><label>Ano<select id="agendaYear"><option value="2027" selected>2027 — Planejamento</option><option value="all">Todos os anos</option></select></label><label>Mês<select id="agendaMonth"><option value="all">Todos os meses</option></select></label><label>Período<select id="agendaPeriod"><option value="upcoming">Próximos eventos</option><option value="all">Todos</option><option value="past">Eventos anteriores</option></select></label><button type="button" id="agendaClear" class="secondary">Limpar filtros</button><button type="button" id="agendaPrintAnnual" class="primary">🖨️ Calendário anual colorido / PDF</button></div><div id="agendaYearOverview" class="moriah-year-overview" aria-label="Resumo dos meses de 2027"></div><div id="agendaSummary" class="moriah-event-summary" aria-live="polite"></div><div id="agendaList" class="cards moriah-agenda-cards"></div></section>
 
 <section id="escala" class="page"><div class="page-head"><div><h2>Escala Trabalhos Oficiais</h2><p>Terças-feiras do mês.</p></div></div><div class="month-nav"><button id="prevMonth">‹</button><strong id="scaleMonth"></strong><button id="nextMonth">›</button></div><div id="scaleList" class="cards"></div></section>
 
@@ -1716,6 +1736,28 @@ $("agendaPeriod").onchange=renderAgenda;
 $("agendaYear").onchange=()=>{$("agendaMonth").value="all";renderAgenda()};
 $("agendaMonth").onchange=renderAgenda;
 $("agendaClear").onclick=()=>{$("agendaSearch").value="";$("agendaPeriod").value="all";$("agendaYear").value="2027";$("agendaMonth").value="all";renderAgenda()};
+// Exportação anual: apenas leitura de state.agenda, sem gravar no Firestore.
+function moriahAgendaEscape(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function moriahAgendaPrintAnnual(){
+ const selected=$('agendaYear')?.value||'2027';
+ const year=selected==='all'?'2027':selected;
+ const events=(state.agenda||[]).filter(a=>String(a.date||'').startsWith(year+'-')).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.time||'').localeCompare(String(b.time||'')));
+ const colors=['#17395c','#1d5976','#237c80','#346c53','#687a39','#9b7535','#a75f43','#99516c','#725c9d','#4c7196','#376b76','#435978'];
+ let report=document.getElementById('agendaAnnualPrint');
+ if(!report){report=document.createElement('section');report.id='agendaAnnualPrint';document.body.appendChild(report);}
+ const months=moriahAgendaMonths.map((name,i)=>{
+  const mm=String(i+1).padStart(2,'0');const items=events.filter(a=>String(a.date||'').slice(5,7)===mm);
+  const content=items.length?items.map(a=>`<div class="ap-item"><span class="ap-date">${moriahAgendaEscape(String(a.date||'').slice(8,10))}/${mm}${a.time?' • '+moriahAgendaEscape(a.time):''}</span> — ${moriahAgendaEscape(a.name||'Evento sem nome')}${a.location?' <span style="color:#64748b">('+moriahAgendaEscape(a.location)+')</span>':''}</div>`).join(''):'<div class="ap-empty">Sem eventos cadastrados</div>';
+  return `<div class="ap-month" style="--ap-color:${colors[i]}"><h2>${name} · ${items.length} ${items.length===1?'evento':'eventos'}</h2><div class="ap-content">${content}</div></div>`;
+ }).join('');
+ report.innerHTML=`<div class="ap-head"><div><h1>ASSEMBLEIA DE DEUS MORIAH · AGENDA ${moriahAgendaEscape(year)}</h1><div class="ap-sub">Calendário anual de eventos e programações</div></div><div class="ap-sub">${events.length} ${events.length===1?'evento cadastrado':'eventos cadastrados'}</div></div><div class="ap-grid">${months}</div><div class="ap-foot">Gerado a partir da Agenda da Igreja · Use “Salvar como PDF” na janela de impressão</div>`;
+ document.body.classList.add('moriah-agenda-printing');
+ const cleanup=()=>{document.body.classList.remove('moriah-agenda-printing');window.removeEventListener('afterprint',cleanup);};
+ window.addEventListener('afterprint',cleanup);
+ window.print();
+}
+$('agendaPrintAnnual').onclick=moriahAgendaPrintAnnual;
+
 function birthdayInfo(date){if(!date)return null;const [y,m,d]=date.split("-").map(Number),now=new Date();let n=new Date(now.getFullYear(),m-1,d),start=new Date(now.getFullYear(),now.getMonth(),now.getDate());if(n<start)n=new Date(now.getFullYear()+1,m-1,d);return{date:n,diff:Math.round((n-start)/86400000)}}
 function renderBirthdays(){
  const p=[...state.obreiros,...state.membros].map(x=>({x,b:birthdayInfo(x.birth)})).filter(o=>o.b&&o.b.diff===0).sort((a,b)=>a.b.diff-b.b.diff);
