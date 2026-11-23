@@ -712,6 +712,25 @@ html,body{background:#f4f8f6;color:#1d2d28}
 </style>
 <style id="moriah-agenda-print-2027">
 #agendaAnnualPrint{display:none}
+@media screen {
+ body.moriah-agenda-printing #agendaAnnualPrint{display:block!important;position:fixed;inset:0;z-index:2147483647;overflow:auto;background:#fff;color:#172a42;padding:16px;box-sizing:border-box;font-family:Arial,sans-serif;overscroll-behavior:contain}
+ body.moriah-agenda-printing{overflow:hidden}
+ #agendaAnnualPrint .ap-tools{display:flex;flex-wrap:wrap;gap:8px;position:sticky;top:0;background:white;padding:10px 0;z-index:1}
+ #agendaAnnualPrint .ap-tools button{background:#17395c;color:white;border:0;border-radius:8px;padding:12px;cursor:pointer}
+ #agendaAnnualPrint .ap-head{border-bottom:3px solid #17395c;padding:12px 0;margin-bottom:12px}
+ #agendaAnnualPrint h1{font-size:20px;margin:0;color:#123557}
+ #agendaAnnualPrint .ap-sub,#agendaAnnualPrint .ap-foot{font-size:12px;color:#536579}
+ #agendaAnnualPrint .ap-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ #agendaAnnualPrint .ap-month{border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;min-height:100px}
+ #agendaAnnualPrint .ap-month h2{background:var(--ap-color);color:white;font-size:14px;margin:0;padding:8px}
+ #agendaAnnualPrint .ap-content{padding:8px;font-size:13px;overflow-wrap:anywhere}
+ #agendaAnnualPrint .ap-item{padding:4px 0;border-bottom:1px solid #e5eaf0}
+ #agendaAnnualPrint .ap-date{font-weight:bold}
+ #agendaAnnualPrint .ap-empty{font-style:italic}
+}
+@media screen and (max-width:600px){#agendaAnnualPrint .ap-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media print{#agendaAnnualPrint .ap-tools{display:none!important}}
+
 @media print{
  body.moriah-agenda-printing > *:not(#agendaAnnualPrint){display:none!important}
  body.moriah-agenda-printing #agendaAnnualPrint{display:block!important;position:static!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;padding:2mm!important;background:#fff!important;color:#172a42!important;font-family:Arial,sans-serif!important}
@@ -1752,9 +1771,11 @@ function moriahAgendaPrintAnnual(){
  }).join('');
  report.innerHTML=`<div class="ap-head"><div><h1>ASSEMBLEIA DE DEUS MORIAH · AGENDA ${moriahAgendaEscape(year)}</h1><div class="ap-sub">Calendário anual de eventos e programações</div></div><div class="ap-sub">${events.length} ${events.length===1?'evento cadastrado':'eventos cadastrados'}</div></div><div class="ap-grid">${months}</div><div class="ap-foot">Gerado a partir da Agenda da Igreja · Use “Salvar como PDF” na janela de impressão</div>`;
  document.body.classList.add('moriah-agenda-printing');
- const cleanup=()=>{document.body.classList.remove('moriah-agenda-printing');window.removeEventListener('afterprint',cleanup);};
- window.addEventListener('afterprint',cleanup);
- window.print();
+ report.insertAdjacentHTML('afterbegin','<div class="ap-tools"><button type="button" id="apBack">← Voltar ao aplicativo</button><button type="button" id="apPrint">Imprimir / Salvar PDF</button></div>');
+ const close=()=>{document.body.classList.remove('moriah-agenda-printing');report.remove();};
+ report.querySelector('#apBack').onclick=close;
+ report.querySelector('#apPrint').onclick=()=>{try{window.print();}catch(e){alert('Use o menu Compartilhar ou Imprimir do navegador para salvar em PDF.');}};
+ report.scrollTop=0;
 }
 $('agendaPrintAnnual').onclick=moriahAgendaPrintAnnual;
 
