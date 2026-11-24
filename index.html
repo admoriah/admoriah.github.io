@@ -1522,11 +1522,11 @@ function pfRegisterMember(r,index=0){
  const nascimento=String(person.nascimento||person.dataNascimento||'').trim();
  const isoNascimento=/^\d{2}\/\d{2}\/\d{4}$/.test(nascimento)?nascimento.split('/').reverse().join('-'):nascimento;
  const dataNascimentoValida=/^\d{4}-\d{2}-\d{2}$/.test(isoNascimento)&&!Number.isNaN(new Date(isoNascimento+'T12:00:00').getTime())&&new Date(isoNascimento+'T12:00:00').toISOString().slice(0,10)===isoNascimento&&isoNascimento<=new Date().toISOString().slice(0,10);
- if(!dataNascimentoValida){toast('Não é possível importar '+person.nome+': informe uma data de nascimento válida no Portal da Família antes de prosseguir.');return;}
+ if(!dataNascimentoValida&&!isAdmin()){toast('Data de nascimento ausente ou inválida. Solicite a conferência de um administrador.');return;}
  const found=[...state.membros,...state.obreiros].filter(m=>pfNorm(m.name)===pfNorm(person.nome));
  if(found.length&&!confirm('ATENÇÃO: '+person.nome+' já possui possível cadastro no App Moriah.\nConfira antes de prosseguir para evitar duplicidade. Deseja abrir um novo cadastro mesmo assim?'))return;
  $('newMemberBtn').click();
- pfPendingImport={requestId:r.id,index,personName:person.nome};
+ pfPendingImport={requestId:r.id,index,personName:person.nome,unknownTither:!['sim','não','nao'].includes(String(person.dizimista||'').toLowerCase()),unknownStatus:!['membro','congregado','obreiro','cooperador'].includes(String(person.situacao||'').toLowerCase())};
  const put=(id,value)=>{const el=$(id);if(el&&value!==undefined&&value!==null&&String(value).trim()!==''){el.value=String(value).trim();return el.value===String(value).trim()}return false};
  const date=(id,value)=>{let v=String(value||'').trim();if(/^\d{2}\/\d{2}\/\d{4}$/.test(v)){const [d,m,y]=v.split('/');v=`${y}-${m}-${d}`}if(/^\d{4}-\d{2}-\d{2}$/.test(v))put(id,v)};
  const sex=String(person.sexo||'').toLowerCase();
@@ -1534,7 +1534,7 @@ function pfRegisterMember(r,index=0){
  const marital=String(person.estadoCivil||'').trim();
  put('mname',person.nome);
  put('mphone',person.telefone||r.telefone);
- date('mbirth',person.nascimento||person.dataNascimento);
+ if(dataNascimentoValida)date('mbirth',isoNascimento);
  if(sex.startsWith('masc'))put('msex','M');else if(sex.startsWith('fem'))put('msex','F');
  if(['membro','congregado','obreiro','cooperador'].includes(status))put('mstatus',status);
  if(person.departamento)put('mdepartment',person.departamento);
@@ -1542,7 +1542,7 @@ function pfRegisterMember(r,index=0){
  if(marital){const normalized={'União estável':'Casado(a)','Separado(a)':'Divorciado(a)'}[marital]||marital;put('mmarital',normalized)}
  if(String(person.dizimista||'').toLowerCase()==='sim')put('mtither','sim');
  else if(String(person.dizimista||'').toLowerCase()==='não'||String(person.dizimista||'').toLowerCase()==='nao')put('mtither','nao');
- else put('mtither','nao'); // O formulário oficial exige uma opção; conferir antes de salvar.
+ else put('mtither','nao'); // Valor padrão existente; confirmar expressamente antes de salvar.
  date('mbaptism',person.dataBatismo);
  date('mentry',person.dataIngresso);
  const address=[r.endereco,r.numero,r.complemento,r.bairro,r.cidade&&[r.cidade,r.uf].filter(Boolean).join('/'),r.cep&&'CEP '+r.cep].filter(Boolean).join(', ');
@@ -1563,7 +1563,7 @@ function pfRegisterMember(r,index=0){
  put('mnotes',extra.join('\n'));
  toggleMemberRole();
  const notice=$('memberSaveNotice');
- if(notice){notice.textContent='Dados do Portal importados. Confira todos os campos, especialmente dizimista e familiares, antes de salvar.';notice.style.color='#134b82'}
+ if(notice){notice.textContent='Dados do Portal importados. Edite os campos antes de salvar. '+(!dataNascimentoValida?'ATENÇÃO: nascimento ausente ou inválido; campo deixado em branco. ':'')+(pfPendingImport.unknownTither?'Dizimista não informado: confira a opção padrão Não. ':'')+(pfPendingImport.unknownStatus?'Situação não informada: confira a opção padrão Membro. ':'')+'Confira também possíveis duplicidades.';notice.style.color='#134b82'}
 }
 async function pfReview(r,status){
  if(!pfAllowed())return;
@@ -1892,6 +1892,24 @@ $("memberForm").onsubmit=async e=>{
    atualizarEtapa("Número já existente em outro registro; atualizando apenas este membro...");
  }
  const previous=id?state.membros.find(m=>m.id===id):null;
+ if(!id&&pfPendingImport){
+   const pending=pfPendingImport;
+   const missing=[];
+   if(!$('mbirth').value||$('mbirth').value>new Date().toISOString().slice(0,10))missing.push('Data de nascimento ausente ou futura');
+   if(!$('msex').value)missing.push('Sexo não informado');
+   if(!$('mphone').value.trim())missing.push('Telefone não informado');
+   if(!$('mmarital').value)missing.push('Estado civil não informado');
+   if(pending.unknownTither)missing.push('Dizimista: confira a opção selecionada');
+   if(pending.unknownStatus)missing.push('Situação: confira a opção selecionada');
+   if($('mstatus').value==='obreiro'&&!$('mrole').value)missing.push('Cargo ministerial não informado');
+   const duplicates=[...state.membros,...state.obreiros].filter(m=>pfNorm(m.name)===pfNorm($('mname').value));
+   if(duplicates.length)missing.push('Possível duplicidade: '+duplicates.map(m=>m.name+' ('+(m.memberNumber||'sem número')+')').join('; '));
+   if(!$('mname').value.trim()){atualizarEtapa('Informe o nome');return toast('Informe o nome do integrante.');}
+   if(missing.length){
+     if(!isAdmin()&&(!$('mbirth').value||$('mbirth').value>new Date().toISOString().slice(0,10)||duplicates.length)){atualizarEtapa('Conferência administrativa necessária');return toast('Corrija o nascimento ou solicite a inclusão por um administrador para tratar a possível duplicidade.');}
+     if(!confirm('CONFERÊNCIA DO CADASTRO\n\n'+missing.join('\n')+'\n\nOK: autorizar inclusão com os dados atuais.\nCancelar: voltar ao formulário para alterar ou fechar sem salvar.')){atualizarEtapa('Gravação cancelada. Edite os dados ou feche o formulário.');return;}
+   }
+ }
  const movementType=$("mmovement").value;
  const movementNotes=$("mmovementNotes").value.trim();
  const entryDate=$("mentry").value;
